@@ -46,19 +46,68 @@ const WindowManager: IWindowManager = (function () {
     let _initialized = false;
     let onDocumentClick: ((e: Event) => void) | null = null;
 
-    const _dragRegistry = new Map<string, {
-        header: HTMLElement;
+    interface IInteractionEntry {
+        triggerElement: HTMLElement;
         mousedown: EventListener;
         mousemove: EventListener;
         mouseup: EventListener;
-    }>();
+    }
 
-    const _resizeRegistry = new Map<string, {
-        resizeHandle: HTMLElement;
-        mousedown: EventListener;
-        mousemove: EventListener;
-        mouseup: EventListener;
-    }>();
+    const _dragRegistry = new Map<string, IInteractionEntry>();
+    const _resizeRegistry = new Map<string, IInteractionEntry>();
+
+    function _bindInteraction(
+        windowId: string,
+        triggerElement: HTMLElement,
+        registry: Map<string, IInteractionEntry>,
+        onMouseDown: (e: MouseEvent) => boolean | void,
+        onMouseMove: (e: MouseEvent) => void,
+        onMouseUp: () => void
+    ): void {
+        let active = false;
+
+        const mousedown = (e: Event): void => {
+            const mouseEvt = e as MouseEvent;
+            const proceed = onMouseDown(mouseEvt);
+            if (proceed === false) return;
+            active = true;
+        };
+
+        const mousemove = (e: Event): void => {
+            if (!active) return;
+            onMouseMove(e as MouseEvent);
+        };
+
+        const mouseup = (): void => {
+            if (!active) return;
+            active = false;
+            onMouseUp();
+        };
+
+        Utils.eventManager.add(triggerElement, 'mousedown', mousedown);
+        Utils.eventManager.add(document, 'mousemove', mousemove);
+        Utils.eventManager.add(document, 'mouseup', mouseup);
+
+        registry.set(windowId, {
+            triggerElement,
+            mousedown,
+            mousemove,
+            mouseup
+        });
+    }
+
+    function _unbindInteraction(
+        windowId: string,
+        registry: Map<string, IInteractionEntry>
+    ): void {
+        const entry = registry.get(windowId);
+        if (entry) {
+            Utils.eventManager.remove(entry.triggerElement, 'mousedown', entry.mousedown);
+            Utils.eventManager.remove(document, 'mousemove', entry.mousemove);
+            Utils.eventManager.remove(document, 'mouseup', entry.mouseup);
+            registry.delete(windowId);
+        }
+    }
 
     /** Calcula el z-index real de una ventana dado su logical order */
     function _zIndexFor(order: number): number {
@@ -400,13 +449,7 @@ const WindowManager: IWindowManager = (function () {
     }
 
     function destroyDraggable(windowId: string): void {
-        const entry = _dragRegistry.get(windowId);
-        if (entry) {
-            Utils.eventManager.remove(entry.header, 'mousedown', entry.mousedown);
-            Utils.eventManager.remove(document, 'mousemove', entry.mousemove);
-            Utils.eventManager.remove(document, 'mouseup', entry.mouseup);
-            _dragRegistry.delete(windowId);
-        }
+        _unbindInteraction(windowId, _dragRegistry);
 
         // Also clean up touch dragging if touch manager is active
         const tm: any = Services.get('TouchManager');
@@ -416,13 +459,7 @@ const WindowManager: IWindowManager = (function () {
     }
 
     function destroyResizable(windowId: string): void {
-        const entry = _resizeRegistry.get(windowId);
-        if (entry) {
-            Utils.eventManager.remove(entry.resizeHandle, 'mousedown', entry.mousedown);
-            Utils.eventManager.remove(document, 'mousemove', entry.mousemove);
-            Utils.eventManager.remove(document, 'mouseup', entry.mouseup);
-            _resizeRegistry.delete(windowId);
-        }
+        _unbindInteraction(windowId, _resizeRegistry);
     }
 
     function destroyWindowInteractions(windowId: string): void {
@@ -450,55 +487,43 @@ const WindowManager: IWindowManager = (function () {
         let isDragging = false;
         let startX: number, startY: number, initialX: number, initialY: number;
 
-        const onMouseDown = (e: Event): void => {
-            const mouseEvt = e as MouseEvent;
-            // Ignore if clicking on buttons
-            if ((mouseEvt.target as HTMLElement).classList.contains('window-btn')) return;
-
-            isDragging = true;
-            startX = mouseEvt.clientX;
-            startY = mouseEvt.clientY;
-
-            // Get current position
-            const rect = win.getBoundingClientRect();
-            initialX = rect.left;
-            initialY = rect.top;
-
-            // Bring to front
-            bringToFront(win);
-
-            // Prevent text selection
-            mouseEvt.preventDefault();
-        };
-
-        const onMouseMove = (e: Event): void => {
-            const mouseEvt = e as MouseEvent;
-            if (!isDragging) return;
-
-            const deltaX = mouseEvt.clientX - startX;
-            const deltaY = mouseEvt.clientY - startY;
-
-            win.style.left = (initialX + deltaX) + 'px';
-            win.style.top = (initialY + deltaY) + 'px';
-            win.style.transform = 'none'; // Remove centering transform
-        };
-
-        const onMouseUp = (): void => {
-            isDragging = false;
-        };
-
-        // Register events with EventManager
-        Utils.eventManager.add(header, 'mousedown', onMouseDown);
-        Utils.eventManager.add(document, 'mousemove', onMouseMove);
-        Utils.eventManager.add(document, 'mouseup', onMouseUp);
-
-        // Store references for clean removal
-        _dragRegistry.set(windowId, {
+        _bindInteraction(
+            windowId,
             header,
-            mousedown: onMouseDown,
-            mousemove: onMouseMove,
-            mouseup: onMouseUp
-        });
+            _dragRegistry,
+            (mouseEvt) => {
+                // Ignore if clicking on buttons
+                if ((mouseEvt.target as HTMLElement).classList.contains('window-btn')) return false;
+
+                isDragging = true;
+                startX = mouseEvt.clientX;
+                startY = mouseEvt.clientY;
+
+                // Get current position
+                const rect = win.getBoundingClientRect();
+                initialX = rect.left;
+                initialY = rect.top;
+
+                // Bring to front
+                bringToFront(win);
+
+                // Prevent text selection
+                mouseEvt.preventDefault();
+            },
+            (mouseEvt) => {
+                if (!isDragging) return;
+
+                const deltaX = mouseEvt.clientX - startX;
+                const deltaY = mouseEvt.clientY - startY;
+
+                win.style.left = (initialX + deltaX) + 'px';
+                win.style.top = (initialY + deltaY) + 'px';
+                win.style.transform = 'none'; // Remove centering transform
+            },
+            () => {
+                isDragging = false;
+            }
+        );
 
         Utils.Logger.window(`Window ${windowId} is now draggable`);
     }
@@ -521,53 +546,41 @@ const WindowManager: IWindowManager = (function () {
         let isResizing = false;
         let startX: number, startY: number, startWidth: number, startHeight: number;
 
-        const onMouseDown = (e: Event): void => {
-            const mouseEvt = e as MouseEvent;
-            isResizing = true;
-            startX = mouseEvt.clientX;
-            startY = mouseEvt.clientY;
-
-            const rect = win.getBoundingClientRect();
-            startWidth = rect.width;
-            startHeight = rect.height;
-
-            // Bring to front
-            bringToFront(win);
-
-            mouseEvt.preventDefault();
-            mouseEvt.stopPropagation();
-        };
-
-        const onMouseMove = (e: Event): void => {
-            const mouseEvt = e as MouseEvent;
-            if (!isResizing) return;
-
-            const deltaX = mouseEvt.clientX - startX;
-            const deltaY = mouseEvt.clientY - startY;
-
-            const newWidth = Math.max(200, startWidth + deltaX);
-            const newHeight = Math.max(150, startHeight + deltaY);
-
-            win.style.width = newWidth + 'px';
-            win.style.height = newHeight + 'px';
-        };
-
-        const onMouseUp = (): void => {
-            isResizing = false;
-        };
-
-        // Register events
-        Utils.eventManager.add(resizeHandle, 'mousedown', onMouseDown);
-        Utils.eventManager.add(document, 'mousemove', onMouseMove);
-        Utils.eventManager.add(document, 'mouseup', onMouseUp);
-
-        // Store references for clean removal
-        _resizeRegistry.set(windowId, {
+        _bindInteraction(
+            windowId,
             resizeHandle,
-            mousedown: onMouseDown,
-            mousemove: onMouseMove,
-            mouseup: onMouseUp
-        });
+            _resizeRegistry,
+            (mouseEvt) => {
+                isResizing = true;
+                startX = mouseEvt.clientX;
+                startY = mouseEvt.clientY;
+
+                const rect = win.getBoundingClientRect();
+                startWidth = rect.width;
+                startHeight = rect.height;
+
+                // Bring to front
+                bringToFront(win);
+
+                mouseEvt.preventDefault();
+                mouseEvt.stopPropagation();
+            },
+            (mouseEvt) => {
+                if (!isResizing) return;
+
+                const deltaX = mouseEvt.clientX - startX;
+                const deltaY = mouseEvt.clientY - startY;
+
+                const newWidth = Math.max(200, startWidth + deltaX);
+                const newHeight = Math.max(150, startHeight + deltaY);
+
+                win.style.width = newWidth + 'px';
+                win.style.height = newHeight + 'px';
+            },
+            () => {
+                isResizing = false;
+            }
+        );
 
         Utils.Logger.window(`Window ${windowId} is now resizable`);
     }
