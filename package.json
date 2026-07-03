@@ -14,6 +14,7 @@
     "test:coverage": "vitest run --exclude test/e2e/** --coverage",
     "lint": "eslint js/ main.ts",
     "lint:fix": "eslint js/ main.ts --fix",
+    "typecheck": "tsc --noEmit",
     "build": "npm run build:games && vite build",
     "build:games": "npx tailwindcss -i tailwind-games.css -o public/css/tailwind-games.css --content \"./public/games/**/*.html\" --minify",
     "generate:app": "node scripts/create-app.js",

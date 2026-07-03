@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=flat&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![CI Status](https://github.com/DeViLDoNia/windows-app-center/actions/workflows/ci.yml/badge.svg)](https://github.com/DeViLDoNia/windows-app-center/actions/workflows/ci.yml)
 
 A high-fidelity **Windows 95/98 Simulator & Prototyping Environment** built with modern web technologies. This project serves as a fully functional desktop sandbox for testing and refining modular systems (VFS, Kernel, Rapier3D) before porting them to other production environments.
 
@@ -64,6 +65,9 @@ A high-fidelity **Windows 95/98 Simulator & Prototyping Environment** built with
    ```bash
    npm run build
    ```
+
+### Continuous Integration (CI)
+Our GitHub Actions pipeline runs on every push and pull request to `main`. The pipeline compiles code via strict `typecheck`, validates styles with `lint`, and verifies regressions with `test:run` as blocking quality gates, while executing Playwright E2E tests (`test:e2e`) as informative checks.
 
 ---
 
