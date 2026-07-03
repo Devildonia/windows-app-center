@@ -23,6 +23,10 @@ class Paint {
     private brushSize: number = 2;
     private canvas: HTMLCanvasElement | null = null;
     private ctx: CanvasRenderingContext2D | null = null;
+    private currentTool: PaintTool = 'pencil';
+    private startX: number = 0;
+    private startY: number = 0;
+    private startImageData: ImageData | null = null;
     private resizeObserver: ResizeObserver | null = null;
     private onResize = (): void => this.resizeCanvas();
     private onKeyDown = (e: KeyboardEvent): void => {
@@ -66,6 +70,7 @@ class Paint {
 
         // Save initial blank state
         this._saveState();
+        this.selectTool('pencil');
 
         window.addEventListener('resize', this.onResize);
 
@@ -263,32 +268,83 @@ class Paint {
     }
 
     private startDrawing(e: MouseEvent): void {
-        if (!this.ctx) return;
+        if (!this.ctx || !this.canvas) return;
         this.isDrawing = true;
         const pos = this.getMousePos(e);
+        this.startX = pos.x;
+        this.startY = pos.y;
+
+        // Save state/snapshot for line and rect preview
+        this.startImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+
         this.ctx.beginPath();
         this.ctx.moveTo(pos.x, pos.y);
     }
 
     private draw(e: MouseEvent): void {
-        if (!this.isDrawing || !this.ctx) return;
+        if (!this.isDrawing || !this.ctx || !this.canvas) return;
         const pos = this.getMousePos(e);
-        this.ctx.lineTo(pos.x, pos.y);
-        this.ctx.strokeStyle = this.color;
-        this.ctx.lineWidth = this.brushSize;
-        this.ctx.lineCap = 'round';
-        this.ctx.stroke();
+
+        if (this.currentTool === 'line' || this.currentTool === 'rect') {
+            if (this.startImageData) {
+                this.ctx.putImageData(this.startImageData, 0, 0);
+            }
+            this.ctx.strokeStyle = this.color;
+            this.ctx.lineWidth = this.brushSize;
+            
+            if (this.currentTool === 'line') {
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.startX, this.startY);
+                this.ctx.lineTo(pos.x, pos.y);
+                this.ctx.stroke();
+            } else if (this.currentTool === 'rect') {
+                this.ctx.beginPath();
+                this.ctx.rect(this.startX, this.startY, pos.x - this.startX, pos.y - this.startY);
+                this.ctx.stroke();
+            }
+        } else {
+            this.ctx.lineTo(pos.x, pos.y);
+            this.ctx.strokeStyle = this.color;
+            this.ctx.lineWidth = this.brushSize;
+            this.ctx.lineCap = 'round';
+            this.ctx.stroke();
+        }
     }
 
     private stopDrawing(): void {
         if (!this.isDrawing) return;
         this.isDrawing = false;
+        this.startImageData = null;
         // Save state after each stroke for undo
         this._saveState();
     }
 
     private selectTool(tool: PaintTool): void {
         if (!this.ctx || !this.canvas) return;
+
+        // Remove active styling from other buttons
+        const btns = document.querySelectorAll(`#${this.windowId} .paint-toolbar button`);
+        btns.forEach(b => {
+            const btnEl = b as HTMLButtonElement;
+            if (btnEl.title !== 'undo' && btnEl.title !== 'redo') {
+                btnEl.style.border = '';
+                btnEl.style.background = '';
+            }
+        });
+
+        // Add active style to the selected button
+        const activeBtn = Array.from(btns).find(b => (b as HTMLButtonElement).title === tool) as HTMLButtonElement | undefined;
+        if (activeBtn) {
+            activeBtn.style.border = '1px inset #fff';
+            activeBtn.style.background = '#e0e0e0';
+        }
+
+        if (tool === 'undo' || tool === 'redo' || tool === 'clear' || tool === 'separator') {
+            // Do not switch currentTool for actions
+        } else {
+            this.currentTool = tool;
+        }
+
         switch (tool) {
             case 'eraser':
                 this.color = '#ffffff';
@@ -299,6 +355,12 @@ class Paint {
                 break;
             case 'brush':
                 this.brushSize = 5;
+                break;
+            case 'rect':
+                this.brushSize = 2;
+                break;
+            case 'line':
+                this.brushSize = 2;
                 break;
             case 'clear':
                 this._saveState(); // Save before clearing for undo
