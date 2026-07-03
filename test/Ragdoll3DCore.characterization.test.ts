@@ -15,6 +15,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
+import { Services } from '../js/core/ServiceContainer';
 
 // ── Mock de RAPIER (evita cargar WASM) ──────────────────────────────────────
 vi.mock('@dimforge/rapier3d-compat', () => {
@@ -164,15 +165,15 @@ describe('Ragdoll3DCore (caracterización) — checkFallDamage', () => {
         expect(r.isFalling).toBe(true);
     });
 
-    it('al asentarse tras caer reproduce boing y programa levantarse', () => {
-        // 1) caída rápida
+    it('aterrizaje SUAVE (caída horizontal) reproduce boing atenuado y programa levantarse', () => {
+        // 1) caída rápida pero horizontal (vel.y ~ 0 durante toda la caída)
         const head = makeBody({ x: 0, y: 0, z: 0 }, { x: 5, y: 0, z: 0 });
         const hips = makeBody({ x: 2, y: 0, z: 3 });
         r.rigidBodies = new Map([['Head', head], ['Hips', hips]]);
         r.checkFallDamage();
         expect(r.isFalling).toBe(true);
 
-        // 2) se detiene (speed < 0.5): reproduce boing y agenda stand-up
+        // 2) se detiene (speed < 0.5): pico vertical bajo ⇒ boing atenuado (soft)
         head.linvel = vi.fn(() => ({ x: 0.1, y: 0.1, z: 0 }));
         r.checkFallDamage();
         expect(r.audioManager.play).toHaveBeenCalledWith('boing', { volume: 0.6 });
@@ -183,6 +184,28 @@ describe('Ragdoll3DCore (caracterización) — checkFallDamage', () => {
         vi.advanceTimersByTime(1000);
         expect(r.model.position.set).toHaveBeenCalledWith(2, r._modelGroundY, 3);
         expect(setRagdollSpy).toHaveBeenCalledWith(false);
+    });
+
+    it('aterrizaje DURO (caída vertical) reproduce ¡Ouch! y háptica heavy', () => {
+        const haptics = { heavy: vi.fn(), medium: vi.fn() };
+        Services.register('HapticService', haptics as any);
+        const saySpy = vi.spyOn(r, 'say');
+
+        // 1) caída vertical rápida — el pico de |vel.y| se captura DURANTE la caída
+        const head = makeBody({ x: 0, y: 0, z: 0 }, { x: 0, y: -6, z: 0 });
+        const hips = makeBody({ x: 0, y: 0, z: 0 });
+        r.rigidBodies = new Map([['Head', head], ['Hips', hips]]);
+        r.checkFallDamage();
+
+        // 2) se detiene: como el pico vertical superó el umbral ⇒ reacción dura
+        head.linvel = vi.fn(() => ({ x: 0, y: 0.1, z: 0 }));
+        r.checkFallDamage();
+
+        expect(r.audioManager.play).toHaveBeenCalledWith('boing'); // sin atenuar
+        expect(haptics.heavy).toHaveBeenCalled();
+        expect(saySpy).toHaveBeenCalledWith('¡Ouch!', 2000);
+
+        Services.register('HapticService', undefined as any);
     });
 });
 
