@@ -43,6 +43,7 @@ export abstract class Ragdoll3DCore {
     protected messageLibrary: any = null;
     protected showBubble: boolean = false;
     protected bubbleTimeout: any = null;
+    protected standUpTimeout: ReturnType<typeof setTimeout> | null = null;
     protected bubbleId: string = 'ragdoll-3d-bubble';
 
     protected readonly ANIM_MAP: Record<string, string> = {
@@ -108,6 +109,10 @@ export abstract class Ragdoll3DCore {
         }
         
         if (this.bubbleTimeout) clearTimeout(this.bubbleTimeout);
+        if (this.standUpTimeout) {
+            clearTimeout(this.standUpTimeout);
+            this.standUpTimeout = null;
+        }
         
         if (this.world) {
             this.world.free();
@@ -477,9 +482,9 @@ export abstract class Ragdoll3DCore {
                 }
             }
 
-            if (!(this as any).standUpTimeout) {
-                (this as any).standUpTimeout = setTimeout(() => {
-                    (this as any).standUpTimeout = null;
+            if (!this.standUpTimeout) {
+                this.standUpTimeout = setTimeout(() => {
+                    this.standUpTimeout = null;
                     if (!this.grabbedBody && this.isRagdollMode) {
                         // Move root model to the hips physics position so it doesn't teleport back to original start position
                         const hipsBody = this.rigidBodies.get('Hips');
@@ -496,9 +501,9 @@ export abstract class Ragdoll3DCore {
                 }, 1000);
             }
         } else {
-            if ((this as any).standUpTimeout) {
-                clearTimeout((this as any).standUpTimeout);
-                (this as any).standUpTimeout = null;
+            if (this.standUpTimeout) {
+                clearTimeout(this.standUpTimeout);
+                this.standUpTimeout = null;
             }
         }
     }
