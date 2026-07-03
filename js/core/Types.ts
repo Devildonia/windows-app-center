@@ -1,8 +1,17 @@
+import { IWindowOptions } from '../ui/WindowFactory';
+
 export interface IAppMetadata {
     name: string;
     icon: string;
     description?: string;
     singleton?: boolean;
+}
+
+export interface IAppPlugin {
+    readonly id: string;
+    readonly metadata: IAppMetadata;
+    readonly component: IWindowsAppConstructor;
+    readonly windowDef?: IWindowOptions;
 }
 
 export interface IWindowsApp {

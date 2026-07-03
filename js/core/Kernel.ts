@@ -10,7 +10,8 @@
 import { Utils } from '../utils';
 import { VFS } from './VFS';
 import { Services } from './ServiceContainer';
-import { IWindowsApp, IAppMetadata, IWindowsAppConstructor, IProcess } from './Types';
+import { IWindowsApp, IAppMetadata, IWindowsAppConstructor, IProcess, IAppPlugin } from './Types';
+import { WindowFactory } from '../ui/WindowFactory';
 
 export interface IAppRegistryEntry {
     appClass: IWindowsAppConstructor;
@@ -25,6 +26,7 @@ export interface IKernelRegistry {
 export interface IKernel {
     init(): void;
     registerApp(id: string, appClass: IWindowsAppConstructor, metadata: IAppMetadata): void;
+    installPlugin(plugin: IAppPlugin): void;
     launch(appId: string, params?: Record<string, unknown>): IProcess | null;
     kill(pid: number): boolean;
     getRegistry(): { apps: Record<string, IAppRegistryEntry>, processes: IProcess[] };
@@ -49,6 +51,18 @@ export const Kernel: IKernel = (() => {
     function registerApp(id: string, appClass: IWindowsAppConstructor, metadata: IAppMetadata): void {
         registry.apps[id] = { appClass, metadata };
         Utils.Logger.log(`Kernel: App registered [${id}]`);
+    }
+
+    function installPlugin(plugin: IAppPlugin): void {
+        registerApp(plugin.id, plugin.component, plugin.metadata);
+        if (plugin.windowDef) {
+            if (plugin.windowDef.src) {
+                WindowFactory.createGameWindow(plugin.windowDef);
+            } else {
+                WindowFactory.create(plugin.windowDef);
+            }
+        }
+        Utils.Logger.log(`Kernel: Plugin installed [${plugin.id}]`);
     }
 
     function launch(appId: string, params: Record<string, unknown> = {}): IProcess | null {
@@ -152,6 +166,7 @@ export const Kernel: IKernel = (() => {
     return {
         init,
         registerApp,
+        installPlugin,
         launch,
         kill,
         getRegistry,

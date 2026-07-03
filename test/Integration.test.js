@@ -262,3 +262,41 @@ describe('Integration: Multiple services depending on each other', () => {
         expect(Services.get('ServiceA').bRef.value).toBe(42);
     });
 });
+
+describe('Integration: Kernel plugin system', () => {
+    beforeEach(() => {
+        Services.__reset();
+        Kernel.getRegistry().processes.forEach(p => Kernel.kill(p.pid));
+        Kernel.__reset();
+    });
+
+    it('should install a plugin and register it successfully in Kernel', () => {
+        class MockPluginApp {
+            constructor() {
+                this.windowId = 'win-mock-plugin';
+            }
+        }
+        const plugin = {
+            id: 'mock-plugin',
+            metadata: { name: 'Mock Plugin', icon: '🔌' },
+            component: MockPluginApp,
+            windowDef: {
+                id: 'win-mock-plugin',
+                title: 'Mock Plugin Window',
+                body: '<div>Mock Plugin Content</div>'
+            }
+        };
+
+        Kernel.installPlugin(plugin);
+
+        const registry = Kernel.getRegistry();
+        expect(registry.apps['mock-plugin']).toBeDefined();
+        expect(registry.apps['mock-plugin'].metadata.name).toBe('Mock Plugin');
+
+        // Check if dynamic window element was created on the desktop/DOM
+        const winEl = document.getElementById('win-mock-plugin');
+        expect(winEl).not.toBeNull();
+        expect(winEl.querySelector('.window-header span').textContent).toContain('Mock Plugin Window');
+    });
+});
+
