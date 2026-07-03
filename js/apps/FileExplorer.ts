@@ -15,12 +15,13 @@ import { Kernel } from '../core/Kernel.js';
 import { Services } from '../core/ServiceContainer.js';
 import { IWindowManager } from '../ui/WindowManager.js';
 import { INotify } from '../ui/NotificationManager.js';
+import { WindowApp } from '../core/WindowApp.js';
 
 export interface IFileExplorerParams {
     path?: string;
 }
 
-class FileExplorer {
+class FileExplorer extends WindowApp {
     public windowId: string = 'win-explorer';
     private viewId: string = 'explorer-view-area';
     private addressId: string = 'explorer-address-input';
@@ -30,10 +31,8 @@ class FileExplorer {
     private addressInput: HTMLInputElement | null = null;
     private backBtn: HTMLElement | null = null;
 
-    // Cleanup registry
-    private _cleanups: Array<() => void> = [];
-
     constructor(params: IFileExplorerParams = {}) {
+        super();
         this.currentPath = params.path || 'C:\\';
         this.init();
     }
@@ -47,7 +46,7 @@ class FileExplorer {
         if (this.backBtn) {
             const backHandler = () => this.goBack();
             this.backBtn.addEventListener('click', backHandler);
-            this._cleanups.push(() => this.backBtn?.removeEventListener('click', backHandler));
+            this.addCleanup(() => this.backBtn?.removeEventListener('click', backHandler));
         }
 
         // FIX v3.2: Address bar — navegar al escribir ruta y pulsar Enter
@@ -58,7 +57,7 @@ class FileExplorer {
                 }
             };
             this.addressInput.addEventListener('keydown', addressHandler);
-            this._cleanups.push(() => this.addressInput?.removeEventListener('keydown', addressHandler));
+            this.addCleanup(() => this.addressInput?.removeEventListener('keydown', addressHandler));
         }
 
         this.render();
@@ -202,9 +201,8 @@ class FileExplorer {
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
-    public terminate(): void {
-        this._cleanups.forEach(fn => fn());
-        this._cleanups = [];
+    public override terminate(): void {
+        super.terminate();
         this.view = null;
         this.addressInput = null;
         this.backBtn = null;

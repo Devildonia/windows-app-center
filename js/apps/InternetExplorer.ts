@@ -16,21 +16,20 @@ import { Utils } from '../utils.js';
 import { Kernel } from '../core/Kernel.js';
 import { EventBus } from '../core/EventBus.js';
 import { Services } from '../core/ServiceContainer.js';
+import { WindowApp } from '../core/WindowApp.js';
 
 export interface IIEParams {
     [key: string]: any;
 }
 
-class InternetExplorerApp {
+class InternetExplorerApp extends WindowApp {
     public windowId: string = 'win-internet-explorer';
     private frameId: string = 'ie-frame';
     private inputId: string = 'ie-address-input';
     private statusId: string = 'ie-status';
 
-    // Cleanup registry — todas las unsubs/listeners se almacenan aquí
-    private _cleanups: Array<() => void> = [];
-
     constructor(params: IIEParams = {}) {
+        super();
         this._setupAddressBarListener();
         this._setupEventBusListeners();
 
@@ -53,7 +52,7 @@ class InternetExplorerApp {
         input.addEventListener('keypress', handler);
         input.dataset.listening = 'true';
 
-        this._cleanups.push(() => {
+        this.addCleanup(() => {
             input.removeEventListener('keypress', handler);
             delete input.dataset.listening;
         });
@@ -61,7 +60,7 @@ class InternetExplorerApp {
 
     private _setupEventBusListeners(): void {
         // Cada EventBus.on() devuelve una función de unsubscribe — la guardamos
-        this._cleanups.push(
+        const unsubs = [
             EventBus.on('action:ie-back', () => {
                 const frame = document.getElementById(this.frameId) as HTMLIFrameElement;
                 try { frame?.contentWindow?.history.back(); } catch (_) { }
@@ -86,7 +85,8 @@ class InternetExplorerApp {
                 const input = document.getElementById(this.inputId) as HTMLInputElement;
                 if (input) this.navigate(input.value);
             })
-        );
+        ];
+        unsubs.forEach(unsub => this.addCleanup(unsub));
     }
 
     // ─── URL Validation ───────────────────────────────────────────────────────
@@ -147,9 +147,8 @@ class InternetExplorerApp {
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
-    public terminate(): void {
-        this._cleanups.forEach(fn => fn());
-        this._cleanups = [];
+    public override terminate(): void {
+        super.terminate();
         Utils.Logger.log('[IE] Terminated — all listeners removed');
     }
 }
