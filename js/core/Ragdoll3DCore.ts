@@ -46,6 +46,9 @@ export abstract class Ragdoll3DCore {
     protected standUpTimeout: ReturnType<typeof setTimeout> | null = null;
     protected bubbleId: string = 'ragdoll-3d-bubble';
 
+    private static readonly _scratchVec3A = new THREE.Vector3();
+    private static readonly _scratchVec3B = new THREE.Vector3();
+
     protected readonly ANIM_MAP: Record<string, string> = {
         'Confident_Strut': 'Baile_1',
         'Fall_Dead_from_Abdom': 'Stand_Pose',
@@ -681,7 +684,7 @@ export abstract class Ragdoll3DCore {
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        const pos = new THREE.Vector3();
+        const pos = Ragdoll3DCore._scratchVec3A;
         const hit = this.raycaster.ray.intersectPlane(this.interactionPlane, pos);
         if (!hit) return;
 
@@ -692,7 +695,7 @@ export abstract class Ragdoll3DCore {
         this._lastMouseMoveTime = now;
 
         if (dt > 0) {
-            const rawVel = new THREE.Vector3()
+            const rawVel = Ragdoll3DCore._scratchVec3B
                 .subVectors(pos, this.lastMousePos)
                 .divideScalar(dt);
             // lerp 0.7: más responsivo que 0.4, evita que lanzamientos rápidos
