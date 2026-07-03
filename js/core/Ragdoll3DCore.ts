@@ -113,6 +113,33 @@ export abstract class Ragdoll3DCore {
             clearTimeout(this.standUpTimeout);
             this.standUpTimeout = null;
         }
+
+        // Dispose of model resources
+        if (this.model) {
+            this.model.traverse((obj: any) => {
+                if (obj.isMesh || obj.isSkinnedMesh) {
+                    obj.geometry?.dispose();
+                    if (obj.material) {
+                        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+                        materials.forEach((m: any) => {
+                            m?.map?.dispose();
+                            m?.dispose();
+                        });
+                    }
+                }
+            });
+        }
+
+        // Dispose of debug mesh resources
+        this.debugMeshMap.forEach(mesh => {
+            mesh.geometry?.dispose();
+            if (Array.isArray(mesh.material)) {
+                mesh.material.forEach((m: any) => m?.dispose());
+            } else if (mesh.material) {
+                mesh.material.dispose();
+            }
+        });
+        this.debugMeshMap.clear();
         
         if (this.world) {
             this.world.free();
