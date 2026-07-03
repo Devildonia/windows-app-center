@@ -367,7 +367,14 @@ const WindowManager: IWindowManager = (function () {
 
             const finalizeClose = () => {
                 win.classList.remove('window-closing');
-                win.style.display = 'none';
+                
+                const wf: any = Services.get('WindowFactory');
+                if (wf && wf.getCreated().has(windowId)) {
+                    wf.destroy(windowId);
+                } else {
+                    win.style.display = 'none';
+                }
+
                 activeWindows.delete(windowId);
                 _windowOrder.delete(windowId);
                 _notifyKernelProcessKilled(windowId);
@@ -381,7 +388,12 @@ const WindowManager: IWindowManager = (function () {
                 win.addEventListener('animationend', finalizeClose);
             }
         } else {
-            win.style.display = 'none';
+            const wf: any = Services.get('WindowFactory');
+            if (wf && wf.getCreated().has(windowId)) {
+                wf.destroy(windowId);
+            } else {
+                win.style.display = 'none';
+            }
             activeWindows.delete(windowId);
             _windowOrder.delete(windowId);
             _notifyKernelProcessKilled(windowId);
