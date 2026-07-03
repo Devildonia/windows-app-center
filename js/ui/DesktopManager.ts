@@ -166,6 +166,9 @@ const DesktopManager: IDesktopManager = (() => {
 
     function setTaskbarColor(color: string, isSilent: boolean = false): void {
         document.documentElement.style.setProperty('--taskbar-bg', color);
+        if (document.body) {
+            document.body.style.setProperty('--taskbar-bg', color);
+        }
 
         Store.set('taskbarColor', color);
         Utils.setStorage('taskbar-color', color);
