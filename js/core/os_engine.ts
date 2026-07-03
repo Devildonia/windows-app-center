@@ -37,7 +37,7 @@ initLegacyWrappers();
 // INITIALIZATION — SINGLE ENTRY POINT
 // Order: Audio → Boot → Desktop → Kernel → UI → Events → Clock
 // ============================================
-(window as any).initOS = function (): void {
+window.initOS = function (): void {
     Utils.Logger.log("[INIT] ========================================");
     Utils.Logger.log("[INIT] OS v3.0 — Starting initialization...");
     Utils.Logger.log("[INIT] ========================================");
@@ -90,7 +90,7 @@ initLegacyWrappers();
 
     // 5. Event listeners (legacy icon handlers, start menu, sticky notes)
     bootStep('Event Listeners', () => {
-        if ((window as any).setupEventListeners) (window as any).setupEventListeners();
+        if (window.setupEventListeners) window.setupEventListeners();
     });
 
     // 6. Event Delegation (data-* attributes — replaces inline handlers)
@@ -103,7 +103,7 @@ initLegacyWrappers();
         if (WindowManager?.initializeControls) {
             WindowManager.initializeControls();
         }
-        if ((window as any).initializeWindowControls) (window as any).initializeWindowControls();
+        if (window.initializeWindowControls) window.initializeWindowControls();
     });
 
     // 8. Clock
@@ -124,7 +124,7 @@ initLegacyWrappers();
             if (ShaderWallpaper) {
                 if (document.hidden) {
                     ShaderWallpaper.stop();
-                } else if (!(window as any).state.wallpaper) {
+                } else if (!window.state.wallpaper) {
                     ShaderWallpaper.start();
                 }
             }

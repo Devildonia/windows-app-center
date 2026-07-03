@@ -90,8 +90,8 @@ console.log(`[VITE] Windows 95 App Center v${CONFIG.APP.VERSION} — ES Modules 
 
 if (document.readyState === 'loading') {
     window.addEventListener('load', () => {
-        if ((window as any).initOS) (window as any).initOS();
+        if (window.initOS) window.initOS();
     });
 } else {
-    if ((window as any).initOS) (window as any).initOS();
+    if (window.initOS) window.initOS();
 }

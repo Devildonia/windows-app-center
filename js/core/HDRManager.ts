@@ -111,7 +111,7 @@ export const HDRManager: IHDRManager = (() => {
 })();
 
 if (typeof window !== 'undefined') {
-    (window as any).HDRManager = HDRManager;
+    window.HDRManager = HDRManager;
     Services.register('HDRManager', HDRManager);
 }
 

@@ -302,6 +302,6 @@ class BubbleAnimator implements IBubbleAnimator {
 export { BubbleAnimator };
 
 if (typeof window !== 'undefined') {
-    (window as any).BubbleAnimator = BubbleAnimator;
+    window.BubbleAnimator = BubbleAnimator;
     Services.register('BubbleAnimator', BubbleAnimator);
 }

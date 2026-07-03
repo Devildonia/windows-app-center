@@ -134,6 +134,6 @@ const TaskbarManager: ITaskbarManager = (() => {
 export { TaskbarManager };
 
 if (typeof window !== 'undefined') {
-    (window as any).TaskbarManager = TaskbarManager;
+    window.TaskbarManager = TaskbarManager;
     Services.register('TaskbarManager', TaskbarManager);
 }

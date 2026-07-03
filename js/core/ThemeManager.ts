@@ -55,9 +55,9 @@ export class ThemeManager {
         this.currentTheme = themeName;
 
         // Apply Shader if available
-        if ((window as any).ShaderWallpaper) {
+        if (window.ShaderWallpaper) {
             try {
-                (window as any).ShaderWallpaper.setFragmentShader(themeName);
+                window.ShaderWallpaper.setFragmentShader(themeName);
             } catch (err) {
                 console.error("[ThemeManager] Failed to apply fragment shader:", err);
             }
@@ -181,7 +181,7 @@ Services.register('ThemeManager', themeManager);
 
 // Legacy bridge for gradual migration
 if (typeof window !== 'undefined') {
-    (window as any).themeManager = themeManager;
+    window.themeManager = themeManager;
 }
 
 themeManager.loadSavedAccentColor();

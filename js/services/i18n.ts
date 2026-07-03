@@ -213,7 +213,7 @@ const i18n: ITranslationService = {
         currentLang = lang;
         Utils.setStorage('win95-lang', lang);
 
-        if ((window as any).state) (window as any).state.lang = lang;
+        if (window.state) window.state.lang = lang;
 
         // Update all DOM elements with data-i18n attribute
         this.updateDOM();
@@ -259,7 +259,7 @@ const i18n: ITranslationService = {
             currentLang = translations[browserLang] ? browserLang : 'en';
         }
 
-        if ((window as any).state) (window as any).state.lang = currentLang;
+        if (window.state) window.state.lang = currentLang;
         Utils.Logger.log(`[i18n] Initialized with lang: ${currentLang}`);
     }
 };
@@ -267,6 +267,6 @@ const i18n: ITranslationService = {
 export { i18n };
 
 if (typeof window !== 'undefined') {
-    (window as any).i18n = i18n;
+    window.i18n = i18n;
     Services.register('i18n', i18n);
 }

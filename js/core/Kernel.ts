@@ -167,6 +167,6 @@ export const Kernel: IKernel = (() => {
 
 // Legacy global binding
 if (typeof window !== 'undefined') {
-    (window as any).Kernel = Kernel;
+    window.Kernel = Kernel;
     Services.register('Kernel', Kernel);
 }

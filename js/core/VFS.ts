@@ -226,6 +226,6 @@ export const VFS: IVFS = (() => {
 })();
 
 if (typeof window !== 'undefined') {
-    (window as any).VFS = VFS;
+    window.VFS = VFS;
     Services.register('VFS', VFS);
 }

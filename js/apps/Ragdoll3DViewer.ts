@@ -17,14 +17,14 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         this.loaderText = document.getElementById('ragdoll-3d-loader');
         this.onResizeHandler = () => this.onWindowResize();
         
-        if (typeof (window as any).AudioManager !== 'undefined') {
-            this.audioManager = (window as any).AudioManager.getInstance?.() || null;
+        if (typeof window.AudioManager !== 'undefined') {
+            this.audioManager = window.AudioManager.getInstance?.() || null;
         }
-        if (typeof (window as any).BubbleAnimator !== 'undefined') {
-            this.bubbleAnimator = new (window as any).BubbleAnimator();
+        if (typeof window.BubbleAnimator !== 'undefined') {
+            this.bubbleAnimator = new window.BubbleAnimator();
         }
-        if (typeof (window as any).MessageLibrary !== 'undefined') {
-            this.messageLibrary = new (window as any).MessageLibrary();
+        if (typeof window.MessageLibrary !== 'undefined') {
+            this.messageLibrary = new window.MessageLibrary();
         }
 
         this.showDebug = true; // Viewer defaults to debug on.
@@ -215,4 +215,4 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
     }
 }
 // Attach to window so the OS Engine (which uses eval or index.html scripts) can find it
-(window as any).Ragdoll3DViewer = Ragdoll3DViewer;
+window.Ragdoll3DViewer = Ragdoll3DViewer;

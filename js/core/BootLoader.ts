@@ -86,6 +86,6 @@ const BootLoader: IBootLoader = (() => {
 export { BootLoader };
 
 if (typeof window !== 'undefined') {
-    (window as any).BootLoader = BootLoader;
+    window.BootLoader = BootLoader;
     Services.register('BootLoader', BootLoader);
 }

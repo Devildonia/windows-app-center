@@ -371,6 +371,6 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
 export { ShaderWallpaper };
 
 if (typeof window !== 'undefined') {
-    (window as any).ShaderWallpaper = ShaderWallpaper;
+    window.ShaderWallpaper = ShaderWallpaper;
     Services.register('ShaderWallpaper', ShaderWallpaper);
 }

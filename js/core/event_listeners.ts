@@ -17,11 +17,11 @@ let windowControlListenersAttached = false;
 
 export function setupEventListeners(): void {
     const openLegacyWindow = (windowId: string): void => {
-        if ((window as any).openWindow) (window as any).openWindow(windowId);
+        if (window.openWindow) window.openWindow(windowId);
     };
 
     const openLegacyDialog = (dialogId: string): void => {
-        if ((window as any).openDialog) (window as any).openDialog(dialogId);
+        if (window.openDialog) window.openDialog(dialogId);
     };
 
     const closeWindowThenOpen = (hideId: string, showId: string): void => {
@@ -43,7 +43,7 @@ export function setupEventListeners(): void {
                 const audio: any = Services.get('AudioManager');
                 if (audio) audio.play('menu_modern', { volume: 0.8 });
             } else {
-                if ((window as any).playBlip) (window as any).playBlip(600);
+                if (window.playBlip) window.playBlip(600);
             }
             const menu = document.getElementById('start-menu');
             if (menu) {
@@ -113,8 +113,8 @@ export function setupEventListeners(): void {
 
     setupIconAction('icon-game-inside', () => launchKernelApp('vlrs'));
 
-    setupIconAction('icon-mycomputer', () => { if ((window as any).state?.bootComplete) openLegacyDialog('dialog-mycomputer'); });
-    setupIconAction('icon-recyclebin', () => { if ((window as any).state?.bootComplete) openLegacyDialog('dialog-recyclebin'); });
+    setupIconAction('icon-mycomputer', () => { if (window.state?.bootComplete) openLegacyDialog('dialog-mycomputer'); });
+    setupIconAction('icon-recyclebin', () => { if (window.state?.bootComplete) openLegacyDialog('dialog-recyclebin'); });
     setupIconAction('icon-display', () => openLegacyWindow('win-display-props'));
 
     // Theme Toggle
@@ -125,7 +125,7 @@ export function setupEventListeners(): void {
             if (!tm) return;
             const nextTheme = tm.currentTheme === 'win95' ? 'modern' : 'win95';
             tm.applyTheme(nextTheme);
-            if ((window as any).playBlip) (window as any).playBlip(600);
+            if (window.playBlip) window.playBlip(600);
         });
     }
 
@@ -134,19 +134,19 @@ export function setupEventListeners(): void {
     const ragdollMenu = document.getElementById('ragdoll-popup-menu');
     if (ragdollToggle && ragdollMenu) {
         ragdollToggle.addEventListener('click', (e) => {
-            if ((window as any).playBlip) (window as any).playBlip(600);
+            if (window.playBlip) window.playBlip(600);
             ragdollMenu.style.display = ragdollMenu.style.display === 'flex' ? 'none' : 'flex';
             e.stopPropagation(); // Prevent global click from immediately closing it
         });
 
         document.getElementById('spawn-ragdoll-2d')?.addEventListener('click', () => {
-            if ((window as any).playBlip) (window as any).playBlip(600);
+            if (window.playBlip) window.playBlip(600);
             ragdollMenu.style.display = 'none';
             EventBus.emit('ragdoll:toggle');
         });
 
         document.getElementById('spawn-ragdoll-3d')?.addEventListener('click', () => {
-            if ((window as any).playBlip) (window as any).playBlip(600);
+            if (window.playBlip) window.playBlip(600);
             ragdollMenu.style.display = 'none';
             EventBus.emit('ragdoll3d:toggle');
         });
@@ -184,7 +184,7 @@ export function setupEventListeners(): void {
                     targetEl.style.display = 'block';
                 }
             }
-            if ((window as any).playBlip) (window as any).playBlip(900);
+            if (window.playBlip) window.playBlip(900);
         });
     });
 
@@ -195,7 +195,7 @@ export function setupEventListeners(): void {
         // Initial load if blank
         const frame = document.getElementById('ie-frame') as HTMLIFrameElement | null;
         if (frame && frame.src === 'about:blank') {
-            if ((window as any).navigateIE) (window as any).navigateIE('https://www.google.com/webhp?igu=1');
+            if (window.navigateIE) window.navigateIE('https://www.google.com/webhp?igu=1');
         }
     });
     setupIconAction('icon-ragdoll-skins', () => openLegacyWindow('win-ragdoll-skins'));
@@ -206,7 +206,7 @@ export function setupEventListeners(): void {
     // Generic Close Buttons
     document.querySelectorAll('.close-btn').forEach(btn => {
         (btn as HTMLElement).onclick = (e: MouseEvent) => {
-            if ((window as any).playBlip) (window as any).playBlip(700);
+            if (window.playBlip) window.playBlip(700);
             Services.get('HapticService')?.medium();
             const win = (e.target as HTMLElement).closest('.win95-window, .win95-dialog') as HTMLElement | null;
             if (win) {
@@ -237,7 +237,7 @@ export function setupEventListeners(): void {
                     const audio: any = Services.get('AudioManager');
                     if (audio) audio.play('click_modern', { volume: 0.8 });
                 } else {
-                    if ((window as any).playBlip) (window as any).playBlip(800);
+                    if (window.playBlip) window.playBlip(800);
                 }
             }
 
@@ -392,7 +392,7 @@ export function initializeDraggableIcons(): void {
             offsetY = e.clientY - rect.top;
             icon.style.zIndex = '100';
             icon.style.transition = 'none';
-            if ((window as any).playBlip) (window as any).playBlip(1000);
+            if (window.playBlip) window.playBlip(1000);
             e.preventDefault();
             e.stopPropagation();
         });
@@ -422,7 +422,7 @@ export function initializeDraggableIcons(): void {
             draggedIcon.style.transition = '';
             const position = { x: parseInt(draggedIcon.style.left || '0'), y: parseInt(draggedIcon.style.top || '0') };
             localStorage.setItem(`icon-pos-${draggedIcon.id}`, JSON.stringify(position));
-            if ((window as any).playBlip) (window as any).playBlip(800);
+            if (window.playBlip) window.playBlip(800);
             draggedIcon = null;
         });
 
@@ -444,12 +444,12 @@ export function initializeWindowControls(): void {
         };
 
         setupBtn('.maximize-btn', (e: Event) => {
-            if ((window as any).playBlip) (window as any).playBlip(700);
+            if (window.playBlip) window.playBlip(700);
             (e.target as HTMLElement).textContent = win.classList.contains('maximized') ? '❐' : '□';
         });
-        setupBtn('.minimize-btn', () => { if ((window as any).playBlip) (window as any).playBlip(700); });
+        setupBtn('.minimize-btn', () => { if (window.playBlip) window.playBlip(700); });
         setupBtn('.close-btn', () => {
-            if ((window as any).playBlip) (window as any).playBlip(700);
+            if (window.playBlip) window.playBlip(700);
             win.classList.remove('maximized');
             const maxBtn = win.querySelector('.maximize-btn');
             if (maxBtn) maxBtn.textContent = '□';
@@ -461,7 +461,7 @@ export function initializeWindowControls(): void {
         document.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.ctrlKey && e.altKey && (e.key === 'w' || e.key === 'W')) {
                 e.preventDefault();
-                if ((window as any).playBlip) (window as any).playBlip(600);
+                if (window.playBlip) window.playBlip(600);
                 const debugDialog = document.getElementById('dialog-debug');
                 if (debugDialog) {
                     debugDialog.style.display = 'block';
@@ -483,7 +483,7 @@ export function initializeWindowControls(): void {
                 localStorage.clear();
 
                 // 3. Play sound and reload
-                if ((window as any).playBlip) (window as any).playBlip(900);
+                if (window.playBlip) window.playBlip(900);
                 setTimeout(() => location.reload(), 200);
             }
         });
@@ -492,9 +492,9 @@ export function initializeWindowControls(): void {
 
 // Legacy globals for os_engine compatibility
 if (typeof window !== 'undefined') {
-    (window as any).setupEventListeners = setupEventListeners;
-    (window as any).initializeDraggableIcons = initializeDraggableIcons;
-    (window as any).initializeWindowControls = initializeWindowControls;
+    window.setupEventListeners = setupEventListeners;
+    window.initializeDraggableIcons = initializeDraggableIcons;
+    window.initializeWindowControls = initializeWindowControls;
 }
 
 export function __resetEventListenersState(): void {

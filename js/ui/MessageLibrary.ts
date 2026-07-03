@@ -376,6 +376,6 @@ class MessageLibrary implements IMessageLibrary {
 export { MessageLibrary };
 
 if (typeof window !== 'undefined') {
-    (window as any).MessageLibrary = MessageLibrary;
+    window.MessageLibrary = MessageLibrary;
     Services.register('MessageLibrary', MessageLibrary);
 }

@@ -194,8 +194,8 @@ class FileExplorer {
             const notify = Services.get('Notify') as INotify | undefined;
             if (notify) {
                 notify.info(`Opening file: ${name} (Mock)`);
-            } else if ((window as any).Notify) {
-                (window as any).Notify.info(`Opening file: ${name} (Mock)`);
+            } else if (window.Notify) {
+                window.Notify.info(`Opening file: ${name} (Mock)`);
             }
         }
     }

@@ -26,7 +26,7 @@ export class RagdollSystem {
 
     private mount(): void {
         // Validate Matter.js availability
-        if (typeof (window as any).Matter === 'undefined') {
+        if (typeof window.Matter === 'undefined') {
             console.warn('[RAGDOLL SYSTEM] Matter.js not found. Delaying initialization...');
             return;
         }
@@ -40,7 +40,7 @@ export class RagdollSystem {
         this.pet = new RagdollPet(this.canvasId);
 
         // Keep standard compatibility for non-migrated games temporarily
-        (window as any).ragdollPet = this.pet;
+        window.ragdollPet = this.pet;
 
         // Check persistent state
         const savedActive = localStorage.getItem('ragdollPetActive');

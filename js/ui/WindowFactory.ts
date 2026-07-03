@@ -268,6 +268,6 @@ export const WindowFactory: IWindowFactory = (function () {
 })();
 
 if (typeof window !== 'undefined') {
-    (window as any).WindowFactory = WindowFactory;
+    window.WindowFactory = WindowFactory;
     Services.register('WindowFactory', WindowFactory);
 }

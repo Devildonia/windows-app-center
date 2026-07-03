@@ -76,7 +76,7 @@ class AudioManager implements IAudioManager {
         if (this.initialized) return;
 
         try {
-            const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (!AudioContextClass) {
                 throw new Error('Web Audio API not supported');
             }
@@ -800,7 +800,7 @@ const audioManager = AudioManager.getInstance();
 export { AudioManager };
 
 if (typeof window !== 'undefined') {
-    (window as any).AudioManager = AudioManager;
+    window.AudioManager = AudioManager;
     Services.register('AudioManager', audioManager);
 }
 

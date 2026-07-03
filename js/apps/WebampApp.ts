@@ -64,7 +64,7 @@ class WebampApp {
             return;
         }
 
-        const WebampClass = (window as any).Webamp;
+        const WebampClass = window.Webamp;
         if (!WebampClass) {
             Utils.Logger.error("Webamp library not loaded!");
             return;
