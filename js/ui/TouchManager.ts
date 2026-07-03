@@ -357,6 +357,5 @@ const TouchManager: ITouchManager = (() => {
 export { TouchManager };
 
 if (typeof window !== 'undefined') {
-    window.TouchManager = TouchManager;
     Services.register('TouchManager', TouchManager);
 }

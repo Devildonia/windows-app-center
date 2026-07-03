@@ -179,6 +179,5 @@ const Notify: INotify = {
 export { Notify };
 
 if (typeof window !== 'undefined') {
-    window.Notify = Notify;
     Services.register('Notify', Notify);
 }

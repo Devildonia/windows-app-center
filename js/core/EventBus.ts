@@ -317,8 +317,6 @@ export { EventBus, Store, createStateBridge };
 
 // Legacy globals
 if (typeof window !== 'undefined') {
-    window.EventBus = EventBus;
     Services.register('EventBus', EventBus);
-    window.Store = Store;
     window._createStateBridge = createStateBridge;
 }

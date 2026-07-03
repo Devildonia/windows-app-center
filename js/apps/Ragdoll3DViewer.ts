@@ -218,5 +218,3 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         super.terminate();
     }
 }
-// Attach to window so the OS Engine (which uses eval or index.html scripts) can find it
-window.Ragdoll3DViewer = Ragdoll3DViewer;

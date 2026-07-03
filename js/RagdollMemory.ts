@@ -295,6 +295,5 @@ const ragdollMemory = RagdollMemory.getInstance();
 export { RagdollMemory };
 
 if (typeof window !== 'undefined') {
-    window.RagdollMemory = RagdollMemory;
     Services.register('RagdollMemory', ragdollMemory);
 }

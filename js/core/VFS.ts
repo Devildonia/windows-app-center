@@ -249,7 +249,6 @@ export const VFS: IVFS = (() => {
 })();
 
 if (typeof window !== 'undefined') {
-    window.VFS = VFS;
     Services.register('VFS', VFS);
     window.addEventListener('beforeunload', () => {
         VFS.flushSync();

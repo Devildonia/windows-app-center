@@ -55,9 +55,10 @@ export class ThemeManager {
         this.currentTheme = themeName;
 
         // Apply Shader if available
-        if (window.ShaderWallpaper) {
+        const sw = Services.get('ShaderWallpaper');
+        if (sw) {
             try {
-                window.ShaderWallpaper.setFragmentShader(themeName);
+                sw.setFragmentShader(themeName);
             } catch (err) {
                 console.error("[ThemeManager] Failed to apply fragment shader:", err);
             }

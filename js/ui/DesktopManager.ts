@@ -257,6 +257,5 @@ const DesktopManager: IDesktopManager = (() => {
 export { DesktopManager };
 
 if (typeof window !== "undefined") {
-    window.DesktopManager = DesktopManager; // Legacy bridge — to be removed
     Services.register('DesktopManager', DesktopManager);
 }

@@ -12,29 +12,10 @@ declare module '*/Particles.js' {
 
 interface Window {
     // Project services/singletons
-    Kernel: any;
-    VFS: any;
     Services: any;
     Utils: any;
-    WindowManager: any;
-    WindowFactory: any;
-    TaskbarManager: any;
-    DesktopManager: any;
-    ShaderWallpaper: any;
-    TouchManager: any;
-    HDRManager: any;
-    EventBus: any;
-    Store: any;
-    AudioManager: any;
-    BubbleAnimator: any;
-    MessageLibrary: any;
-    RagdollMemory: any;
-    Ragdoll3DViewer: any;
-    BootLoader: any;
     themeManager: any;
     ragdollPet: any;
-    Notify: any;
-    i18n: any;
 
     // OS global bridging
     state: any;

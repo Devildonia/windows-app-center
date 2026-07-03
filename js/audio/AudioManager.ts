@@ -800,7 +800,6 @@ const audioManager = AudioManager.getInstance();
 export { AudioManager };
 
 if (typeof window !== 'undefined') {
-    window.AudioManager = AudioManager;
     Services.register('AudioManager', audioManager);
 }
 

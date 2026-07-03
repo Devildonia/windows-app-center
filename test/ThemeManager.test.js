@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ThemeManager } from '../js/core/ThemeManager.js';
+import { Services } from '../js/core/ServiceContainer.js';
 
 describe('ThemeManager', () => {
     let themeManager;
@@ -8,6 +9,9 @@ describe('ThemeManager', () => {
         // Reset DOM and Mock Environment
         document.body.className = '';
         localStorage.clear();
+
+        // Clear registry to avoid overlapping service issues
+        Services.unregister('ShaderWallpaper');
 
         // Mock DOM elements that ThemeManager interacts with
         document.body.innerHTML = `
@@ -19,6 +23,7 @@ describe('ThemeManager', () => {
         window.ShaderWallpaper = {
             setFragmentShader: vi.fn()
         };
+        Services.register('ShaderWallpaper', window.ShaderWallpaper);
 
         // Suppress console errors or missing icons warning during tests
         vi.spyOn(console, 'warn').mockImplementation(() => { });

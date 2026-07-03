@@ -267,6 +267,5 @@ const i18n: ITranslationService = {
 export { i18n };
 
 if (typeof window !== 'undefined') {
-    window.i18n = i18n;
     Services.register('i18n', i18n);
 }

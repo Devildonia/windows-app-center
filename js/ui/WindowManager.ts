@@ -754,6 +754,5 @@ const WindowManager: IWindowManager = (function () {
 export { WindowManager };
 
 if (typeof window !== 'undefined') {
-    window.WindowManager = WindowManager;
     Services.register('WindowManager', WindowManager);
 }
