@@ -207,6 +207,7 @@ export function setupEventListeners(): void {
     document.querySelectorAll('.close-btn').forEach(btn => {
         (btn as HTMLElement).onclick = (e: MouseEvent) => {
             if ((window as any).playBlip) (window as any).playBlip(700);
+            Services.get('HapticService')?.medium();
             const win = (e.target as HTMLElement).closest('.win95-window, .win95-dialog') as HTMLElement | null;
             if (win) {
                 if (win.classList.contains('win95-dialog')) {
@@ -224,11 +225,12 @@ export function setupEventListeners(): void {
         // Global Click Sound & Start Menu Close Logic
         document.addEventListener('click', (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            // 1. Play button sound
+            // 1. Play button sound & trigger haptics
             const isClickableIcon = target.closest('.icon') || target.closest('.icon-box');
             const isButton = target.tagName === 'BUTTON' && !target.classList.contains('close-btn');
 
             if (isButton || isClickableIcon) {
+                Services.get('HapticService')?.light();
                 const tm: any = Services.get('ThemeManager');
                 const isModern = tm?.currentTheme === 'modern';
                 if (isModern) {

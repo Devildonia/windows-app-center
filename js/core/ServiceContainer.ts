@@ -35,6 +35,12 @@ import type { INotify } from '../ui/NotificationManager';
 import type { ITranslationService } from '../services/i18n';
 import type { IRagdollMemory } from '../RagdollMemory';
 import type { InternetExplorerApp } from '../apps/InternetExplorer';
+import type { AudioManager } from '../audio/AudioManager';
+import type { ThemeManager } from './ThemeManager';
+import type { IHapticService } from '../services/HapticService';
+
+type BubbleAnimatorCtor = new () => IBubbleAnimator;
+type MessageLibraryCtor = new () => IMessageLibrary;
 
 /**
  * Registro centralizado de todos los servicios del sistema.
@@ -55,15 +61,16 @@ export interface IServiceRegistry {
     'DesktopManager':   IDesktopManager;
     'ShaderWallpaper':  IShaderWallpaper;
     'TouchManager':     ITouchManager;
-    'BubbleAnimator':   any;   // Registered as constructor on window for legacy consumers
-    'MessageLibrary':   any;   // Registered as constructor on window for legacy consumers
+    'BubbleAnimator':   BubbleAnimatorCtor;
+    'MessageLibrary':   MessageLibraryCtor;
     'Notify':           INotify;
     // Services & Apps
-    'AudioManager':     any;   // AudioManager no tiene interfaz exportada aún
-    'ThemeManager':     any;   // ThemeManager no tiene interfaz exportada aún
+    'AudioManager':     AudioManager;
+    'ThemeManager':     ThemeManager;
     'i18n':             ITranslationService;
     'RagdollMemory':    IRagdollMemory;
     'InternetExplorerApp': InstanceType<typeof InternetExplorerApp>;
+    'HapticService':    IHapticService;
     // Fallback: permite registrar servicios custom sin romper el tipado
     [key: string]:      unknown;
 }
@@ -83,7 +90,7 @@ export interface IServiceContainer {
 }
 
 const _registry = new Map<string, unknown>();
-const _pendingCallbacks = new Map<string, Set<ServiceCallback<any>>>();
+const _pendingCallbacks = new Map<string, Set<ServiceCallback<string>>>();
 
 const Services: IServiceContainer = {
     /**
@@ -97,7 +104,7 @@ const Services: IServiceContainer = {
 
         // Fire any pending callbacks waiting for this service
         if (_pendingCallbacks.has(name as string)) {
-            _pendingCallbacks.get(name as string)!.forEach(cb => cb(instance as any));
+            _pendingCallbacks.get(name as string)!.forEach(cb => cb(instance as never));
             _pendingCallbacks.delete(name as string);
         }
     },
@@ -127,7 +134,7 @@ const Services: IServiceContainer = {
             if (!_pendingCallbacks.has(name as string)) {
                 _pendingCallbacks.set(name as string, new Set());
             }
-            _pendingCallbacks.get(name as string)!.add(callback as ServiceCallback<any>);
+            _pendingCallbacks.get(name as string)!.add(callback as ServiceCallback<string>);
         }
     },
 
@@ -155,5 +162,5 @@ Object.freeze(Services);
 // Bridge: also expose on window for HTML onclick handlers during migration
 // This can be removed once all inline handlers are migrated
 if (typeof window !== 'undefined') {
-    (window as any).Services = Services;
+    (window as Window & { Services?: IServiceContainer }).Services = Services;
 }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import RAPIER from '@dimforge/rapier3d-compat';
+import { Services } from './ServiceContainer';
 
 export abstract class Ragdoll3DCore {
     protected container: HTMLElement | null = null;
@@ -13,6 +14,8 @@ export abstract class Ragdoll3DCore {
     protected actions: Record<string, THREE.AnimationAction> = {};
     protected activeAction!: THREE.AnimationAction;
     protected lastTime: number = 0;
+    protected physicsAccumulator: number = 0;
+    protected readonly FIXED_TIMESTEP: number = 1 / 60;
     protected model!: THREE.Group;
     
     protected raycaster: THREE.Raycaster = new THREE.Raycaster();
@@ -73,6 +76,13 @@ export abstract class Ragdoll3DCore {
     private readonly boundOnMouseDown = (event: MouseEvent): void => this.onMouseDown(event);
     private readonly boundOnMouseMove = (event: MouseEvent): void => this.onMouseMove(event);
     private readonly boundOnMouseUp = (): void => this.onMouseUp();
+
+    protected static readonly _scratchVector1 = new THREE.Vector3();
+    protected static readonly _scratchVector2 = new THREE.Vector3();
+    protected static readonly _scratchVector3 = new THREE.Vector3();
+    protected static readonly _scratchQuat1 = new THREE.Quaternion();
+    protected static readonly _scratchQuat2 = new THREE.Quaternion();
+    protected static readonly _scratchQuat3 = new THREE.Quaternion();
 
     constructor() {}
 
@@ -188,13 +198,20 @@ export abstract class Ragdoll3DCore {
         
         this.animationFrameId = requestAnimationFrame(this.animate);
         
-        const delta = this.lastTime ? (time - this.lastTime) / 1000 : 0;
+        let delta = this.lastTime ? (time - this.lastTime) / 1000 : 0;
         this.lastTime = time;
+        
+        // Cap delta to avoid spiral of death
+        if (delta > 0.1) delta = 0.1;
         
         if (this.mixer) this.mixer.update(delta);
         if (this.world) {
-            this.onBeforePhysicsStep();
-            this.world.step();
+            this.physicsAccumulator += delta;
+            while (this.physicsAccumulator >= this.FIXED_TIMESTEP) {
+                this.onBeforePhysicsStep();
+                this.world.step();
+                this.physicsAccumulator -= this.FIXED_TIMESTEP;
+            }
             this.syncPhysicsWithBones();
             this.checkFallDamage();
         }
@@ -378,8 +395,8 @@ export abstract class Ragdoll3DCore {
     }
 
     protected syncPhysicsWithBones(): void {
-        const tempPos = new THREE.Vector3();
-        const tempQuat = new THREE.Quaternion();
+        const tempPos = Ragdoll3DCore._scratchVector1;
+        const tempQuat = Ragdoll3DCore._scratchQuat1;
 
         this.boneRigidBodyMap.forEach((bone, name) => {
             const body = this.rigidBodies.get(name);
@@ -398,15 +415,19 @@ export abstract class Ragdoll3DCore {
                 
                 const parent = bone.parent;
                 if (parent) {
-                    const worldPos = new THREE.Vector3(translation.x, translation.y, translation.z);
-                    const worldQuat = new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
+                    const worldPos = Ragdoll3DCore._scratchVector2.set(translation.x, translation.y, translation.z);
+                    const worldQuat = Ragdoll3DCore._scratchQuat2.set(rotation.x, rotation.y, rotation.z, rotation.w);
                     
-                    const localPos = parent.worldToLocal(worldPos.clone());
+                    const localPos = Ragdoll3DCore._scratchVector3.copy(worldPos);
+                    parent.worldToLocal(localPos);
                     bone.position.copy(localPos);
                     
-                    const parentWorldQuat = new THREE.Quaternion();
+                    const parentWorldQuat = Ragdoll3DCore._scratchQuat3;
                     parent.getWorldQuaternion(parentWorldQuat);
-                    const localQuat = worldQuat.clone().premultiply(parentWorldQuat.invert());
+                    
+                    const localQuat = worldQuat;
+                    parentWorldQuat.invert();
+                    localQuat.premultiply(parentWorldQuat);
                     bone.quaternion.copy(localQuat);
                     
                     // Force the matrix update to prevent frustum culling from dropping the mesh
@@ -445,13 +466,14 @@ export abstract class Ragdoll3DCore {
             if (this.isFalling) {
                 this.isFalling = false;
                 
-                if (this.audioManager) {
-                    if (Math.abs(vel.y) > 3) {
-                        this.audioManager.play('boing');
-                        this.say('¡Ouch!', 2000);
-                    } else {
-                        this.audioManager.play('boing', { volume: 0.6 });
-                    }
+                const haptics = Services.get('HapticService');
+                if (Math.abs(vel.y) > 3) {
+                    haptics?.heavy();
+                    if (this.audioManager) this.audioManager.play('boing');
+                    this.say('¡Ouch!', 2000);
+                } else {
+                    haptics?.medium();
+                    if (this.audioManager) this.audioManager.play('boing', { volume: 0.6 });
                 }
             }
 
@@ -516,7 +538,7 @@ export abstract class Ragdoll3DCore {
 
         const headNode = this.boneRigidBodyMap.get('Head');
         if (headNode) {
-            const tempPos = new THREE.Vector3();
+            const tempPos = Ragdoll3DCore._scratchVector1;
             headNode.getWorldPosition(tempPos);
             tempPos.y += 0.3;
             tempPos.project(this.camera);

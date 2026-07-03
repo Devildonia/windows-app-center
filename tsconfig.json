@@ -8,6 +8,8 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
+        "noImplicitOverride": true,
+        "useUnknownInCatchVariables": true,
         "outDir": "./dist",
         "baseUrl": ".",
         "paths": {

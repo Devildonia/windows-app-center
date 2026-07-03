@@ -1,6 +1,16 @@
 import { CONFIG } from '../config';
 import { Utils } from '../utils';
 import { Services } from '../core/ServiceContainer';
+import { IAppMetadata, IProcess } from '../core/Types';
+
+type ILegacyProcess = {
+    pid: string;
+    appId: string;
+    windowId: string;
+    status: 'running';
+    isLegacy: true;
+    metadata: { icon: string; name: string };
+};
 
 export interface IWindowManager {
     open(windowId: string): void;
@@ -134,10 +144,10 @@ const WindowManager: IWindowManager = (function () {
 
         // Try to find the app in registry by name/title
         let appId = windowId;
-        let metadata: { icon: string, name: string } = { icon: '📄', name: title };
+        let metadata: IAppMetadata = { icon: '📄', name: title };
 
         // Match against catalog
-        const appEntry: any = Object.entries(registry.apps).find(([id, info]: [string, any]) => {
+        const appEntry = (Object.entries(registry.apps) as [string, { metadata: IAppMetadata }][]).find(([id, info]) => {
             return id === windowId || info.metadata.name === cleanTitle || info.metadata.name === title;
         });
 
@@ -163,7 +173,7 @@ const WindowManager: IWindowManager = (function () {
             metadata.name = cleanTitle;
         }
 
-        const fakeProcess = {
+        const fakeProcess: ILegacyProcess = {
             pid: `legacy-${windowId}`,
             appId: appId,
             windowId: windowId,
@@ -175,7 +185,7 @@ const WindowManager: IWindowManager = (function () {
         // Safety: Check if taskbar already has a button for this window
         const existingBtn = document.getElementById(`task-btn-legacy-${windowId}`);
         if (!existingBtn) {
-            window.dispatchEvent(new CustomEvent('kernel:process-started', { detail: fakeProcess }));
+            window.dispatchEvent(new CustomEvent('kernel:process-started', { detail: fakeProcess as unknown as IProcess }));
         }
     }
 
@@ -298,7 +308,7 @@ const WindowManager: IWindowManager = (function () {
             } else {
                 // Check for our legacy fake process
                 window.dispatchEvent(new CustomEvent('kernel:process-stopped', {
-                    detail: { pid: `legacy-${windowId}`, windowId: windowId }
+                    detail: { pid: `legacy-${windowId}`, windowId: windowId } as unknown as IProcess
                 }));
             }
         }

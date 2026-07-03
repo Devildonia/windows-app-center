@@ -20,6 +20,9 @@ import { VFS } from './js/core/VFS';
 import { Kernel } from './js/core/Kernel';
 import { BootLoader } from './js/core/BootLoader';
 import { HDRManager } from './js/core/HDRManager';
+import { HapticService } from './js/services/HapticService';
+
+Services.register('HapticService', new HapticService());
 
 // === Sprint 2: Error Boundary — must be registered ASAP, before any UI ===
 import { initErrorBoundary } from './js/core/ErrorBoundary';

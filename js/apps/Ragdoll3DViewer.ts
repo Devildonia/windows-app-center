@@ -68,7 +68,7 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         }
     }
 
-    protected setupThreeJS(): void {
+    protected override setupThreeJS(): void {
         if (!this.container) return;
         const width = this.container.clientWidth || 640;
         const height = this.container.clientHeight || 450;
@@ -110,15 +110,15 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         this.setupInteractionListeners();
     }
 
-    protected onModelLoaded(): void {
+    protected override onModelLoaded(): void {
         this.buildAnimationGui();
     }
 
-    protected onModelProgress(progress: number): void {
+    protected override onModelProgress(progress: number): void {
         this.updateStatus(`Loading Model: ${Math.round(progress * 100)}%`);
     }
 
-    protected onActionChanged(exactKey: string): void {
+    protected override onActionChanged(exactKey: string): void {
         const displayName = this.ANIM_MAP[exactKey] || exactKey;
         this.updateStatus(`Motion: ${displayName}`);
         

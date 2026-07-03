@@ -9,8 +9,16 @@ export interface IWindowsApp {
     terminate?: () => void;
 }
 
+export interface IProcess {
+    pid: number;
+    appId: string;
+    instance: IWindowsApp;
+    windowId: string | null;
+    status: 'running' | 'terminated';
+}
+
 export interface IWindowsAppConstructor {
-    new (params?: Record<string, any>): IWindowsApp;
+    new (params?: Record<string, unknown>): IWindowsApp;
 }
 
 // Mapeo de claves de Store a sus tipos de valor
@@ -25,11 +33,18 @@ export interface IStoreStateMap {
 
 // Mapeo de nombres de evento a la estructura de su payload
 export interface IEventPayloadMap {
-    'process-started': any;
-    'process-stopped': any;
-    'store:changed': [string, any, any]; // tuple: [key, new, old]
-    'ragdoll:action': [string, ...any[]]; // [actionType, ...args]
+    'process-started': IProcess;
+    'process-stopped': IProcess;
+    'store:changed': [string, unknown, unknown]; // tuple: [key, new, old]
+    'ragdoll:action': [string, ...unknown[]]; // [actionType, ...args]
     'ragdoll:toggle': [];
     'ragdoll:state': [boolean]; // [isActive]
-    [key: string]: any; // Fallback interactivo universal (cubre dinámica xyz:changed)
+    'ragdoll3d:toggle': [];
+    'ragdoll3d:state': [boolean];
 }
+
+export type EventPayload<K extends string> = K extends keyof IEventPayloadMap
+    ? IEventPayloadMap[K] extends any[]
+        ? IEventPayloadMap[K]
+        : [IEventPayloadMap[K]]
+    : unknown[];

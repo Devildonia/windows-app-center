@@ -10,15 +10,7 @@
 import { Utils } from '../utils';
 import { VFS } from './VFS';
 import { Services } from './ServiceContainer';
-import { IWindowsApp, IAppMetadata, IWindowsAppConstructor } from './Types';
-
-export interface IProcess {
-    pid: number;
-    appId: string;
-    instance: IWindowsApp;
-    windowId: string | null;
-    status: 'running' | 'terminated';
-}
+import { IWindowsApp, IAppMetadata, IWindowsAppConstructor, IProcess } from './Types';
 
 export interface IAppRegistryEntry {
     appClass: IWindowsAppConstructor;
@@ -33,7 +25,7 @@ export interface IKernelRegistry {
 export interface IKernel {
     init(): void;
     registerApp(id: string, appClass: IWindowsAppConstructor, metadata: IAppMetadata): void;
-    launch(appId: string, params?: Record<string, any>): IProcess | null;
+    launch(appId: string, params?: Record<string, unknown>): IProcess | null;
     kill(pid: number): boolean;
     getRegistry(): { apps: Record<string, IAppRegistryEntry>, processes: IProcess[] };
     getProcess(pid: number): IProcess | undefined;
@@ -62,7 +54,7 @@ export const Kernel: IKernel = (() => {
     /**
      * Launches an application
      */
-    function launch(appId: string, params: Record<string, any> = {}): IProcess | null {
+    function launch(appId: string, params: Record<string, unknown> = {}): IProcess | null {
         const appInfo = registry.apps[appId];
         if (!appInfo) {
             Utils.Logger.error(`Kernel: App not found [${appId}]`);

@@ -49,7 +49,7 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
         }
     }
 
-    protected setupThreeJS(): void {
+    protected override setupThreeJS(): void {
         if (!this.container) return;
         const width = this.container.clientWidth;
         const height = this.container.clientHeight;
@@ -101,18 +101,18 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
         this.setupInteractionListeners();
     }
 
-    protected onModelLoaded(): void {
+    protected override onModelLoaded(): void {
         this.ai = new Ragdoll3DAI(this);
     }
 
-    protected onBeforePhysicsStep(): void {
+    protected override onBeforePhysicsStep(): void {
         // Run AI before physics step
         if (this.ai && this.isPhysicsSettled()) {
             this.ai.tick(0.016 * 1000); // approx 16ms
         }
     }
 
-    protected onRagdollGrabbed(): void {
+    protected override onRagdollGrabbed(): void {
         if (this.ai) {
             this.ai.forceState(Ragdoll3DAIState.PHYSICS_MODE);
             // Si el muñeco dice algo al agarrar, lo limpiamos rápido
@@ -120,7 +120,7 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
         }
     }
 
-    protected onActionChanged(exactKey: string): void {
+    protected override onActionChanged(exactKey: string): void {
         // Additional Desktop hooks if needed
     }
 

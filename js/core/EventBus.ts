@@ -13,19 +13,26 @@
 
 import { Utils } from '../utils.js';
 import { Services } from './ServiceContainer.js';
-import { IEventPayloadMap, IStoreStateMap } from './Types.js';
+import { IEventPayloadMap, IStoreStateMap, EventPayload } from './Types.js';
 
 // ============================================
 // EVENT BUS — Pub/Sub for decoupled communication
 // ============================================
 
-export type EventHandler<T extends any[] = any[]> = (...args: T) => void;
+export type EventHandler<T extends unknown[] = unknown[]> = (...args: T) => void;
+
+type KnownEventName = keyof IEventPayloadMap;
+type KnownEventArgs<K extends KnownEventName> = IEventPayloadMap[K] extends any[] ? IEventPayloadMap[K] : [IEventPayloadMap[K]];
 
 export interface IEventBus {
-    on<K extends keyof IEventPayloadMap>(event: K, handler: EventHandler<IEventPayloadMap[K] extends any[] ? IEventPayloadMap[K] : [IEventPayloadMap[K]]>): () => void;
-    once<K extends keyof IEventPayloadMap>(event: K, handler: EventHandler<IEventPayloadMap[K] extends any[] ? IEventPayloadMap[K] : [IEventPayloadMap[K]]>): void;
-    off<K extends keyof IEventPayloadMap>(event: K, handler: EventHandler<any>): void;
-    emit<K extends keyof IEventPayloadMap>(event: K, ...args: IEventPayloadMap[K] extends any[] ? IEventPayloadMap[K] : [IEventPayloadMap[K]]): void;
+    on<K extends KnownEventName>(event: K, handler: EventHandler<KnownEventArgs<K>>): () => void;
+    on(event: string, handler: EventHandler<unknown[]>): () => void;
+    once<K extends KnownEventName>(event: K, handler: EventHandler<KnownEventArgs<K>>): void;
+    once(event: string, handler: EventHandler<unknown[]>): void;
+    off<K extends KnownEventName>(event: K, handler: EventHandler<KnownEventArgs<K>> | EventHandler<unknown[]>): void;
+    off(event: string, handler: EventHandler<unknown[]>): void;
+    emit<K extends KnownEventName>(event: K, ...args: KnownEventArgs<K>): void;
+    emit(event: string, ...args: unknown[]): void;
     clear(): void;
     __reset(): void;
     debug(): Record<string, number>;
@@ -34,7 +41,7 @@ export interface IEventBus {
 const EventBus: IEventBus = (() => {
     'use strict';
 
-    const listeners = new Map<string, Set<EventHandler>>();
+    const listeners = new Map<string, Set<EventHandler<unknown[]>>>();
 
     /**
      * Subscribe to an event
@@ -42,15 +49,15 @@ const EventBus: IEventBus = (() => {
      * @param {Function} handler - Callback
      * @returns {Function} Unsubscribe function
      */
-    function on<K extends keyof IEventPayloadMap>(event: K, handler: EventHandler<IEventPayloadMap[K] extends any[] ? IEventPayloadMap[K] : [IEventPayloadMap[K]]>): () => void {
+    function on(event: string, handler: EventHandler<unknown[]>): () => void {
         const eventName = String(event);
         if (!listeners.has(eventName)) {
             listeners.set(eventName, new Set());
         }
-        listeners.get(eventName)!.add(handler as EventHandler<any>);
+        listeners.get(eventName)!.add(handler);
 
         // Return unsubscribe function
-        return () => off(event, handler);
+        return () => off(eventName, handler);
     }
 
     /**
@@ -58,12 +65,12 @@ const EventBus: IEventBus = (() => {
      * @param {string} event - Event name
      * @param {Function} handler - Callback
      */
-    function once<K extends keyof IEventPayloadMap>(event: K, handler: EventHandler<IEventPayloadMap[K] extends any[] ? IEventPayloadMap[K] : [IEventPayloadMap[K]]>): void {
-        const wrapper = (...args: Extract<IEventPayloadMap[K] extends any[] ? IEventPayloadMap[K] : [IEventPayloadMap[K]], any[]>) => {
-            off(event, wrapper as EventHandler<any>);
-            handler(...(args as any) as any);
+    function once(event: string, handler: EventHandler<unknown[]>): void {
+        const wrapper: EventHandler<unknown[]> = (...args) => {
+            off(event, wrapper);
+            handler(...args);
         };
-        on(event, wrapper as EventHandler<any>);
+        on(event, wrapper);
     }
 
     /**
@@ -71,7 +78,7 @@ const EventBus: IEventBus = (() => {
      * @param {string} event - Event name
      * @param {Function} handler - Callback to remove
      */
-    function off<K extends keyof IEventPayloadMap>(event: K, handler: EventHandler<any>): void {
+    function off(event: string, handler: EventHandler<unknown[]>): void {
         const eventName = String(event);
         const set = listeners.get(eventName);
         if (set) {
@@ -85,13 +92,13 @@ const EventBus: IEventBus = (() => {
      * @param {string} event - Event name
      * @param {...*} args - Arguments to pass
      */
-    function emit<K extends keyof IEventPayloadMap>(event: K, ...args: IEventPayloadMap[K] extends any[] ? IEventPayloadMap[K] : [IEventPayloadMap[K]]): void {
+    function emit(event: string, ...args: unknown[]): void {
         const eventName = String(event);
         const set = listeners.get(eventName);
         if (set) {
             set.forEach(handler => {
                 try {
-                    handler(...(args as any));
+                    handler(...(args as unknown[]));
                 } catch (e) {
                     console.error(`[EventBus] Error in handler for "${event}":`, e);
                 }
@@ -137,8 +144,8 @@ export interface IStore {
     set<K extends keyof IStoreStateMap>(key: K, value: IStoreStateMap[K]): void;
     getAll(): Partial<IStoreStateMap>;
     has(key: string): boolean;
-    on<K extends keyof IEventPayloadMap>(event: K, handler: EventHandler<IEventPayloadMap[K] extends any[] ? IEventPayloadMap[K] : [IEventPayloadMap[K]]>): () => void;
-    off<K extends keyof IEventPayloadMap>(event: K, handler: EventHandler<any>): void;
+    on<K extends string>(event: K, handler: EventHandler<EventPayload<K>>): () => void;
+    off<K extends string>(event: K, handler: EventHandler<unknown[]>): void;
     __reset(): void;
 }
 
@@ -223,7 +230,7 @@ const Store: IStore = (() => {
         }
 
         // Emit specific change event
-        EventBus.emit(`${keyString}:changed` as keyof IEventPayloadMap, value, oldValue);
+        EventBus.emit(`${keyString}:changed`, value, oldValue);
 
         // Emit generic change event
         EventBus.emit('store:changed', key as string, value, oldValue);
