@@ -3,6 +3,8 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Ragdoll3DAI, Ragdoll3DAIState, IRagdoll3DController } from './Ragdoll3DAI';
 import { Ragdoll3DCore } from './Ragdoll3DCore';
 
+import { Services } from './ServiceContainer';
+
 export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DController {
     private ai!: Ragdoll3DAI;
     
@@ -11,20 +13,21 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
         this.container = document.getElementById('ragdoll3d-desktop-canvas-container');
         this.bubbleId = 'ragdoll3d-desktop-bubble';
         
-        // These will be removed in Phase 3
-        if (typeof window.AudioManager !== 'undefined') {
-            this.audioManager = window.AudioManager.getInstance?.() || null;
-            if (this.audioManager) {
-                this.audioManager.loadSound('scream', '/games/ragdoll/assets/audio/ahh.opus');
-                this.audioManager.loadSound('wii', '/games/ragdoll/assets/audio/wii.opus');
-                this.audioManager.loadSound('boing', '/games/ragdoll/assets/audio/boing.opus');
-            }
+        this.audioManager = Services.get('AudioManager') || null;
+        if (this.audioManager) {
+            this.audioManager.loadSound('scream', '/games/ragdoll/assets/audio/ahh.opus');
+            this.audioManager.loadSound('wii', '/games/ragdoll/assets/audio/wii.opus');
+            this.audioManager.loadSound('boing', '/games/ragdoll/assets/audio/boing.opus');
         }
-        if (typeof window.BubbleAnimator !== 'undefined') {
-            this.bubbleAnimator = new window.BubbleAnimator();
+        
+        const BubbleAnimatorCtor = Services.get('BubbleAnimator');
+        if (BubbleAnimatorCtor) {
+            this.bubbleAnimator = new BubbleAnimatorCtor();
         }
-        if (typeof window.MessageLibrary !== 'undefined') {
-            this.messageLibrary = new window.MessageLibrary();
+        
+        const MessageLibraryCtor = Services.get('MessageLibrary');
+        if (MessageLibraryCtor) {
+            this.messageLibrary = new MessageLibraryCtor();
         }
     }
 

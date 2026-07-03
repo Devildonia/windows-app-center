@@ -3,6 +3,8 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Ragdoll3DCore } from '../core/Ragdoll3DCore';
 import { Kernel } from '../core/Kernel';
 
+import { Services } from '../core/ServiceContainer';
+
 export class Ragdoll3DViewer extends Ragdoll3DCore {
     public windowId: string = 'win-ragdoll-skins';
     private statusText: HTMLElement | null;
@@ -17,14 +19,16 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         this.loaderText = document.getElementById('ragdoll-3d-loader');
         this.onResizeHandler = () => this.onWindowResize();
         
-        if (typeof window.AudioManager !== 'undefined') {
-            this.audioManager = window.AudioManager.getInstance?.() || null;
+        this.audioManager = Services.get('AudioManager') || null;
+        
+        const BubbleAnimatorCtor = Services.get('BubbleAnimator');
+        if (BubbleAnimatorCtor) {
+            this.bubbleAnimator = new BubbleAnimatorCtor();
         }
-        if (typeof window.BubbleAnimator !== 'undefined') {
-            this.bubbleAnimator = new window.BubbleAnimator();
-        }
-        if (typeof window.MessageLibrary !== 'undefined') {
-            this.messageLibrary = new window.MessageLibrary();
+        
+        const MessageLibraryCtor = Services.get('MessageLibrary');
+        if (MessageLibraryCtor) {
+            this.messageLibrary = new MessageLibraryCtor();
         }
 
         this.showDebug = true; // Viewer defaults to debug on.
