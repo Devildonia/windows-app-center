@@ -80,7 +80,9 @@ if (localStorage.getItem('ragdoll3DPetActive') === 'true') {
         const target = e.target as HTMLElement;
         if (target.closest('#spawn-ragdoll-3d') || target.closest('[data-ragdoll3d]')) {
             document.removeEventListener('click', onFirstRagdoll3DClick);
-            initRagdoll3D().catch(console.error);
+            initRagdoll3D().then(() => {
+                EventBus.emit('ragdoll3d:toggle');
+            }).catch(console.error);
         }
     });
 }
