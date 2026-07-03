@@ -7,7 +7,7 @@
  * si un cambio los rompe, es una regresión, no un ajuste esperado.
  *
  * Se centran en las rutas NO cubiertas por AudioManager.test.js:
- *   - síntesis: sweep con midFreq, pulse, vibrato, bubbles, noise con lowpass
+ *   - síntesis: sweep con midFreq, pulse, vibrato, bubbles, noise con filtro
  *   - escalado de volumen por `variation` en tone
  *   - playHTML5: clonado, escalado por MASTER_VOLUME y mute
  *   - grafo de nodos (connect) de cada tipo
@@ -134,19 +134,18 @@ describe('AudioManager (caracterización) — síntesis bubbles', () => {
     });
 });
 
-// ─── Síntesis: noise con lowpass ────────────────────────────────────────────
-describe('AudioManager (caracterización) — síntesis noise + lowpass', () => {
-    it('crea un BiquadFilter lowpass usando config.frequency (NO config.lowpass)', () => {
+// ─── Síntesis: noise (filtro lowpass) ───────────────────────────────────────
+describe('AudioManager (caracterización) — síntesis noise + filtro', () => {
+    it('crea un BiquadFilter lowpass con corte en config.frequency', () => {
         const { am, ctx } = setup();
         ctx.createBiquadFilter.mockClear();
-        am.play('fall_impact'); // frequency: 100, lowpass: 200
+        am.play('fall_impact'); // frequency: 100
         expect(ctx.createBiquadFilter).toHaveBeenCalled();
         const filter = ctx.createBiquadFilter.mock.results.at(-1).value;
         expect(filter.type).toBe('lowpass');
-        // COMPORTAMIENTO ACTUAL (bloqueado a propósito): playNoiseSound lee
-        // `config.frequency`, no `config.lowpass`. El campo `lowpass` está
-        // declarado en el catálogo pero es CÓDIGO MUERTO en el motor de ruido.
-        // No se "arregla" aquí: el refactor debe preservar este comportamiento.
+        // El motor de ruido usa `config.frequency` como frecuencia de corte del
+        // filtro lowpass. (El antiguo campo `config.lowpass` era código muerto y
+        // fue eliminado del catálogo y de ISoundConfig.)
         expect(filter.frequency.value).toBe(100);
     });
 

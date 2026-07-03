@@ -20,7 +20,6 @@ export interface ISoundConfig {
     baseFreq?: number;
     bubbleCount?: number;
     variations?: number;
-    lowpass?: number;
     loop?: boolean;
 }
 
