@@ -202,6 +202,9 @@ export const WindowFactory: IWindowFactory = (function () {
                 iframe.src = 'about:blank';
             });
 
+            // Clean up drag events to prevent memory leaks
+            WindowManager.destroyDraggable(windowId);
+
             win.remove();
             createdWindows.delete(windowId);
             Utils.Logger.window(`WindowFactory: Destroyed [${windowId}]`);

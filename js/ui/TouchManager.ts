@@ -11,6 +11,7 @@ import { WindowManager } from './WindowManager';
 export interface ITouchManager {
     init(): void;
     destroy(): void;
+    destroyDraggable(windowId: string): void;
     addPointerEvents(element: HTMLElement, handlers: { onStart?: (e: any) => void, onMove?: (e: any) => void, onEnd?: (e: any) => void }): void;
     DOUBLE_TAP_DELAY: number;
     LONG_PRESS_DELAY: number;
@@ -30,6 +31,13 @@ const TouchManager: ITouchManager = (() => {
     let _longPressTimer: ReturnType<typeof setTimeout> | null = null;
     let _initialized = false;
     let _originalMakeDraggable: ((windowId: string) => void) | null = null;
+
+    const _touchDragRegistry = new Map<string, {
+        header: HTMLElement;
+        touchstart: EventListener;
+        touchmove: EventListener;
+        touchend: EventListener;
+    }>();
 
     /**
      * Initialize touch support
@@ -69,35 +77,49 @@ const TouchManager: ITouchManager = (() => {
         _initialized = false;
     }
 
+    function destroyDraggable(windowId: string): void {
+        const entry = _touchDragRegistry.get(windowId);
+        if (entry) {
+            Utils.eventManager.remove(entry.header, 'touchstart', entry.touchstart);
+            Utils.eventManager.remove(document, 'touchmove', entry.touchmove);
+            Utils.eventManager.remove(document, 'touchend', entry.touchend);
+            _touchDragRegistry.delete(windowId);
+        }
+    }
+
     /**
      * Patches WindowManager's draggable to support touch events
      */
     function patchWindowDragging(): void {
         // Override makeDraggable to add touch support
-        const wm: any = Services.get('WindowManager');
-        const originalMakeDraggable = wm?.makeDraggable;
+        const wm: any = Services.get('ThemeManager'); // Just testing/accessing services safely
+        const wmService: any = Services.get('WindowManager');
+        const originalMakeDraggable = wmService?.makeDraggable;
         if (!originalMakeDraggable) return;
 
         if (!_originalMakeDraggable) {
             _originalMakeDraggable = originalMakeDraggable;
         }
 
-        wm.makeDraggable = function (windowId: string): void {
+        wmService.makeDraggable = function (windowId: string): void {
             // Call original mouse-based draggable
             originalMakeDraggable(windowId);
+
+            // Clean up previous touch dragging for this window
+            destroyDraggable(windowId);
 
             // Add touch dragging
             const win = document.getElementById(windowId);
             if (!win) return;
 
-            const header = win.querySelector('.window-header');
+            const header = win.querySelector('.window-header') as HTMLElement | null;
             if (!header) return;
 
             let isDragging = false;
             let startX: number, startY: number, initialX: number, initialY: number;
             let hasMoved = false;
 
-            header.addEventListener('touchstart', ((e: TouchEvent) => {
+            const onTouchStart = ((e: TouchEvent) => {
                 // Ignore if touching buttons
                 if ((e.target as HTMLElement).closest('.window-btn')) return;
 
@@ -118,9 +140,9 @@ const TouchManager: ITouchManager = (() => {
                 }
 
                 e.preventDefault();
-            }) as EventListener, { passive: false });
+            }) as EventListener;
 
-            document.addEventListener('touchmove', ((e: TouchEvent) => {
+            const onTouchMove = ((e: TouchEvent) => {
                 if (!isDragging) return;
 
                 const touch = e.touches[0];
@@ -138,10 +160,22 @@ const TouchManager: ITouchManager = (() => {
                 win.style.transform = 'none';
 
                 e.preventDefault();
-            }) as EventListener, { passive: false });
+            }) as EventListener;
 
-            document.addEventListener('touchend', () => {
+            const onTouchEnd = (() => {
                 isDragging = false;
+            }) as EventListener;
+
+            // Use eventManager to prevent leaks
+            Utils.eventManager.add(header, 'touchstart', onTouchStart, { passive: false });
+            Utils.eventManager.add(document, 'touchmove', onTouchMove, { passive: false });
+            Utils.eventManager.add(document, 'touchend', onTouchEnd);
+
+            _touchDragRegistry.set(windowId, {
+                header,
+                touchstart: onTouchStart,
+                touchmove: onTouchMove,
+                touchend: onTouchEnd
             });
 
             Utils.Logger.log(`[TouchManager] Touch dragging enabled for ${windowId}`);
@@ -313,6 +347,7 @@ const TouchManager: ITouchManager = (() => {
     return {
         init,
         destroy,
+        destroyDraggable,
         addPointerEvents,
         DOUBLE_TAP_DELAY,
         LONG_PRESS_DELAY

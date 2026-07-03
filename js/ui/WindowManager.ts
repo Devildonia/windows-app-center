@@ -19,6 +19,7 @@ export interface IWindowManager {
     maximize(windowId: string): void;
     bringToFront(win: HTMLElement | null): void;
     makeDraggable(windowId: string): void;
+    destroyDraggable(windowId: string): void;
     initializeControls(): void;
     destroy(): void;
     getActive(): string[];
@@ -42,6 +43,13 @@ const WindowManager: IWindowManager = (function () {
     let activeWindows = new Set<string>();
     let _initialized = false;
     let onDocumentClick: ((e: Event) => void) | null = null;
+
+    const _dragRegistry = new Map<string, {
+        header: HTMLElement;
+        mousedown: EventListener;
+        mousemove: EventListener;
+        mouseup: EventListener;
+    }>();
 
     /** Calcula el z-index real de una ventana dado su logical order */
     function _zIndexFor(order: number): number {
@@ -354,8 +362,24 @@ const WindowManager: IWindowManager = (function () {
         _orderCounter = newOrder;
     }
 
+    function destroyDraggable(windowId: string): void {
+        const entry = _dragRegistry.get(windowId);
+        if (entry) {
+            Utils.eventManager.remove(entry.header, 'mousedown', entry.mousedown);
+            Utils.eventManager.remove(document, 'mousemove', entry.mousemove);
+            Utils.eventManager.remove(document, 'mouseup', entry.mouseup);
+            _dragRegistry.delete(windowId);
+        }
+
+        // Also clean up touch dragging if touch manager is active
+        const tm: any = Services.get('TouchManager');
+        if (tm && typeof tm.destroyDraggable === 'function') {
+            tm.destroyDraggable(windowId);
+        }
+    }
+
     /**
-     * Makes a window draggable
+     * Makes a window draggable by its header
      * @param {string} windowId - Window element ID
      */
     function makeDraggable(windowId: string): void {
@@ -367,6 +391,9 @@ const WindowManager: IWindowManager = (function () {
             Utils.Logger.warn(`No header found for window: ${windowId}`);
             return;
         }
+
+        // Clean up previous draggable listeners if any
+        destroyDraggable(windowId);
 
         let isDragging = false;
         let startX: number, startY: number, initialX: number, initialY: number;
@@ -412,6 +439,14 @@ const WindowManager: IWindowManager = (function () {
         Utils.eventManager.add(header, 'mousedown', onMouseDown);
         Utils.eventManager.add(document, 'mousemove', onMouseMove);
         Utils.eventManager.add(document, 'mouseup', onMouseUp);
+
+        // Store references for clean removal
+        _dragRegistry.set(windowId, {
+            header,
+            mousedown: onMouseDown,
+            mousemove: onMouseMove,
+            mouseup: onMouseUp
+        });
 
         Utils.Logger.window(`Window ${windowId} is now draggable`);
     }
@@ -611,6 +646,7 @@ const WindowManager: IWindowManager = (function () {
         maximize: toggleMaximize,
         bringToFront,
         makeDraggable,
+        destroyDraggable,
         initializeControls: initializeWindowControls,
         destroy: destroyWindowControls,
         getActive: getActiveWindows,
