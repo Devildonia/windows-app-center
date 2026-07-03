@@ -668,92 +668,100 @@ export abstract class Ragdoll3DCore {
                 this.mouseVelocity.set(0, 0, 0);
                 this._lastMouseMoveTime = 0; // reset para que el primer delta sea limpio
 
-                if (this.audioManager) this.audioManager.play('wii');
-                this.onRagdollGrabbed();
-            }
-        }
-    }
-
-    protected onRagdollGrabbed(): void {}
-
-    protected onMouseMove(event: MouseEvent): void {
-        if (!this.grabbedBody || !this.mouseAnchorBody || !this.camera || !this.container) return;
-
-        const rect = this.container.getBoundingClientRect();
-        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-        this.raycaster.setFromCamera(this.mouse, this.camera);
-        const pos = Ragdoll3DCore._scratchVec3A;
-        const hit = this.raycaster.ray.intersectPlane(this.interactionPlane, pos);
-        if (!hit) return;
-
-        const now = performance.now();
-        const dt = this._lastMouseMoveTime > 0
-            ? Math.min((now - this._lastMouseMoveTime) / 1000, 0.05)
-            : 0.016;
-        this._lastMouseMoveTime = now;
-
-        if (dt > 0) {
-            const rawVel = Ragdoll3DCore._scratchVec3B
-                .subVectors(pos, this.lastMousePos)
-                .divideScalar(dt);
-            // lerp 0.7: más responsivo que 0.4, evita que lanzamientos rápidos
-            // queden amortiguados por el suavizado
-            this.mouseVelocity.lerp(rawVel, 0.7);
-        }
-        this.lastMousePos.copy(pos);
-
-        this.mouseAnchorBody.setNextKinematicTranslation(pos);
-        this.rigidBodies.forEach(body => body.wakeUp());
-    }
-
-    protected onMouseUp(): void {
-        if (!this.grabbedBody || !this.world) return;
-
-        this.grabbedBody.wakeUp();
-
-        if (this.mouseJoint) {
-            this.world.removeImpulseJoint(this.mouseJoint, true);
-            this.mouseJoint = null;
-        }
-        if (this.mouseAnchorBody) {
-            this.world.removeRigidBody(this.mouseAnchorBody);
-            this.mouseAnchorBody = null;
-        }
-
-        // Aplicar velocidad de lanzamiento solo si el usuario realmente arrastró.
-        // Si mouseVelocity es casi cero (soltó sin mover), no aplicar nada —
-        // dejar que la gravedad tome el control sin interferencia.
-        const throwVel = this.mouseVelocity.clone().multiplyScalar(1.5);
-        const speed = throwVel.length();
-
-        if (speed > 0.5) {
-            const hipsBody = this.rigidBodies.get('Hips');
-            const hipsPos = hipsBody
-                ? new THREE.Vector3(
-                    hipsBody.translation().x,
-                    hipsBody.translation().y,
-                    hipsBody.translation().z
-                  )
-                : new THREE.Vector3();
-
-            this.rigidBodies.forEach((body) => {
-                const t = body.translation();
-                const dist = new THREE.Vector3(t.x, t.y, t.z).distanceTo(hipsPos);
-                const falloff = Math.max(0.6, 1.0 - dist * 0.08);
-                body.setLinvel(
-                    { x: throwVel.x * falloff, y: throwVel.y * falloff, z: throwVel.z * falloff },
-                    true
-                );
-                body.wakeUp();
-            });
-
-            if (speed > 4) {
-                if (this.audioManager) this.audioManager.play('scream', { volume: 0.4 });
-                this.say('¡AHHHH!', 2000);
-            }
-        }
+                 if (this.audioManager) this.audioManager.play('wii');
+                 this.onRagdollGrabbed();
+             }
+         }
+     }
+ 
+     protected onRagdollGrabbed(): void {
+         const mem = Services.get('RagdollMemory');
+         if (mem) mem.recordGrab();
+     }
+ 
+     protected onMouseMove(event: MouseEvent): void {
+         if (!this.grabbedBody || !this.mouseAnchorBody || !this.camera || !this.container) return;
+ 
+         const rect = this.container.getBoundingClientRect();
+         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+ 
+         this.raycaster.setFromCamera(this.mouse, this.camera);
+         const pos = Ragdoll3DCore._scratchVec3A;
+         const hit = this.raycaster.ray.intersectPlane(this.interactionPlane, pos);
+         if (!hit) return;
+ 
+         const now = performance.now();
+         const dt = this._lastMouseMoveTime > 0
+             ? Math.min((now - this._lastMouseMoveTime) / 1000, 0.05)
+             : 0.016;
+         this._lastMouseMoveTime = now;
+ 
+         if (dt > 0) {
+             const rawVel = Ragdoll3DCore._scratchVec3B
+                 .subVectors(pos, this.lastMousePos)
+                 .divideScalar(dt);
+             // lerp 0.7: más responsivo que 0.4, evita que lanzamientos rápidos
+             // queden amortiguados por el suavizado
+             this.mouseVelocity.lerp(rawVel, 0.7);
+         }
+         this.lastMousePos.copy(pos);
+ 
+         this.mouseAnchorBody.setNextKinematicTranslation(pos);
+         this.rigidBodies.forEach(body => body.wakeUp());
+     }
+ 
+     protected onMouseUp(): void {
+         if (!this.grabbedBody || !this.world) return;
+ 
+         this.grabbedBody.wakeUp();
+ 
+         if (this.mouseJoint) {
+             this.world.removeImpulseJoint(this.mouseJoint, true);
+             this.mouseJoint = null;
+         }
+         if (this.mouseAnchorBody) {
+             this.world.removeRigidBody(this.mouseAnchorBody);
+             this.mouseAnchorBody = null;
+         }
+ 
+         const mem = Services.get('RagdollMemory');
+         if (mem) mem.recordDrop();
+ 
+         // Aplicar velocidad de lanzamiento solo si el usuario realmente arrastró.
+         // Si mouseVelocity es casi cero (soltó sin mover), no aplicar nada —
+         // dejar que la gravedad tome el control sin interferencia.
+         const throwVel = this.mouseVelocity.clone().multiplyScalar(1.5);
+         const speed = throwVel.length();
+ 
+         if (speed > 0.5) {
+             const hipsBody = this.rigidBodies.get('Hips');
+             const hipsPos = hipsBody
+                 ? new THREE.Vector3(
+                     hipsBody.translation().x,
+                     hipsBody.translation().y,
+                     hipsBody.translation().z
+                   )
+                 : new THREE.Vector3();
+ 
+             this.rigidBodies.forEach((body) => {
+                 const t = body.translation();
+                 const dist = new THREE.Vector3(t.x, t.y, t.z).distanceTo(hipsPos);
+                 const falloff = Math.max(0.6, 1.0 - dist * 0.08);
+                 body.setLinvel(
+                     { x: throwVel.x * falloff, y: throwVel.y * falloff, z: throwVel.z * falloff },
+                     true
+                 );
+                 body.wakeUp();
+             });
+ 
+             if (speed > 4) {
+                 if (this.audioManager) this.audioManager.play('scream', { volume: 0.4 });
+                 this.say('¡AHHHH!', 2000);
+                 const memHurt = Services.get('RagdollMemory');
+                 if (memHurt) memHurt.recordHurt();
+             }
+         }
 
         this._lastMouseMoveTime = 0;
         this.mouseVelocity.set(0, 0, 0);

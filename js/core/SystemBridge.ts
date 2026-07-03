@@ -121,6 +121,8 @@ export function destroyLegacyWrappers(): void {
         delete legacyWindowTarget[name as string];
     });
 
+    delete (legacyWindow as any).RagdollMemory;
+
     legacyWindow.__legacyWrappersInitialized = false;
 }
 
@@ -130,6 +132,12 @@ export function destroyLegacyWrappers(): void {
 export function initLegacyWrappers(): void {
     if (legacyWindow.__legacyWrappersInitialized) return;
     legacyWindow.__legacyWrappersInitialized = true;
+
+    // Bridge RagdollMemory for legacy Stickman.js/RagdollPet.js code
+    const ragdollMemory = Services.get('RagdollMemory');
+    if (ragdollMemory) {
+        (legacyWindow as any).RagdollMemory = ragdollMemory;
+    }
 
     bindLegacyAction('setWallpaper', (url: string, silent: boolean = false): void => {
         Services.get('DesktopManager')?.setWallpaper(url, silent);
