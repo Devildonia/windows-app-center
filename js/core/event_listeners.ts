@@ -16,11 +16,20 @@ import { setupStickyNotes } from './StickyNotesController';
 
 export function setupEventListeners(): void {
     const openLegacyWindow = (windowId: string): void => {
-        if (window.openWindow) window.openWindow(windowId);
+        if (window.openWindow) {
+            window.openWindow(windowId);
+        } else {
+            WindowManager.open(windowId);
+        }
     };
 
     const openLegacyDialog = (dialogId: string): void => {
-        if (window.openDialog) window.openDialog(dialogId);
+        if (window.openDialog) {
+            window.openDialog(dialogId);
+        } else {
+            const dialog = document.getElementById(dialogId);
+            if (dialog) dialog.style.display = 'block';
+        }
     };
 
     const closeWindowThenOpen = (hideId: string, showId: string): void => {
@@ -91,7 +100,7 @@ export function setupEventListeners(): void {
     setupReadme('icon-tetris-readme', 'README_TETRIS.TXT', TETRIS_README);
 
     // Folder icons actions
-    setupIconAction('icon-display', () => openLegacyWindow('win-display-properties'));
+    setupIconAction('icon-display', () => openLegacyWindow('win-display-props'));
     setupIconAction('icon-notepad', () => launchKernelApp('notepad'));
     setupIconAction('icon-paint', () => launchKernelApp('paint'));
     setupIconAction('icon-explorer', () => launchKernelApp('explorer'));
