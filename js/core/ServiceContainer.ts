@@ -82,6 +82,7 @@ export type ServiceCallback<K extends keyof IServiceRegistry = string> =
 
 export interface IServiceContainer {
     register<K extends keyof IServiceRegistry>(name: K, instance: IServiceRegistry[K]): void;
+    unregister<K extends keyof IServiceRegistry>(name: K): boolean;
     get<K extends keyof IServiceRegistry>(name: K): IServiceRegistry[K] | undefined;
     has(name: string): boolean;
     whenReady<K extends keyof IServiceRegistry>(name: K, callback: ServiceCallback<K>): void;
@@ -107,6 +108,13 @@ const Services: IServiceContainer = {
             _pendingCallbacks.get(name as string)!.forEach(cb => cb(instance as never));
             _pendingCallbacks.delete(name as string);
         }
+    },
+
+    /**
+     * Unregister a service by name (for HMR)
+     */
+    unregister<K extends keyof IServiceRegistry>(name: K): boolean {
+        return _registry.delete(name as string);
     },
 
     /**

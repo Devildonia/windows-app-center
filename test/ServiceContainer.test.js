@@ -96,6 +96,23 @@ describe('ServiceContainer', () => {
         });
     });
 
+    describe('unregister', () => {
+        it('should remove a registered service and return true', () => {
+            Services.register('ServiceToUnregister', { val: 123 });
+            expect(Services.has('ServiceToUnregister')).toBe(true);
+
+            const result = Services.unregister('ServiceToUnregister');
+            expect(result).toBe(true);
+            expect(Services.has('ServiceToUnregister')).toBe(false);
+            expect(Services.get('ServiceToUnregister')).toBeUndefined();
+        });
+
+        it('should return false if service does not exist', () => {
+            const result = Services.unregister('NonExistentService');
+            expect(result).toBe(false);
+        });
+    });
+
     describe('__reset', () => {
         it('should clear all services and pending callbacks', () => {
             Services.register('Temp', {});
