@@ -72,6 +72,7 @@ class InternetExplorerApp {
             }),
             EventBus.on('action:ie-stop', () => {
                 const frame = document.getElementById(this.frameId) as HTMLIFrameElement;
+                // eslint-disable-next-line no-self-assign
                 if (frame) frame.src = frame.src;
             }),
             EventBus.on('action:ie-refresh', () => {

@@ -1,4 +1,5 @@
 import globals from "globals";
+import tseslint from "typescript-eslint";
 
 export default [
     {
@@ -14,8 +15,9 @@ export default [
     },
     {
         // Main source files
-        files: ["js/**/*.js", "main.js", "ragdoll.js"],
+        files: ["js/**/*.{js,ts}", "main.ts", "ragdoll.ts"],
         languageOptions: {
+            parser: tseslint.parser,
             ecmaVersion: 2022,
             sourceType: "module",
             globals: {
@@ -60,10 +62,14 @@ export default [
                 Matter: "readonly"
             }
         },
+        plugins: {
+            "@typescript-eslint": tseslint.plugin
+        },
         rules: {
             // === Errors ===
-            "no-undef": "error",
-            "no-unused-vars": ["warn", {
+            "no-undef": "off", // TypeScript compiler handles definition checking better
+            "no-unused-vars": "off",
+            "@typescript-eslint/no-unused-vars": ["warn", {
                 "argsIgnorePattern": "^_",
                 "varsIgnorePattern": "^_"
             }],
@@ -94,8 +100,9 @@ export default [
     },
     {
         // Test files
-        files: ["test/**/*.js"],
+        files: ["test/**/*.{js,ts}"],
         languageOptions: {
+            parser: tseslint.parser,
             ecmaVersion: 2022,
             sourceType: "module",
             globals: {
@@ -112,7 +119,8 @@ export default [
             }
         },
         rules: {
-            "no-unused-vars": "off"
+            "no-unused-vars": "off",
+            "@typescript-eslint/no-unused-vars": "off"
         }
     }
 ];
