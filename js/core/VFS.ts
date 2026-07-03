@@ -48,7 +48,7 @@ export const VFS: IVFS = (() => {
             },
             'DOCUMENTS': {
                 name: 'DOCUMENTS', type: 'dir', children: {
-                    'README.txt': { name: 'README.txt', type: 'file', content: 'Welcome to Windows App Center v1.6.0' }
+                    'README.txt': { name: 'README.txt', type: 'file', content: 'Welcome to Windows App Center v1.6.1' }
                 }
             },
             'GAMES': {
