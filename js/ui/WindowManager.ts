@@ -126,6 +126,15 @@ const WindowManager: IWindowManager = (function () {
         win.style.zIndex = _zIndexFor(++_orderCounter).toString();
         _windowOrder.set(windowId, _orderCounter);
         activeWindows.add(windowId);
+
+        // Move focus to first interactive element or the window itself
+        const interactive = win.querySelector('[tabindex]:not([tabindex="-1"]), button:not(.window-btn), input, textarea, select') as HTMLElement | null;
+        if (interactive) {
+            interactive.focus();
+        } else {
+            win.setAttribute('tabindex', '-1');
+            win.focus();
+        }
     }
 
     /**
@@ -258,6 +267,25 @@ const WindowManager: IWindowManager = (function () {
     function closeWindow(windowId: string): void {
         const win = Utils.getElement(windowId) as HTMLElement | null;
         if (!win) return;
+
+        // Restore focus before window is hidden/closed
+        const activeEl = document.activeElement;
+        if (activeEl && win.contains(activeEl)) {
+            let fallbackFocusTarget: HTMLElement | null = null;
+            const appId = windowId.replace('win-', '');
+            if (appId) {
+                fallbackFocusTarget = document.querySelector(`.icon[data-launch="${appId}"]`) as HTMLElement | null;
+            }
+            if (!fallbackFocusTarget) {
+                fallbackFocusTarget = document.getElementById('desktop');
+            }
+            if (!fallbackFocusTarget) {
+                fallbackFocusTarget = document.body;
+            }
+            if (fallbackFocusTarget) {
+                fallbackFocusTarget.focus();
+            }
+        }
 
         Utils.Logger.window(`Closing window: ${windowId}`);
 
@@ -564,6 +592,28 @@ const WindowManager: IWindowManager = (function () {
             const win = node as HTMLElement;
             const windowId = win.id;
             if (!windowId) return;
+
+            // Make sure role and aria-labelledby are present (Semantics of windows)
+            if (!win.getAttribute('role')) {
+                win.setAttribute('role', 'dialog');
+            }
+            if (!win.getAttribute('aria-labelledby')) {
+                const header = win.querySelector('.window-header');
+                if (header) {
+                    const titleSpan = header.querySelector('span:not(.window-btn)');
+                    if (titleSpan) {
+                        if (!titleSpan.id) titleSpan.id = `${windowId}-title`;
+                        win.setAttribute('aria-labelledby', titleSpan.id);
+                    }
+                }
+            }
+            // Ensure control buttons have aria-label
+            const minBtn = win.querySelector('.minimize-btn');
+            if (minBtn && !minBtn.getAttribute('aria-label')) minBtn.setAttribute('aria-label', 'Minimize');
+            const maxBtn = win.querySelector('.maximize-btn');
+            if (maxBtn && !maxBtn.getAttribute('aria-label')) maxBtn.setAttribute('aria-label', 'Maximize');
+            const closeBtn = win.querySelector('.close-btn');
+            if (closeBtn && !closeBtn.getAttribute('aria-label')) closeBtn.setAttribute('aria-label', 'Close');
 
             // Make draggable
             makeDraggable(windowId);

@@ -96,6 +96,7 @@ function showBSOD(message: string = 'Unknown error', source: string = '', line: 
 
     content.innerHTML = _buildBSODContent(message, source, line, stack);
     screen.style.display = 'flex';
+    Utils.announce('System error occurred');
 
     // Stop the shader / audio to free resources
     try {
