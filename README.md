@@ -9,6 +9,8 @@ A high-fidelity **Windows 95/98 Simulator & Prototyping Environment** built with
 
 > [!NOTE]
 > This project was audited for stability and performance on March 2026, and the roadmap keeps tightening lifecycle edges and regressions.
+>
+> See the [CHANGELOG.md](file:///f:/Seaverse/Proyectos/Windows%20App%20Center%20v1.5.50/CHANGELOG.md) for the detailed version history and recent upgrades.
 
 ---
 
