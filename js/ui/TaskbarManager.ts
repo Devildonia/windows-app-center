@@ -14,6 +14,9 @@ const TaskbarManager: ITaskbarManager = (() => {
 
     const containerId = 'taskbar-apps'; // We need to add this to index.html
     let container: HTMLElement | null = null;
+    let listenersAttached = false;
+    let onProcessStarted: ((e: Event) => void) | null = null;
+    let onProcessStopped: ((e: Event) => void) | null = null;
 
     function init(): void {
         container = document.getElementById(containerId);
@@ -31,17 +34,22 @@ const TaskbarManager: ITaskbarManager = (() => {
         }
 
         // Listen for Kernel events
-        window.addEventListener('kernel:process-started', ((e: CustomEvent<IProcess>) => update(e.detail)) as EventListener);
-        window.addEventListener('kernel:process-stopped', ((e: CustomEvent<IProcess>) => remove(e.detail)) as EventListener);
+        if (!listenersAttached && !onProcessStarted) {
+            onProcessStarted = (e: Event) => update((e as CustomEvent<IProcess>).detail);
+            window.addEventListener('kernel:process-started', onProcessStarted);
+        }
+        if (!listenersAttached && !onProcessStopped) {
+            onProcessStopped = (e: Event) => remove((e as CustomEvent<IProcess>).detail);
+            window.addEventListener('kernel:process-stopped', onProcessStopped);
+        }
 
+        listenersAttached = true;
         Utils.Logger.log('TaskbarManager: Initialized');
     }
 
     function update(process: IProcess): void {
-        console.log("UPDATE_CALLED:", process ? process.pid : "UNDEFINED PROCESS");
         if (!process) return;
         if (!container) {
-            console.log("UPDATE_ABORTED: no container");
             return;
         }
 
@@ -100,7 +108,7 @@ const TaskbarManager: ITaskbarManager = (() => {
 
     function remove(process: IProcess | { pid?: number, windowId?: string, appId?: string }): void {
         // Find by PID
-        let btn: HTMLElement | null = process.pid ? document.getElementById(`task-btn-${process.pid}`) : null;
+        let btn: HTMLElement | null = typeof process.pid === 'number' ? document.getElementById(`task-btn-${process.pid}`) : null;
 
         // Fallback: Find by windowId if PID doesn't match (crucial for legacy processes)
         if (!btn && process.windowId && container) {

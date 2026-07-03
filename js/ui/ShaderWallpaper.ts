@@ -15,6 +15,7 @@ export interface IShaderWallpaper {
     init(canvasId: string): void;
     start(): void;
     stop(): void;
+    destroy(): void;
     setVisibility(visible: boolean): void;
     setFragmentShader(themeName: string): void;
     isVisible(): boolean;
@@ -32,6 +33,7 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
     let isRunning = false;
     let isVisible = true;
     let frameCount = 0;
+    let resizeListenerAttached = false;
 
     const vsSource = `
         attribute vec2 a_position;
@@ -207,6 +209,8 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
     let passes: RenderPass[] = [];
 
     function init(canvasId: string): void {
+        destroy();
+
         canvas = document.getElementById(canvasId) as HTMLCanvasElement;
         if (!canvas) {
             console.error("[ShaderWallpaper] Canvas not found:", canvasId);
@@ -226,6 +230,7 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
         window.addEventListener('resize', resizeCanvas);
+        resizeListenerAttached = true;
         resizeCanvas();
 
         loadThemeShaders();
@@ -304,6 +309,33 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
     function stop(): void {
         isRunning = false;
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+
+    function destroy(): void {
+        stop();
+
+        if (resizeListenerAttached) {
+            window.removeEventListener('resize', resizeCanvas);
+            resizeListenerAttached = false;
+        }
+
+        try {
+            passes.forEach((pass) => pass.destroy());
+        } finally {
+            passes = [];
+        }
+
+        if (gl && positionBuffer && typeof gl.deleteBuffer === 'function') {
+            gl.deleteBuffer(positionBuffer);
+        }
+
+        canvas = null;
+        gl = null;
+        positionBuffer = null;
+        startTime = 0;
+        frameCount = 0;
+        isVisible = true;
     }
 
     function setVisibility(visible: boolean): void {
@@ -327,6 +359,7 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
         init,
         start,
         stop,
+        destroy,
         setVisibility,
         setFragmentShader, // Now expects theme name instead of source
         isVisible: () => isVisible,

@@ -93,15 +93,15 @@ export class Stickman {
 
     loadAssets() {
         const load = (src) => { const img = new Image(); img.src = src; return img; };
-        this.headImage = load('/games/ragdoll/assets/ragdoll.webp');
-        this.leftHandImage = load('/games/ragdoll/assets/left hand.png');
-        this.rightHandImage = load('/games/ragdoll/assets/Right hand.png');
-        this.pantsImage = load('/games/ragdoll/assets/trousers.webp');
-        this.leftLegImage = load('/games/ragdoll/assets/l_leg.webp');
-        this.rightLegImage = load('/games/ragdoll/assets/r_leg.webp');
-        this.shirtImage = load('/games/ragdoll/assets/cami.webp');
-        this.lHandOverlay = load('/games/ragdoll/assets/l_hand.webp');
-        this.rHandOverlay = load('/games/ragdoll/assets/r_hand.webp');
+        this.headImage = load('games/ragdoll/assets/ragdoll.webp');
+        this.leftHandImage = load('games/ragdoll/assets/left hand.png');
+        this.rightHandImage = load('games/ragdoll/assets/Right hand.png');
+        this.pantsImage = load('games/ragdoll/assets/trousers.webp');
+        this.leftLegImage = load('games/ragdoll/assets/l_leg.webp');
+        this.rightLegImage = load('games/ragdoll/assets/r_leg.webp');
+        this.shirtImage = load('games/ragdoll/assets/cami.webp');
+        this.lHandOverlay = load('games/ragdoll/assets/l_hand.webp');
+        this.rHandOverlay = load('games/ragdoll/assets/r_hand.webp');
         this.neckImage = null; // Default to null for new parts
         this.leftArmImage = null;
         this.rightArmImage = null;

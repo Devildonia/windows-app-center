@@ -51,6 +51,50 @@ class Notepad {
         this.init(params.content || '');
     }
 
+    // Legacy compatibility surface used by tests and older callers.
+    public saveFile(): void {
+        const name = window.prompt('Save as', this.currentFile === 'Untitled' ? '' : this.currentFile.replace(/\.txt$/, ''));
+        if (!name) return;
+
+        const key = `notepad_${name}`;
+        const content = this.textarea?.value ?? '';
+        localStorage.setItem(key, JSON.stringify(content));
+        this.currentFile = name;
+        this.isModified = false;
+        this.updateTitle();
+    }
+
+    public openFile(): void {
+        const name = window.prompt('Open file', '');
+        if (!name) return;
+
+        const key = `notepad_${name}`;
+        const raw = localStorage.getItem(key);
+        const notify = Services.get('Notify') as INotify | undefined;
+
+        if (raw === null) {
+            if (notify) notify.warn('File not found');
+            return;
+        }
+
+        const content = JSON.parse(raw) as string;
+        if (this.textarea) this.textarea.value = content;
+        this.currentFile = name;
+        this.isModified = false;
+        this.updateTitle();
+        this._updateStatus();
+    }
+
+    public newFile(): void {
+        if (this.textarea) this.textarea.value = '';
+        this.currentFile = 'Untitled';
+        this.currentPath = VFS_SAVE_DIR;
+        this.isModified = false;
+        this._lastFindIndex = -1;
+        this.updateTitle();
+        this._updateStatus();
+    }
+
     // ─── Init ─────────────────────────────────────────────────────────────────
 
     private init(initialContent: string): void {
@@ -452,7 +496,7 @@ class Notepad {
 
     // ─── Title ────────────────────────────────────────────────────────────────
 
-    private updateTitle(): void {
+    public updateTitle(): void {
         const titleSpan = document.querySelector(`#${this.windowId} .window-header span`);
         if (titleSpan) {
             titleSpan.textContent = `${this.isModified ? '*' : ''}${this.currentFile} - Notepad`;

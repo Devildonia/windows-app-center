@@ -3,21 +3,40 @@ import { Services } from './ServiceContainer';
 export class ThemeManager {
     public currentTheme: string;
     public themes: string[];
+    private initialized: boolean;
+    private onDomReady: (() => void) | null;
 
     constructor() {
         this.currentTheme = localStorage.getItem('os-theme') || 'win95';
         this.themes = ['win95', 'modern'];
+        this.initialized = false;
+        this.onDomReady = null;
 
         // Ensure DOM is ready or wait for it
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.init());
+            this.onDomReady = () => this.init();
+            document.addEventListener('DOMContentLoaded', this.onDomReady, { once: true });
         } else {
             this.init();
         }
     }
 
     init(): void {
+        if (this.initialized) return;
+        this.initialized = true;
+        if (this.onDomReady) {
+            document.removeEventListener('DOMContentLoaded', this.onDomReady);
+            this.onDomReady = null;
+        }
         this.applyTheme(this.currentTheme);
+    }
+
+    destroy(): void {
+        if (this.onDomReady) {
+            document.removeEventListener('DOMContentLoaded', this.onDomReady);
+            this.onDomReady = null;
+        }
+        this.initialized = false;
     }
 
     applyTheme(themeName: string): void {

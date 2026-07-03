@@ -69,6 +69,10 @@ export abstract class Ragdoll3DCore {
     
     protected isPlaying: boolean = false;
     protected animationFrameId: number = 0;
+    protected interactionListenersAttached: boolean = false;
+    private readonly boundOnMouseDown = (event: MouseEvent): void => this.onMouseDown(event);
+    private readonly boundOnMouseMove = (event: MouseEvent): void => this.onMouseMove(event);
+    private readonly boundOnMouseUp = (): void => this.onMouseUp();
 
     constructor() {}
 
@@ -77,6 +81,11 @@ export abstract class Ragdoll3DCore {
     public terminate(): void {
         this.isPlaying = false;
         if (this.container) this.container.style.display = 'none';
+
+        window.removeEventListener('mousedown', this.boundOnMouseDown);
+        window.removeEventListener('mousemove', this.boundOnMouseMove);
+        window.removeEventListener('mouseup', this.boundOnMouseUp);
+        this.interactionListenersAttached = false;
 
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
@@ -94,13 +103,11 @@ export abstract class Ragdoll3DCore {
             this.world.free();
         }
         
-        console.log('[Ragdoll3DCore] Process terminated and memory freed.');
     }
 
     protected abstract setupThreeJS(): void;
 
     protected async loadModelCore(): Promise<void> {
-        console.log('[Ragdoll3DCore] Downloading GLB Model...');
         const loader = new GLTFLoader();
         
         return new Promise((resolve, reject) => {
@@ -140,7 +147,6 @@ export abstract class Ragdoll3DCore {
                     });
                     
                     this.mixer = new THREE.AnimationMixer(this.model);
-                    console.log('[Ragdoll3DCore] Mapping bones to physics...');
                     this.model.traverse((node: any) => {
                         if (node.isBone) {
                             this.boneRigidBodyMap.set(node.name, node);
@@ -216,8 +222,6 @@ export abstract class Ragdoll3DCore {
         const nextAction = this.actions[exactKey];
         if (!nextAction || nextAction === this.activeAction) return;
 
-        console.log(`[Ragdoll3DCore] Fading to animation: ${exactKey}`);
-        
         nextAction.reset();
         nextAction.setEffectiveTimeScale(1);
         nextAction.setEffectiveWeight(1);
@@ -237,8 +241,6 @@ export abstract class Ragdoll3DCore {
     protected setRagdollMode(enabled: boolean): void {
         if (this.isRagdollMode === enabled) return;
         this.isRagdollMode = enabled;
-
-        console.log(`[Ragdoll3DCore] Switching to Ragdoll Mode: ${enabled}`);
 
         this.rigidBodies.forEach((body, boneName) => {
             if (enabled) {
@@ -483,7 +485,6 @@ export abstract class Ragdoll3DCore {
         const calcDuration = duration || Math.min(8000, Math.max(2000, text.length * 80));
         
         if (!this.bubbleAnimator) {
-            console.log(`[Ragdoll3DCore] Says: ${text}`);
             return;
         }
 
@@ -531,10 +532,11 @@ export abstract class Ragdoll3DCore {
     }
 
     protected setupInteractionListeners(): void {
-        if (!this.container) return;
-        window.addEventListener('mousedown', this.onMouseDown.bind(this));
-        window.addEventListener('mousemove', this.onMouseMove.bind(this));
-        window.addEventListener('mouseup', this.onMouseUp.bind(this));
+        if (!this.container || this.interactionListenersAttached) return;
+        window.addEventListener('mousedown', this.boundOnMouseDown);
+        window.addEventListener('mousemove', this.boundOnMouseMove);
+        window.addEventListener('mouseup', this.boundOnMouseUp);
+        this.interactionListenersAttached = true;
     }
 
     protected onMouseDown(event: MouseEvent): void {

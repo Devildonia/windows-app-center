@@ -10,6 +10,7 @@ import { Store } from '../core/EventBus';
 
 export interface IDesktopManager {
     init(): void;
+    destroy(): void;
     showDesktop(): void;
     setWallpaper(url: string | null, isSilent?: boolean): void;
     setTaskbarColor(color: string, isSilent?: boolean): void;
@@ -21,8 +22,30 @@ const DesktopManager: IDesktopManager = (() => {
 
     // Helper: resolve a service by name (avoids window.* lookups)
     const svc = (name: string): any => Services.get(name);
+    let initialized = false;
+    let wallpaperDropZone: HTMLElement | null = null;
+
+    function preventDefaults(e: Event): void {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function highlightDropZone(): void {
+        if (!wallpaperDropZone) return;
+        wallpaperDropZone.style.borderColor = '#000080';
+        wallpaperDropZone.style.backgroundColor = '#e0e0e0';
+    }
+
+    function resetDropZone(): void {
+        if (!wallpaperDropZone) return;
+        wallpaperDropZone.style.borderColor = 'transparent';
+        wallpaperDropZone.style.backgroundColor = 'transparent';
+    }
 
     function init(): void {
+        if (initialized) return;
+        initialized = true;
+
         Utils.Logger.log("[DESKTOP] DesktopManager initialized");
         setupWallpaperDragDrop();
 
@@ -52,6 +75,27 @@ const DesktopManager: IDesktopManager = (() => {
         }
 
         if (taskbarColor) setTaskbarColor(taskbarColor, true);
+    }
+
+    function destroy(): void {
+        if (wallpaperDropZone) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                wallpaperDropZone?.removeEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                wallpaperDropZone?.removeEventListener(eventName, highlightDropZone, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                wallpaperDropZone?.removeEventListener(eventName, resetDropZone, false);
+            });
+
+            wallpaperDropZone.removeEventListener('drop', handleDrop, false);
+        }
+
+        wallpaperDropZone = null;
+        initialized = false;
     }
 
     function showDesktop(): void {
@@ -145,42 +189,32 @@ const DesktopManager: IDesktopManager = (() => {
     }
 
     function setupWallpaperDragDrop(): void {
-        const dropZone = document.getElementById('wallpaper-drop-zone');
-        if (!dropZone) return;
+        wallpaperDropZone = document.getElementById('wallpaper-drop-zone');
+        if (!wallpaperDropZone) return;
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
+            wallpaperDropZone?.addEventListener(eventName, preventDefaults, false);
         });
 
-        function preventDefaults(e: Event): void {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
         ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => {
-                dropZone.style.borderColor = '#000080';
-                dropZone.style.backgroundColor = '#e0e0e0';
-            }, false);
+            wallpaperDropZone?.addEventListener(eventName, highlightDropZone, false);
         });
 
         ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => {
-                dropZone.style.borderColor = 'transparent';
-                dropZone.style.backgroundColor = 'transparent';
-            }, false);
+            wallpaperDropZone?.addEventListener(eventName, resetDropZone, false);
         });
 
-        dropZone.addEventListener('drop', handleDrop, false);
+        wallpaperDropZone.addEventListener('drop', handleDrop, false);
 
-        function handleDrop(e: DragEvent): void {
+    }
+
+    function handleDrop(e: DragEvent): void {
             const dt = e.dataTransfer;
             if (!dt) return;
             const files = dt.files;
             if (files && files.length > 0) {
                 handleWallpaperUpload({ files: files });
             }
-        }
     }
 
     function handleWallpaperUpload(input: HTMLInputElement | { files: FileList | File[] }): void {
@@ -209,6 +243,7 @@ const DesktopManager: IDesktopManager = (() => {
 
     return {
         init,
+        destroy,
         showDesktop,
         setWallpaper,
         setTaskbarColor,

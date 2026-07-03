@@ -140,9 +140,9 @@ export class RagdollPet {
 
         // Load scream sound if audioManager is available
         if (this.audioManager) {
-            this.audioManager.loadSound('scream', '/games/ragdoll/assets/audio/ahh.opus');
-            this.audioManager.loadSound('wii', '/games/ragdoll/assets/audio/wii.opus');
-            this.audioManager.loadSound('boing', '/games/ragdoll/assets/audio/boing.opus');
+            this.audioManager.loadSound('scream', 'games/ragdoll/assets/audio/ahh.opus');
+            this.audioManager.loadSound('wii', 'games/ragdoll/assets/audio/wii.opus');
+            this.audioManager.loadSound('boing', 'games/ragdoll/assets/audio/boing.opus');
         }
     }
 

@@ -10,7 +10,30 @@ import { WindowManager } from '../ui/WindowManager';
 import { Services } from './ServiceContainer';
 import { EventBus } from './EventBus';
 
+let globalClickListenersAttached = false;
+let globalKeyboardListenersAttached = false;
+let draggableListenersAttached = false;
+let windowControlListenersAttached = false;
+
 export function setupEventListeners(): void {
+    const openLegacyWindow = (windowId: string): void => {
+        if ((window as any).openWindow) (window as any).openWindow(windowId);
+    };
+
+    const openLegacyDialog = (dialogId: string): void => {
+        if ((window as any).openDialog) (window as any).openDialog(dialogId);
+    };
+
+    const closeWindowThenOpen = (hideId: string, showId: string): void => {
+        WindowManager.close(hideId);
+        openLegacyWindow(showId);
+    };
+
+    const launchKernelApp = (appId: string, params?: Record<string, any>): void => {
+        if (params) Kernel.launch(appId, params);
+        else Kernel.launch(appId);
+    };
+
     const startBtn = document.getElementById('start-button');
     if (startBtn) {
         startBtn.onclick = (): void => {
@@ -29,49 +52,31 @@ export function setupEventListeners(): void {
         };
     }
 
-    // --- REUSABLE ICON HANDLer ---
     const setupIconAction = (id: string, callback: () => void): void => {
         const icon = document.getElementById(id);
         if (icon) icon.ondblclick = callback;
     };
 
     // --- Icon handlers ---
-    setupIconAction('icon-games-folder', () => { if ((window as any).openWindow) (window as any).openWindow('win-games-folder'); });
+    setupIconAction('icon-games-folder', () => openLegacyWindow('win-games-folder'));
 
-    // v1.0.7.5: Bugfix - Game folders should open subfolders, not execute games
-    setupIconAction('icon-vlrs-folder', () => {
-        WindowManager.close('win-games-folder');
-        if ((window as any).openWindow) (window as any).openWindow('win-vlrs-folder');
-    });
-    setupIconAction('icon-flappy-folder', () => {
-        WindowManager.close('win-games-folder');
-        if ((window as any).openWindow) (window as any).openWindow('win-flappy-folder');
-    });
-    setupIconAction('icon-football-folder', () => {
-        WindowManager.close('win-games-folder');
-        if ((window as any).openWindow) (window as any).openWindow('win-football-folder');
-    });
-    setupIconAction('icon-doom-folder', () => {
-        WindowManager.close('win-games-folder');
-        if ((window as any).openWindow) (window as any).openWindow('win-doom-folder');
-    });
-    setupIconAction('icon-tetris-folder', () => {
-        WindowManager.close('win-games-folder');
-        if ((window as any).openWindow) (window as any).openWindow('win-tetris-folder');
-    });
+    setupIconAction('icon-vlrs-folder', () => closeWindowThenOpen('win-games-folder', 'win-vlrs-folder'));
+    setupIconAction('icon-flappy-folder', () => closeWindowThenOpen('win-games-folder', 'win-flappy-folder'));
+    setupIconAction('icon-football-folder', () => closeWindowThenOpen('win-games-folder', 'win-football-folder'));
+    setupIconAction('icon-doom-folder', () => closeWindowThenOpen('win-games-folder', 'win-doom-folder'));
+    setupIconAction('icon-tetris-folder', () => closeWindowThenOpen('win-games-folder', 'win-tetris-folder'));
 
     // EXE icons actions
-    setupIconAction('icon-flappy-neon-exe', () => { WindowManager.close('win-flappy-folder'); Kernel.launch('flappy-neon'); });
-    setupIconAction('icon-football-rush-exe', () => { WindowManager.close('win-football-folder'); Kernel.launch('football-rush'); });
-    setupIconAction('icon-doom-exe', () => { WindowManager.close('win-doom-folder'); Kernel.launch('doom'); });
-    setupIconAction('icon-tetris-exe', () => { WindowManager.close('win-tetris-folder'); Kernel.launch('tetris-tryhard'); });
+    setupIconAction('icon-flappy-neon-exe', () => { WindowManager.close('win-flappy-folder'); launchKernelApp('flappy-neon'); });
+    setupIconAction('icon-football-rush-exe', () => { WindowManager.close('win-football-folder'); launchKernelApp('football-rush'); });
+    setupIconAction('icon-doom-exe', () => { WindowManager.close('win-doom-folder'); launchKernelApp('doom'); });
+    setupIconAction('icon-tetris-exe', () => { WindowManager.close('win-tetris-folder'); launchKernelApp('tetris-tryhard'); });
 
     // Back navigation
     const setupBackBtn = (btnId: string, hideId: string, showId: string): void => {
         const btn = document.getElementById(btnId);
         if (btn) btn.onclick = () => {
-            WindowManager.close(hideId);
-            if ((window as any).openWindow) (window as any).openWindow(showId);
+            closeWindowThenOpen(hideId, showId);
         };
     };
 
@@ -86,9 +91,7 @@ export function setupEventListeners(): void {
     // READMEs
     const setupReadme = (iconId: string, filename: string, contentText: string): void => {
         const icon = document.getElementById(iconId);
-        if (icon) icon.ondblclick = () => {
-            Kernel.launch('notepad', { file: filename, content: contentText });
-        };
+        if (icon) icon.ondblclick = () => launchKernelApp('notepad', { file: filename, content: contentText });
     };
 
     // README Content
@@ -108,11 +111,11 @@ export function setupEventListeners(): void {
     setupReadme('icon-doom-readme', 'README.TXT', DOOM_README);
     setupReadme('icon-tetris-readme', 'README.TXT', TETRIS_README);
 
-    setupIconAction('icon-game-inside', () => { Kernel.launch('vlrs'); });
+    setupIconAction('icon-game-inside', () => launchKernelApp('vlrs'));
 
-    setupIconAction('icon-mycomputer', () => { if ((window as any).state?.bootComplete && (window as any).openDialog) (window as any).openDialog('dialog-mycomputer'); });
-    setupIconAction('icon-recyclebin', () => { if ((window as any).state?.bootComplete && (window as any).openDialog) (window as any).openDialog('dialog-recyclebin'); });
-    setupIconAction('icon-display', () => { if ((window as any).openWindow) (window as any).openWindow('win-display-props'); });
+    setupIconAction('icon-mycomputer', () => { if ((window as any).state?.bootComplete) openLegacyDialog('dialog-mycomputer'); });
+    setupIconAction('icon-recyclebin', () => { if ((window as any).state?.bootComplete) openLegacyDialog('dialog-recyclebin'); });
+    setupIconAction('icon-display', () => openLegacyWindow('win-display-props'));
 
     // Theme Toggle
     const themeBtn = document.getElementById('theme-toggle');
@@ -188,16 +191,16 @@ export function setupEventListeners(): void {
     // Files actions
 
     setupIconAction('icon-internet', () => {
-        if ((window as any).openWindow) (window as any).openWindow('win-internet-explorer');
+        openLegacyWindow('win-internet-explorer');
         // Initial load if blank
         const frame = document.getElementById('ie-frame') as HTMLIFrameElement | null;
         if (frame && frame.src === 'about:blank') {
             if ((window as any).navigateIE) (window as any).navigateIE('https://www.google.com/webhp?igu=1');
         }
     });
-    setupIconAction('icon-ragdoll-skins', () => { if ((window as any).openWindow) (window as any).openWindow('win-ragdoll-skins'); });
-    setupIconAction('icon-secrets-file', () => { if ((window as any).openDialog) (window as any).openDialog('dialog-encryption'); });
-    setupIconAction('icon-winamp', () => { Kernel.launch('webamp'); });
+    setupIconAction('icon-ragdoll-skins', () => openLegacyWindow('win-ragdoll-skins'));
+    setupIconAction('icon-secrets-file', () => openLegacyDialog('dialog-encryption'));
+    setupIconAction('icon-winamp', () => launchKernelApp('webamp'));
 
 
     // Generic Close Buttons
@@ -217,69 +220,76 @@ export function setupEventListeners(): void {
         };
     });
 
-    // Global Click Sound & Start Menu Close Logic
-    document.addEventListener('click', (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-        // 1. Play button sound
-        const isClickableIcon = target.closest('.icon') || target.closest('.icon-box');
-        const isButton = target.tagName === 'BUTTON' && !target.classList.contains('close-btn');
+    if (!globalClickListenersAttached) {
+        // Global Click Sound & Start Menu Close Logic
+        document.addEventListener('click', (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            // 1. Play button sound
+            const isClickableIcon = target.closest('.icon') || target.closest('.icon-box');
+            const isButton = target.tagName === 'BUTTON' && !target.classList.contains('close-btn');
 
-        if (isButton || isClickableIcon) {
-            const tm: any = Services.get('ThemeManager');
-            const isModern = tm?.currentTheme === 'modern';
-            if (isModern) {
-                const audio: any = Services.get('AudioManager');
-                if (audio) audio.play('click_modern', { volume: 0.8 });
-            } else {
-                if ((window as any).playBlip) (window as any).playBlip(800);
+            if (isButton || isClickableIcon) {
+                const tm: any = Services.get('ThemeManager');
+                const isModern = tm?.currentTheme === 'modern';
+                if (isModern) {
+                    const audio: any = Services.get('AudioManager');
+                    if (audio) audio.play('click_modern', { volume: 0.8 });
+                } else {
+                    if ((window as any).playBlip) (window as any).playBlip(800);
+                }
             }
-        }
 
-        // 2. Close Start Menu if clicking outside
-        const menu = document.getElementById('start-menu');
-        const startBtn = document.getElementById('start-button');
-        if (menu && menu.style.display === 'block' && startBtn) {
-            // If click is NOT on menu AND NOT on start button (or its children)
-            if (!menu.contains(target) && !startBtn.contains(target)) {
-                menu.style.display = 'none';
+            // 2. Close Start Menu if clicking outside
+            const menu = document.getElementById('start-menu');
+            const startBtn = document.getElementById('start-button');
+            if (menu && menu.style.display === 'block' && startBtn) {
+                // If click is NOT on menu AND NOT on start button (or its children)
+                if (!menu.contains(target) && !startBtn.contains(target)) {
+                    menu.style.display = 'none';
+                }
             }
-        }
 
-        // 3. Close Ragdoll Menu if clicking outside
-        const ragMenu = document.getElementById('ragdoll-popup-menu');
-        const ragBtn = document.getElementById('ragdollToggle');
-        if (ragMenu && ragMenu.style.display === 'flex' && ragBtn) {
-            if (!ragMenu.contains(target) && !ragBtn.contains(target)) {
-                ragMenu.style.display = 'none';
+            // 3. Close Ragdoll Menu if clicking outside
+            const ragMenu = document.getElementById('ragdoll-popup-menu');
+            const ragBtn = document.getElementById('ragdollToggle');
+            if (ragMenu && ragMenu.style.display === 'flex' && ragBtn) {
+                if (!ragMenu.contains(target) && !ragBtn.contains(target)) {
+                    ragMenu.style.display = 'none';
+                }
             }
-        }
-    });
+        });
+
+        globalClickListenersAttached = true;
+    }
 
     // Initialize Draggable Icons
     initializeDraggableIcons();
 
     // --- ACCESSIBILITY: Keyboard Navigation ---
-    document.addEventListener('keydown', (e: KeyboardEvent) => {
-        const target = e.target as HTMLElement;
-        // Ignore if user is typing in an input or textarea
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+    if (!globalKeyboardListenersAttached) {
+        document.addEventListener('keydown', (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            // Ignore if user is typing in an input or textarea
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
-        if (target.tabIndex === 0 && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            // Trigger dblclick or click action
-            if (target.ondblclick) target.ondblclick(new MouseEvent('dblclick') as any);
-            else if (target.onclick) target.onclick(new MouseEvent('click') as any);
-            else {
-                // Check if it's a desktop icon with dblclick listener
-                const event = new MouseEvent('dblclick', {
-                    bubbles: true,
-                    cancelable: true,
-                    view: window
-                });
-                target.dispatchEvent(event);
+            if (target.tabIndex === 0 && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                // Trigger dblclick or click action
+                if (target.ondblclick) target.ondblclick(new MouseEvent('dblclick') as any);
+                else if (target.onclick) target.onclick(new MouseEvent('click') as any);
+                else {
+                    // Check if it's a desktop icon with dblclick listener
+                    const event = new MouseEvent('dblclick', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    target.dispatchEvent(event);
+                }
             }
-        }
-    });
+        });
+        globalKeyboardListenersAttached = true;
+    }
 };
 
 export function initializeDraggableIcons(): void {
@@ -341,31 +351,35 @@ export function initializeDraggableIcons(): void {
         icon.addEventListener('dragstart', (e: DragEvent) => e.preventDefault());
     });
 
-    document.addEventListener('mousemove', (e: MouseEvent) => {
-        if (!draggedIcon) return;
-        let currentX = e.clientX - offsetX;
-        let currentY = e.clientY - offsetY;
-        const desktopRect = document.getElementById('desktop')?.getBoundingClientRect();
-        if (!desktopRect) return;
-        const taskbarHeight = document.getElementById('taskbar')?.offsetHeight || 40;
+    if (!draggableListenersAttached) {
+        document.addEventListener('mousemove', (e: MouseEvent) => {
+            if (!draggedIcon) return;
+            let currentX = e.clientX - offsetX;
+            let currentY = e.clientY - offsetY;
+            const desktopRect = document.getElementById('desktop')?.getBoundingClientRect();
+            if (!desktopRect) return;
+            const taskbarHeight = document.getElementById('taskbar')?.offsetHeight || 40;
 
-        currentX = Math.max(0, Math.min(currentX, desktopRect.width - draggedIcon.offsetWidth));
-        currentY = Math.max(0, Math.min(currentY, desktopRect.height - taskbarHeight - draggedIcon.offsetHeight));
+            currentX = Math.max(0, Math.min(currentX, desktopRect.width - draggedIcon.offsetWidth));
+            currentY = Math.max(0, Math.min(currentY, desktopRect.height - taskbarHeight - draggedIcon.offsetHeight));
 
-        draggedIcon.style.left = currentX + 'px';
-        draggedIcon.style.top = currentY + 'px';
-    });
+            draggedIcon.style.left = currentX + 'px';
+            draggedIcon.style.top = currentY + 'px';
+        });
 
-    document.addEventListener('mouseup', () => {
-        if (!draggedIcon) return;
-        draggedIcon.style.cursor = 'default';
-        draggedIcon.style.zIndex = '';
-        draggedIcon.style.transition = '';
-        const position = { x: parseInt(draggedIcon.style.left || '0'), y: parseInt(draggedIcon.style.top || '0') };
-        localStorage.setItem(`icon-pos-${draggedIcon.id}`, JSON.stringify(position));
-        if ((window as any).playBlip) (window as any).playBlip(800);
-        draggedIcon = null;
-    });
+        document.addEventListener('mouseup', () => {
+            if (!draggedIcon) return;
+            draggedIcon.style.cursor = 'default';
+            draggedIcon.style.zIndex = '';
+            draggedIcon.style.transition = '';
+            const position = { x: parseInt(draggedIcon.style.left || '0'), y: parseInt(draggedIcon.style.top || '0') };
+            localStorage.setItem(`icon-pos-${draggedIcon.id}`, JSON.stringify(position));
+            if ((window as any).playBlip) (window as any).playBlip(800);
+            draggedIcon = null;
+        });
+
+        draggableListenersAttached = true;
+    }
 };
 
 export function initializeWindowControls(): void {
@@ -394,21 +408,23 @@ export function initializeWindowControls(): void {
         });
     });
 
-    // --- Debug Menu (Ctrl + Alt + D) ---
-    document.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.ctrlKey && e.altKey && (e.key === 'w' || e.key === 'W')) {
-            e.preventDefault();
-            if ((window as any).playBlip) (window as any).playBlip(600);
-            const debugDialog = document.getElementById('dialog-debug');
-            if (debugDialog) {
-                debugDialog.style.display = 'block';
-                // Center it just in case
-                debugDialog.style.top = '50%';
-                debugDialog.style.left = '50%';
-                debugDialog.style.transform = 'translate(-50%, -50%)';
+    // --- Debug Menu (Ctrl + Alt + W) ---
+    if (!windowControlListenersAttached) {
+        document.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.altKey && (e.key === 'w' || e.key === 'W')) {
+                e.preventDefault();
+                if ((window as any).playBlip) (window as any).playBlip(600);
+                const debugDialog = document.getElementById('dialog-debug');
+                if (debugDialog) {
+                    debugDialog.style.display = 'block';
+                    debugDialog.style.top = '50%';
+                    debugDialog.style.left = '50%';
+                    debugDialog.style.transform = 'translate(-50%, -50%)';
+                }
             }
-        }
-    });
+        });
+        windowControlListenersAttached = true;
+    }
 
     // Debug Menu Actions
     const btnResetDesktop = document.getElementById('btn-reset-desktop');

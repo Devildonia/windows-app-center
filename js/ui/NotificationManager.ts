@@ -8,6 +8,7 @@ export interface INotify {
     error(message: string, options?: { duration?: number }): number;
     i18n(type: 'info' | 'success' | 'warn' | 'error', i18nKey: string, params?: Record<string, any>): number;
     clear(): void;
+    destroy(): void;
 }
 
 // ============================================
@@ -15,6 +16,7 @@ export interface INotify {
 // ============================================
 let container: HTMLDivElement | null = null;
 let notificationId = 0;
+const activeTimers = new Set<ReturnType<typeof setTimeout>>();
 
 const ICONS: Record<string, string> = {
     info: 'ℹ️',
@@ -48,6 +50,16 @@ function ensureContainer(): void {
         overflow: hidden;
     `;
     document.body.appendChild(container);
+}
+
+function trackTimer(timerId: ReturnType<typeof setTimeout>): ReturnType<typeof setTimeout> {
+    activeTimers.add(timerId);
+    return timerId;
+}
+
+function clearTrackedTimers(): void {
+    activeTimers.forEach((timerId) => clearTimeout(timerId));
+    activeTimers.clear();
 }
 
 function createNotification(type: 'info' | 'success' | 'warn' | 'error', message: string, options: { duration?: number } = {}): number {
@@ -98,7 +110,7 @@ function createNotification(type: 'info' | 'success' | 'warn' | 'error', message
 
     // Auto-dismiss
     if (duration > 0) {
-        setTimeout(() => dismissNotification(el), duration);
+        trackTimer(setTimeout(() => dismissNotification(el), duration));
     }
 
     // Play blip for errors/warnings
@@ -116,9 +128,9 @@ function dismissNotification(el: HTMLDivElement): void {
     if (!el || !el.parentNode) return;
     el.style.opacity = '0';
     el.style.transform = 'translateX(100%)';
-    setTimeout(() => {
+    trackTimer(setTimeout(() => {
         if (el.parentNode) el.parentNode.removeChild(el);
-    }, 300);
+    }, 300));
 }
 
 // ============================================
@@ -146,11 +158,21 @@ const Notify: INotify = {
      * Dismiss all notifications
      */
     clear() {
+        clearTrackedTimers();
         if (container) {
             while (container.firstChild) {
                 container.removeChild(container.firstChild);
             }
         }
+    },
+
+    destroy() {
+        clearTrackedTimers();
+        if (container && container.parentNode) {
+            container.parentNode.removeChild(container);
+        }
+        container = null;
+        notificationId = 0;
     }
 };
 

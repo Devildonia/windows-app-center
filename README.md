@@ -7,7 +7,7 @@
 A high-fidelity **Windows 95/98 Simulator & Prototyping Environment** built with modern web technologies. This project serves as a fully functional desktop sandbox for testing and refining modular systems (VFS, Kernel, Rapier3D) before porting them to other production environments.
 
 > [!NOTE]
-> This project was audited for stability and performance on March 2026. All core systems including physics and window management are release-ready.
+> This project was audited for stability and performance on March 2026, and the roadmap keeps tightening lifecycle edges and regressions.
 
 ---
 

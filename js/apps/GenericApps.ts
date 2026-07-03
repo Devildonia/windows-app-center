@@ -5,6 +5,8 @@
 import { Kernel } from '../core/Kernel';
 import { Ragdoll3DViewer } from './Ragdoll3DViewer';
 
+let ragdollViewerBootstrapped = false;
+
 export interface IGenericAppParams {
     windowId: string;
 }
@@ -28,12 +30,11 @@ Kernel.registerApp('display-props', class extends GenericWindowApp {
 }, { name: 'Display Properties', icon: 'assets/icons/Display.webp' });
 
 Kernel.registerApp('ragdoll-skins', class extends GenericWindowApp {
-    private static viewerInitialized = false;
     constructor() { 
         super({ windowId: 'win-ragdoll-skins' }); 
-        if (!(this.constructor as any).viewerInitialized) {
+        if (!ragdollViewerBootstrapped) {
             new Ragdoll3DViewer();
-            (this.constructor as any).viewerInitialized = true;
+            ragdollViewerBootstrapped = true;
         }
     }
 }, { name: 'Ragdoll Workshop', icon: 'assets/icons/ragdoll_skins.webp' });

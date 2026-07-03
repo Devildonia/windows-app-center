@@ -10,6 +10,7 @@ export interface IWindowManager {
     bringToFront(win: HTMLElement | null): void;
     makeDraggable(windowId: string): void;
     initializeControls(): void;
+    destroy(): void;
     getActive(): string[];
     closeAll(): void;
 }
@@ -30,6 +31,7 @@ const WindowManager: IWindowManager = (function () {
     let _orderCounter: number = 0;                     // monótono creciente, nunca se resetea
     let activeWindows = new Set<string>();
     let _initialized = false;
+    let onDocumentClick: ((e: Event) => void) | null = null;
 
     /** Calcula el z-index real de una ventana dado su logical order */
     function _zIndexFor(order: number): number {
@@ -528,9 +530,7 @@ const WindowManager: IWindowManager = (function () {
             Utils.eventManager.add(win, 'mousedown', ((e: Event) => bringToFront(win)) as EventListener);
         });
 
-        // GLOBAL EVENT DELEGATION FOR WINDOW BUTTONS
-        // This handles clicks for ALL windows, even those added dynamically
-        document.addEventListener('click', ((e: Event) => {
+        onDocumentClick = (e: Event): void => {
             const target = e.target as HTMLElement;
 
             // Check if clicked element is a window button (or inside one)
@@ -548,7 +548,7 @@ const WindowManager: IWindowManager = (function () {
             // Find which window this button belongs to
             const win = btn.closest('.win95-window') as HTMLElement | null;
             if (!win) {
-                console.error("[WindowManager] Button clicked but no parent window found!");
+                Utils.Logger.error('[WindowManager] Button clicked but no parent window found!');
                 return;
             }
 
@@ -562,9 +562,19 @@ const WindowManager: IWindowManager = (function () {
             } else if (btn.classList.contains('close-btn')) {
                 closeWindow(windowId);
             }
-        }) as EventListener);
+        };
+
+        document.addEventListener('click', onDocumentClick);
 
         Utils.Logger.window(`Initialized controls for ${windows.length} existing windows`);
+    }
+
+    function destroyWindowControls(): void {
+        if (onDocumentClick) {
+            document.removeEventListener('click', onDocumentClick);
+            onDocumentClick = null;
+        }
+        _initialized = false;
     }
 
     /**
@@ -592,6 +602,7 @@ const WindowManager: IWindowManager = (function () {
         bringToFront,
         makeDraggable,
         initializeControls: initializeWindowControls,
+        destroy: destroyWindowControls,
         getActive: getActiveWindows,
         closeAll: closeAllWindows
     };

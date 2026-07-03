@@ -55,8 +55,8 @@ export interface IServiceRegistry {
     'DesktopManager':   IDesktopManager;
     'ShaderWallpaper':  IShaderWallpaper;
     'TouchManager':     ITouchManager;
-    'BubbleAnimator':   IBubbleAnimator;
-    'MessageLibrary':   IMessageLibrary;
+    'BubbleAnimator':   any;   // Registered as constructor on window for legacy consumers
+    'MessageLibrary':   any;   // Registered as constructor on window for legacy consumers
     'Notify':           INotify;
     // Services & Apps
     'AudioManager':     any;   // AudioManager no tiene interfaz exportada aún

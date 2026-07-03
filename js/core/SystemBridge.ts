@@ -1,12 +1,6 @@
 /**
  * WINDOWS 95 APP CENTER - SYSTEM BRIDGE
- * Legacy window.* wrappers for backward compatibility with HTML handlers
- * that haven't been migrated to EventDelegation yet.
- *
- * v1.0 — Extracted from os_engine.js (Fase 2 Refactor)
- *
- * NOTE: New code should use Services.get('X') instead of window.X
- * These wrappers will be removed when all inline HTML handlers are migrated.
+ * Minimal legacy bridge for remaining window.* consumers.
  */
 
 import { Utils } from '../utils';
@@ -37,7 +31,6 @@ export function initSystemState(): void {
     i18n.init();
     if ((window as any).state) (window as any).state.lang = i18n.getLang();
 
-    // Legacy family data — separate from reactive store (game-specific)
     (window as any).familyData = {
         parents: {
             mother: { name: 'Mary', status: 'alive', occupation: 'System Admin', stats: { happiness: 85, health: 90, intelligence: 80, money: 70, appearance: 75 } },
@@ -52,65 +45,86 @@ export function initSystemState(): void {
 // ============================================
 export function initAudioBridge(): void {
     (window as any).playBlip = (freq: number = 800): void => {
-        const tm: any = Services.get('ThemeManager');
-        const isModern = tm?.currentTheme === 'modern';
+        const isModern = getThemeManager()?.currentTheme === 'modern';
         if (isModern) return;
 
-        const am: any = Services.get('AudioManager') || (window as any).AudioManager;
+        const am: any = getAudioManager();
         if (am) {
             am.play('blip', { frequency: freq });
         }
     };
 }
 
+export function destroyAudioBridge(): void {
+    delete (window as any).playBlip;
+}
+
+function getThemeManager(): any {
+    return Services.get('ThemeManager');
+}
+
+function getAudioManager(): any {
+    return Services.get('AudioManager') || (window as any).AudioManager;
+}
+
+function bindLegacyAction<T extends any[]>(name: string, handler: (...args: T) => void): void {
+    (window as any)[name] = (...args: T): void => handler(...args);
+}
+
+function setDialogVisibility(dialogId: string, visible: boolean): void {
+    const dialog = document.getElementById(dialogId);
+    if (dialog) dialog.style.display = visible ? 'block' : 'none';
+}
+
+export function destroyLegacyWrappers(): void {
+    if (!(window as any).__legacyWrappersInitialized) return;
+
+    ['setWallpaper', 'setTaskbarColor', 'handleWallpaperUpload', 'openWindow', 'closeWindow', 'openDialog', 'closeDialog', 'handleShutdown'].forEach((name) => {
+        delete (window as any)[name];
+    });
+
+    (window as any).__legacyWrappersInitialized = false;
+}
+
 // ============================================
 // 3. LEGACY WRAPPERS (for remaining HTML onclick handlers)
 // ============================================
 export function initLegacyWrappers(): void {
-    // Desktop — legacy wrappers (kept for edge cases, but EventDelegation is primary)
-    (window as any).setWallpaper = (url: string, silent: boolean = false): void => {
-        const dm: any = Services.get('DesktopManager');
-        if (dm) dm.setWallpaper(url, silent);
-    };
-    (window as any).setTaskbarColor = (color: string, silent: boolean = false): void => {
-        const dm: any = Services.get('DesktopManager');
-        if (dm) dm.setTaskbarColor(color, silent);
-    };
-    (window as any).handleWallpaperUpload = (input: HTMLInputElement): void => {
-        const dm: any = Services.get('DesktopManager');
-        if (dm) dm.handleWallpaperUpload(input);
-    };
+    if ((window as any).__legacyWrappersInitialized) return;
+    (window as any).__legacyWrappersInitialized = true;
 
-    // Window Manager
-    (window as any).openWindow = (id: string): void => {
-        if ((window as any).playBlip) (window as any).playBlip();
-        const wm: any = Services.get('WindowManager');
-        if (wm) wm.open(id);
-    };
-    (window as any).closeWindow = (id: string): void => {
-        if ((window as any).playBlip) (window as any).playBlip();
-        const wm: any = Services.get('WindowManager');
-        if (wm) wm.close(id);
-    };
+    bindLegacyAction('setWallpaper', (url: string, silent: boolean = false): void => {
+        Services.get('DesktopManager')?.setWallpaper(url, silent);
+    });
+    bindLegacyAction('setTaskbarColor', (color: string, silent: boolean = false): void => {
+        Services.get('DesktopManager')?.setTaskbarColor(color, silent);
+    });
+    bindLegacyAction('handleWallpaperUpload', (input: HTMLInputElement): void => {
+        Services.get('DesktopManager')?.handleWallpaperUpload(input);
+    });
 
-    // Dialogs
-    (window as any).openDialog = (dialogId: string): void => {
-        if ((window as any).playBlip) (window as any).playBlip();
-        const dialog = document.getElementById(dialogId);
-        if (dialog) dialog.style.display = 'block';
-    };
-    (window as any).closeDialog = (dialogId: string): void => {
-        if ((window as any).playBlip) (window as any).playBlip();
-        const dialog = document.getElementById(dialogId);
-        if (dialog) dialog.style.display = 'none';
-    };
+    bindLegacyAction('openWindow', (id: string): void => {
+        (window as any).playBlip?.();
+        Services.get('WindowManager')?.open(id);
+    });
+    bindLegacyAction('closeWindow', (id: string): void => {
+        (window as any).playBlip?.();
+        Services.get('WindowManager')?.close(id);
+    });
 
-    // Shutdown
-    (window as any).handleShutdown = function (): void {
-        const am: any = Services.get('AudioManager') || (window as any).AudioManager;
+    bindLegacyAction('openDialog', (dialogId: string): void => {
+        (window as any).playBlip?.();
+        setDialogVisibility(dialogId, true);
+    });
+    bindLegacyAction('closeDialog', (dialogId: string): void => {
+        (window as any).playBlip?.();
+        setDialogVisibility(dialogId, false);
+    });
+
+    bindLegacyAction('handleShutdown', (): void => {
+        const am: any = getAudioManager();
         if (am) {
-            const tm: any = Services.get('ThemeManager');
-            const isModernTheme = tm?.currentTheme === 'modern';
+            const isModernTheme = getThemeManager()?.currentTheme === 'modern';
             const shutdownSound = isModernTheme ? 'shutdown_modern' : 'shutdown';
             am.play(shutdownSound, { volume: 0.8 });
         } else {
@@ -124,7 +138,7 @@ export function initLegacyWrappers(): void {
             if ((window as any).openDialog) (window as any).openDialog('dialog-shutdown');
             setTimeout(() => location.reload(), 4000);
         }, 500);
-    };
+    });
 
     // --- DELEGATED ACTIONS VIA EVENTBUS ---
     EventBus.on('action:shutdown', () => {
@@ -178,6 +192,11 @@ export function initLegacyWrappers(): void {
 // 4. CLOCK
 // ============================================
 export function initClock(): void {
+    const existingInterval = (window as any).__clockIntervalId as number | undefined;
+    if (typeof existingInterval === 'number') {
+        clearInterval(existingInterval);
+    }
+
     function updateClock(): void {
         const clock = document.getElementById('taskbar-clock');
         if (!clock) return;
@@ -192,5 +211,14 @@ export function initClock(): void {
     (window as any).updateClock = updateClock;
 
     updateClock();
-    setInterval(updateClock, 1000);
+    (window as any).__clockIntervalId = window.setInterval(updateClock, 1000);
+}
+
+export function destroyClock(): void {
+    const existingInterval = (window as any).__clockIntervalId as number | undefined;
+    if (typeof existingInterval === 'number') {
+        clearInterval(existingInterval);
+        delete (window as any).__clockIntervalId;
+    }
+    delete (window as any).updateClock;
 }

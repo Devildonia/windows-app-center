@@ -84,6 +84,10 @@ export const VFS: IVFS = (() => {
 
     let root: IVFSNode | null = null;
 
+    function cloneDefaultFS(): IVFSNode {
+        return structuredClone(DEFAULT_FS);
+    }
+
     function init(): void {
         const saved = localStorage.getItem(STORAGE_KEY);
         let needsReset = false;
@@ -114,7 +118,7 @@ export const VFS: IVFS = (() => {
         }
 
         if (needsReset) {
-            root = DEFAULT_FS;
+            root = cloneDefaultFS();
             save();
         }
 
@@ -173,7 +177,7 @@ export const VFS: IVFS = (() => {
 
     function readFile(path: string): string | null {
         const node = resolve(path);
-        return (node && node.type === 'file' && node.content) ? node.content : null;
+        return (node && node.type === 'file') ? (node.content ?? '') : null;
     }
 
     function deleteNode(parentPath: string, name: string): boolean {

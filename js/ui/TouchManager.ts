@@ -10,6 +10,7 @@ import { WindowManager } from './WindowManager';
 
 export interface ITouchManager {
     init(): void;
+    destroy(): void;
     addPointerEvents(element: HTMLElement, handlers: { onStart?: (e: any) => void, onMove?: (e: any) => void, onEnd?: (e: any) => void }): void;
     DOUBLE_TAP_DELAY: number;
     LONG_PRESS_DELAY: number;
@@ -28,13 +29,13 @@ const TouchManager: ITouchManager = (() => {
     let _lastTapTarget: Element | null = null;
     let _longPressTimer: ReturnType<typeof setTimeout> | null = null;
     let _initialized = false;
+    let _originalMakeDraggable: ((windowId: string) => void) | null = null;
 
     /**
      * Initialize touch support
      */
     function init(): void {
         if (_initialized) return;
-        _initialized = true;
 
         // Patch WindowManager.makeDraggable to also handle touch
         patchWindowDragging();
@@ -45,7 +46,27 @@ const TouchManager: ITouchManager = (() => {
         // Add double-tap detection for icons
         setupDoubleTap();
 
+        _initialized = true;
+
         Utils.Logger.log('[TouchManager] Initialized');
+    }
+
+    function destroy(): void {
+        if (_longPressTimer) {
+            clearTimeout(_longPressTimer);
+            _longPressTimer = null;
+        }
+
+        _lastTapTime = 0;
+        _lastTapTarget = null;
+
+        const wm: any = Services.get('WindowManager');
+        if (wm && _originalMakeDraggable) {
+            wm.makeDraggable = _originalMakeDraggable;
+        }
+
+        _originalMakeDraggable = null;
+        _initialized = false;
     }
 
     /**
@@ -56,6 +77,10 @@ const TouchManager: ITouchManager = (() => {
         const wm: any = Services.get('WindowManager');
         const originalMakeDraggable = wm?.makeDraggable;
         if (!originalMakeDraggable) return;
+
+        if (!_originalMakeDraggable) {
+            _originalMakeDraggable = originalMakeDraggable;
+        }
 
         wm.makeDraggable = function (windowId: string): void {
             // Call original mouse-based draggable
@@ -287,6 +312,7 @@ const TouchManager: ITouchManager = (() => {
 
     return {
         init,
+        destroy,
         addPointerEvents,
         DOUBLE_TAP_DELAY,
         LONG_PRESS_DELAY

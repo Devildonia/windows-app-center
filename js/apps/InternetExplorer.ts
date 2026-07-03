@@ -157,7 +157,7 @@ class InternetExplorerApp {
 // FIX v4.3: Delega a la instancia registrada en ServiceContainer.
 // Ya no hay validación duplicada ni lógica de iframe dispersa aquí.
 (window as any).navigateIE = (url: string): void => {
-    const ie = Services.get<InternetExplorerApp>('InternetExplorerApp');
+    const ie = Services.get('InternetExplorerApp');
     if (ie?.navigate) {
         ie.navigate(url);
     } else {

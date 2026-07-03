@@ -11,6 +11,7 @@ import { EventBus } from '../core/EventBus.js';
 export interface IHDRManager {
     init(): void;
     toggle(): void;
+    destroy(): void;
     isSupported(): boolean;
     isEnabled(): boolean;
 }
@@ -20,13 +21,25 @@ export const HDRManager: IHDRManager = (() => {
 
     let isEnabled: boolean = localStorage.getItem('hdr-enabled') === 'true';
     let isSupported: boolean = false;
+    let initialized = false;
+    let unsubscribeToggle: (() => void) | null = null;
 
     function init(): void {
+        if (initialized) return;
         checkSupport();
         applyState();
         updateUI();
-        EventBus.on('action:hdr-toggle', toggle);
+        unsubscribeToggle = EventBus.on('action:hdr-toggle', toggle);
+        initialized = true;
         Utils.Logger.log(`HDRManager: Initialized (Supported: ${isSupported}, Enabled: ${isEnabled})`);
+    }
+
+    function destroy(): void {
+        if (unsubscribeToggle) {
+            unsubscribeToggle();
+            unsubscribeToggle = null;
+        }
+        initialized = false;
     }
 
     function checkSupport(): void {
@@ -68,7 +81,7 @@ export const HDRManager: IHDRManager = (() => {
     }
 
     function updateUI(): void {
-        const btn = document.getElementById('hdr-toggle') as HTMLButtonElement | null;
+        const btn = (document.getElementById('hdr-toggle') || document.getElementById('hdr-toggle-btn')) as HTMLButtonElement | null;
         if (btn) {
             if (!isSupported) {
                 btn.disabled = true;
@@ -91,6 +104,7 @@ export const HDRManager: IHDRManager = (() => {
     return {
         init,
         toggle,
+        destroy,
         isSupported: () => isSupported,
         isEnabled: () => isEnabled
     };

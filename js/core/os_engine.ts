@@ -23,6 +23,9 @@ import { initSystemState, initAudioBridge, initLegacyWrappers, initClock } from 
 
 Utils.Logger.log("[OS_ENGINE] Module loaded");
 
+let visibilityHandler: ((event: Event) => void) | null = null;
+let themeSyncTimer: ReturnType<typeof setTimeout> | null = null;
+
 // ============================================
 // SYSTEM STATE & BRIDGES (must run at import time)
 // ============================================
@@ -113,7 +116,11 @@ initLegacyWrappers();
 
     // 10. Pause shader when tab is hidden (performance)
     bootStep('Visibility Handler', () => {
-        document.addEventListener('visibilitychange', () => {
+        if (visibilityHandler) {
+            document.removeEventListener('visibilitychange', visibilityHandler);
+        }
+
+        visibilityHandler = () => {
             if (ShaderWallpaper) {
                 if (document.hidden) {
                     ShaderWallpaper.stop();
@@ -121,16 +128,23 @@ initLegacyWrappers();
                     ShaderWallpaper.start();
                 }
             }
-        });
+        };
+
+        document.addEventListener('visibilitychange', visibilityHandler);
     });
 
     // 11. Sync ThemeManager state after all UI components and shaders have loaded
     bootStep('Theme Synchronization', () => {
-        setTimeout(() => {
+        if (themeSyncTimer) {
+            clearTimeout(themeSyncTimer);
+        }
+
+        themeSyncTimer = setTimeout(() => {
             const tm: any = Services.get('ThemeManager');
             if (tm) {
                 tm.applyTheme(tm.currentTheme);
             }
+            themeSyncTimer = null;
         }, 100);
     });
 

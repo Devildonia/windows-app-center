@@ -183,7 +183,9 @@ export class Renderer {
             ctx.save();
             ctx.translate(waist.position.x, waist.position.y);
             ctx.rotate(waist.angle);
-            ctx.drawImage(bottomImg, -pw / 2, -ph / 2 - 2 * scale, pw, ph);
+            if (bottomImg.complete && bottomImg.naturalWidth !== 0) {
+                ctx.drawImage(bottomImg, -pw / 2, -ph / 2 - 2 * scale, pw, ph);
+            }
             ctx.restore();
         }
 
@@ -196,7 +198,9 @@ export class Renderer {
             ctx.translate(chest.position.x, chest.position.y);
             ctx.rotate(chest.angle);
             // Raised from +3*scale to +1*scale
-            ctx.drawImage(topImg, (-size * widthScale) / 2, -size / 2 + 1 * scale, size * widthScale, size);
+            if (topImg.complete && topImg.naturalWidth !== 0) {
+                ctx.drawImage(topImg, (-size * widthScale) / 2, -size / 2 + 1 * scale, size * widthScale, size);
+            }
             ctx.restore();
         }
     }
@@ -209,7 +213,7 @@ export class Renderer {
         ctx.translate(head.position.x, head.position.y);
         ctx.rotate(head.angle);
 
-        if (stickman.skinEnabled && stickman.headImage?.complete) {
+        if (stickman.skinEnabled && stickman.headImage?.complete && stickman.headImage?.naturalWidth !== 0) {
             const size = 40 * scale;
             ctx.drawImage(stickman.headImage, -size / 2, -size / 2, size, size);
         } else {
@@ -476,7 +480,7 @@ export class Renderer {
 
         const tint = stickman.skinManager.layers.base.tint;
 
-        if (image && image.complete) {
+        if (image && image.complete && image.naturalWidth !== 0) {
             try {
                 // Draw the image
                 ctx.drawImage(image, -width / 2, -height / 2 + (yOffset * globalScale), width, height);

@@ -24,6 +24,25 @@ class Paint {
     private canvas: HTMLCanvasElement | null = null;
     private ctx: CanvasRenderingContext2D | null = null;
     private resizeObserver: ResizeObserver | null = null;
+    private onResize = (): void => this.resizeCanvas();
+    private onKeyDown = (e: KeyboardEvent): void => {
+        const win = document.getElementById(this.windowId);
+        if (!win || win.style.display === 'none') return;
+
+        if (e.ctrlKey && e.key === 'z') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                this.redo();
+            } else {
+                this.undo();
+            }
+        }
+        if (e.ctrlKey && e.key === 'y') {
+            e.preventDefault();
+            this.redo();
+        }
+    };
+    private onMouseUp = (): void => this.stopDrawing();
 
     // Undo/Redo stacks (ImageData snapshots)
     private _undoStack: ImageData[] = [];
@@ -48,7 +67,7 @@ class Paint {
         // Save initial blank state
         this._saveState();
 
-        window.addEventListener('resize', () => this.resizeCanvas());
+        window.addEventListener('resize', this.onResize);
 
         if (window.ResizeObserver) {
             this.resizeObserver = new ResizeObserver(() => this.resizeCanvas());
@@ -118,23 +137,7 @@ class Paint {
     }
 
     private _setupKeyboardShortcuts(): void {
-        document.addEventListener('keydown', (e: KeyboardEvent) => {
-            const win = document.getElementById(this.windowId);
-            if (!win || win.style.display === 'none') return;
-
-            if (e.ctrlKey && e.key === 'z') {
-                e.preventDefault();
-                if (e.shiftKey) {
-                    this.redo();
-                } else {
-                    this.undo();
-                }
-            }
-            if (e.ctrlKey && e.key === 'y') {
-                e.preventDefault();
-                this.redo();
-            }
-        });
+        document.addEventListener('keydown', this.onKeyDown);
     }
 
     // ========================================
@@ -250,7 +253,7 @@ class Paint {
         if (!this.canvas) return;
         this.canvas.addEventListener('mousedown', (e: MouseEvent) => this.startDrawing(e));
         this.canvas.addEventListener('mousemove', (e: MouseEvent) => this.draw(e));
-        Utils.eventManager.add(document, 'mouseup', () => this.stopDrawing());
+        Utils.eventManager.add(document, 'mouseup', this.onMouseUp);
     }
 
     private getMousePos(e: MouseEvent): { x: number, y: number } {
@@ -311,6 +314,9 @@ class Paint {
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
         }
+        window.removeEventListener('resize', this.onResize);
+        document.removeEventListener('keydown', this.onKeyDown);
+        Utils.eventManager.remove(document, 'mouseup', this.onMouseUp);
     }
 }
 

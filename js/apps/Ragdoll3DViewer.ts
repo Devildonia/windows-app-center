@@ -3,25 +3,19 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Ragdoll3DCore } from '../core/Ragdoll3DCore';
 import { Kernel } from '../core/Kernel';
 
-// Removed the `class` declaration without `export`, because in a modular system 
-// we usually want to export, but if it was not exported we keep it local.
-// Wait, the original was:
-// class Ragdoll3DViewer { 
-// and probably injected itself or handled via Kernel. Let's keep it default if needed, 
-// or maybe it's instantiated globally. The original code just had `class Ragdoll3DViewer`.
-// Assuming the user runs it inside `os_engine` or it's dynamically typed. 
-// We will export it so it plays nice with TS modules, won't hurt.
-
 export class Ragdoll3DViewer extends Ragdoll3DCore {
     public windowId: string = 'win-ragdoll-skins';
     private statusText: HTMLElement | null;
     private loaderText: HTMLElement | null;
+    private readonly onResizeHandler: () => void;
+    private initStarted: boolean = false;
     
     constructor() {
         super();
         this.container = document.getElementById('ragdoll-3d-canvas-container');
         this.statusText = document.getElementById('ragdoll-3d-status');
         this.loaderText = document.getElementById('ragdoll-3d-loader');
+        this.onResizeHandler = () => this.onWindowResize();
         
         if (typeof (window as any).AudioManager !== 'undefined') {
             this.audioManager = (window as any).AudioManager.getInstance?.() || null;
@@ -34,15 +28,14 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         }
 
         this.showDebug = true; // Viewer defaults to debug on.
-        
-        // Defer launch until tab is opened, or launch now if it's always ready.
-        // For the Workshop tab, we initialize the canvas immediately on app launch.
+
         setTimeout(() => this.launch(), 500);
     }
 
-    // Alias for legacy support
     public launch(): void {
-        this.initAsync();
+        if (this.initStarted) return;
+        this.initStarted = true;
+        void this.initAsync();
     }
 
     public async initAsync(): Promise<void> {
@@ -70,6 +63,7 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
             this.animate(performance.now());
         } catch (error) {
             console.error('[Ragdoll3DViewer] Initialization failed:', error);
+            this.initStarted = false;
             this.updateStatus('Error initializing Ragdoll 3D Viewer');
         }
     }
@@ -108,7 +102,7 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         mesh.receiveShadow = true;
         this.scene.add(mesh);
         
-        window.addEventListener('resize', this.onWindowResize.bind(this));
+        window.addEventListener('resize', this.onResizeHandler);
         
         const groundColliderDesc = RAPIER.ColliderDesc.cuboid(50.0, 0.1, 50.0);
         this.world.createCollider(groundColliderDesc);
@@ -212,6 +206,12 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(width, height);
+    }
+
+    public override terminate(): void {
+        window.removeEventListener('resize', this.onResizeHandler);
+        this.initStarted = false;
+        super.terminate();
     }
 }
 // Attach to window so the OS Engine (which uses eval or index.html scripts) can find it
