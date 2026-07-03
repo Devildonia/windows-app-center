@@ -1,17 +1,24 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('../js/ui/WindowManager.js', () => ({
+    WindowManager: {
+        makeDraggable: vi.fn(),
+        destroyWindowInteractions: vi.fn(),
+        open: vi.fn()
+    }
+}));
+
 import { WindowFactory } from '../js/ui/WindowFactory.js';
+import { Services } from '../js/core/ServiceContainer.js';
+import { WindowManager } from '../js/ui/WindowManager.js';
 
 describe('WindowFactory', () => {
     beforeEach(() => {
         document.body.innerHTML = '<div id="desktop"></div>';
-        vi.resetAllMocks();
+        vi.clearAllMocks();
+        Services.__reset();
         WindowFactory.__reset();
-
-        // Mock global dependencies
-        global.WindowManager = {
-            makeDraggable: vi.fn(),
-            open: vi.fn()
-        };
+        Services.register('WindowManager', WindowManager);
     });
 
     it('should create a window with correct structure', () => {
@@ -50,12 +57,13 @@ describe('WindowFactory', () => {
         expect(iframe.src).toBe(''); // Should be empty initially (lazy)
     });
 
-    it('should destroy windows correctly', () => {
+    it('should destroy windows correctly and clean up interactions', () => {
         const id = WindowFactory.create({ title: 'Kill Me' });
         expect(document.getElementById(id)).not.toBeNull();
 
         WindowFactory.destroy(id);
         expect(document.getElementById(id)).toBeNull();
+        expect(WindowManager.destroyWindowInteractions).toHaveBeenCalledWith(id);
     });
 
     it('should update window title', () => {

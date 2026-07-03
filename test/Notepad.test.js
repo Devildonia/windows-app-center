@@ -135,4 +135,76 @@ describe('Notepad', () => {
             expect(title.textContent).not.toContain('*');
         });
     });
+
+    describe('multi-window support', () => {
+        it('should allow parameterizing the windowId and textareaId in constructor', () => {
+            const container = document.createElement('div');
+            container.id = 'win-custom';
+            container.innerHTML = `
+                <div class="window-header"><span>Untitled - Notepad</span></div>
+                <div class="window-body">
+                    <textarea id="textarea-custom"></textarea>
+                </div>
+            `;
+            document.body.appendChild(container);
+
+            const notepad = new (Kernel.getRegistry().apps['notepad'].appClass)({
+                windowId: 'win-custom',
+                textareaId: 'textarea-custom'
+            });
+
+            expect(notepad.windowId).toBe('win-custom');
+            expect(notepad.textareaId).toBe('textarea-custom');
+            container.remove();
+        });
+
+        it('should support opening a new window via WindowFactory and not affect other instances', () => {
+            // Mock WindowFactory in Services
+            const mockWindowFactory = {
+                create: vi.fn((opts) => {
+                    const el = document.createElement('div');
+                    el.id = opts.id;
+                    el.appendChild(opts.bodyElement);
+                    document.body.appendChild(el);
+                    return opts.id;
+                })
+            };
+            Services.register('WindowFactory', mockWindowFactory);
+
+            // Re-mock WindowManager to include open
+            Services.register('WindowManager', {
+                open: vi.fn(),
+                close: vi.fn(),
+                makeDraggable: vi.fn()
+            });
+
+            // We need to set up the menu for the main instance
+            document.body.innerHTML = `
+                <div id="win-notepad">
+                    <div class="window-header"><span>Untitled - Notepad</span></div>
+                    <div class="window-body">
+                        <div class="window-menu" id="notepad-menu-bar"></div>
+                        <textarea id="notepad-textarea"></textarea>
+                    </div>
+                </div>
+            `;
+
+            const primaryInstance = new (Kernel.getRegistry().apps['notepad'].appClass)();
+            
+            // Execute new-window action
+            primaryInstance._executeAction('new-window');
+
+            // Expect WindowFactory.create was called
+            expect(mockWindowFactory.create).toHaveBeenCalled();
+
+            // Find dynamic textarea and check it is different
+            const dynamicTextarea = document.querySelector('[id^="notepad-textarea-dynamic-"]');
+            expect(dynamicTextarea).not.toBeNull();
+            expect(dynamicTextarea.id).not.toBe('notepad-textarea');
+
+            // Clean up created dynamic windows
+            const dynamicWins = document.querySelectorAll('[id^="win-notepad-dynamic-"]');
+            dynamicWins.forEach(w => w.remove());
+        });
+    });
 });

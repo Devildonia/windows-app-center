@@ -25,6 +25,9 @@ export interface INotepadParams {
     file?: string;
     content?: string;
     path?: string; // VFS path where file resides
+    windowId?: string;
+    textareaId?: string;
+    onClose?: () => void;
 }
 
 // Default save directory in VFS
@@ -46,9 +49,14 @@ class Notepad {
     private _cleanups: Array<() => void> = [];
 
     constructor(params: INotepadParams = {}) {
+        if (params.windowId) this.windowId = params.windowId;
+        if (params.textareaId) this.textareaId = params.textareaId;
         this.currentFile = params.file || 'Untitled';
         this.currentPath = params.path || VFS_SAVE_DIR;
         this.init(params.content || '');
+        if (params.onClose) {
+            this._cleanups.push(params.onClose);
+        }
     }
 
     // Legacy compatibility surface used by tests and older callers.
@@ -131,7 +139,8 @@ class Notepad {
     }
 
     private _updateStatus(): void {
-        const status = document.getElementById('notepad-status');
+        const win = document.getElementById(this.windowId);
+        const status = win ? win.querySelector('.window-statusbar span') : null;
         if (!status || !this.textarea) return;
         const text = this.textarea.value;
         const lines = text.split('\n').length;
@@ -142,7 +151,8 @@ class Notepad {
     // ─── Dropdown Menu ────────────────────────────────────────────────────────
 
     private _setupMenuListeners(): void {
-        const menuBar = document.getElementById('notepad-menu-bar');
+        const win = document.getElementById(this.windowId);
+        const menuBar = win ? win.querySelector('.window-menu') as HTMLElement | null : null;
         if (!menuBar) return;
 
         // Toggle dropdown on label click
@@ -174,7 +184,6 @@ class Notepad {
             e.stopPropagation();
         };
         menuBar.addEventListener('click', itemClickHandler);
-        // (same handler — no double-push needed, both on menuBar already)
     }
 
     private _closeAllDropdowns(): void {
@@ -262,6 +271,7 @@ class Notepad {
     private _executeAction(action: string): void {
         switch (action) {
             case 'new':        this._newFile(); break;
+            case 'new-window': this._newWindow(); break;
             case 'open':       this._showOpenDialog(); break;
             case 'save':       this._saveFile(); break;
             case 'save-as':    this._showSaveAsDialog(); break;
@@ -296,6 +306,79 @@ class Notepad {
         this._lastFindIndex = -1;
         this.updateTitle();
         this._updateStatus();
+    }
+
+    private _newWindow(): void {
+        const wf: any = Services.get('WindowFactory');
+        if (!wf) return;
+
+        const timestamp = Date.now();
+        const newWindowId = `win-notepad-dynamic-${timestamp}`;
+        const newTextareaId = `notepad-textarea-dynamic-${timestamp}`;
+
+        // Build dynamic body structure replicating minimum Notepad structure
+        const bodyEl = document.createElement('div');
+        bodyEl.className = 'window-body notepad-body';
+
+        // Clone menu bar
+        const originalMenuBar = document.getElementById('notepad-menu-bar');
+        if (originalMenuBar) {
+            const newMenuBar = originalMenuBar.cloneNode(true) as HTMLElement;
+            newMenuBar.removeAttribute('id');
+            newMenuBar.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+            bodyEl.appendChild(newMenuBar);
+        }
+
+        // Textarea
+        const newTextarea = document.createElement('textarea');
+        newTextarea.id = newTextareaId;
+        bodyEl.appendChild(newTextarea);
+
+        // Statusbar
+        const statusbar = document.createElement('div');
+        statusbar.className = 'window-statusbar';
+        const statusSpan = document.createElement('span');
+        statusSpan.textContent = 'For Help, press F1';
+        statusbar.appendChild(statusSpan);
+        bodyEl.appendChild(statusbar);
+
+        // Create the window
+        wf.create({
+            id: newWindowId,
+            title: 'Untitled - Notepad',
+            width: 500,
+            height: 400,
+            icon: '📝',
+            bodyElement: bodyEl
+        });
+
+        // Make it visible via WindowManager
+        const wm: any = Services.get('WindowManager');
+        if (wm) {
+            wm.open(newWindowId);
+        }
+
+        // Instantiate secondary Notepad
+        let secondaryInstance: Notepad | null = null;
+        
+        const closeCallback = () => {
+            if (secondaryInstance) {
+                secondaryInstance.terminate();
+                secondaryInstance = null;
+            }
+        };
+
+        secondaryInstance = new Notepad({
+            windowId: newWindowId,
+            textareaId: newTextareaId,
+            onClose: closeCallback
+        });
+
+        // Set the onCloseCallback on the window DOM element
+        const winEl = document.getElementById(newWindowId);
+        if (winEl) {
+            (winEl as any)._onCloseCallback = closeCallback;
+        }
     }
 
     /** Save to VFS. If filename is 'Untitled', show Save As dialog first. */

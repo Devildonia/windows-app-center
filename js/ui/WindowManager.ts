@@ -20,6 +20,8 @@ export interface IWindowManager {
     bringToFront(win: HTMLElement | null): void;
     makeDraggable(windowId: string): void;
     destroyDraggable(windowId: string): void;
+    destroyResizable(windowId: string): void;
+    destroyWindowInteractions(windowId: string): void;
     initializeControls(): void;
     destroy(): void;
     getActive(): string[];
@@ -46,6 +48,13 @@ const WindowManager: IWindowManager = (function () {
 
     const _dragRegistry = new Map<string, {
         header: HTMLElement;
+        mousedown: EventListener;
+        mousemove: EventListener;
+        mouseup: EventListener;
+    }>();
+
+    const _resizeRegistry = new Map<string, {
+        resizeHandle: HTMLElement;
         mousedown: EventListener;
         mousemove: EventListener;
         mouseup: EventListener;
@@ -406,6 +415,21 @@ const WindowManager: IWindowManager = (function () {
         }
     }
 
+    function destroyResizable(windowId: string): void {
+        const entry = _resizeRegistry.get(windowId);
+        if (entry) {
+            Utils.eventManager.remove(entry.resizeHandle, 'mousedown', entry.mousedown);
+            Utils.eventManager.remove(document, 'mousemove', entry.mousemove);
+            Utils.eventManager.remove(document, 'mouseup', entry.mouseup);
+            _resizeRegistry.delete(windowId);
+        }
+    }
+
+    function destroyWindowInteractions(windowId: string): void {
+        destroyDraggable(windowId);
+        destroyResizable(windowId);
+    }
+
     /**
      * Makes a window draggable by its header
      * @param {string} windowId - Window element ID
@@ -479,13 +503,12 @@ const WindowManager: IWindowManager = (function () {
         Utils.Logger.window(`Window ${windowId} is now draggable`);
     }
 
-    /**
-     * Makes a window resizable
-     * @param {string} windowId - Window element ID
-     */
     function makeResizable(windowId: string): void {
         const win = Utils.getElement(windowId) as HTMLElement | null;
         if (!win) return;
+
+        // Clean up previous resizable listeners if any
+        destroyResizable(windowId);
 
         // Add resize handle if it doesn't exist
         let resizeHandle = win.querySelector('.window-resize-handle') as HTMLElement | null;
@@ -537,6 +560,14 @@ const WindowManager: IWindowManager = (function () {
         Utils.eventManager.add(resizeHandle, 'mousedown', onMouseDown);
         Utils.eventManager.add(document, 'mousemove', onMouseMove);
         Utils.eventManager.add(document, 'mouseup', onMouseUp);
+
+        // Store references for clean removal
+        _resizeRegistry.set(windowId, {
+            resizeHandle,
+            mousedown: onMouseDown,
+            mousemove: onMouseMove,
+            mouseup: onMouseUp
+        });
 
         Utils.Logger.window(`Window ${windowId} is now resizable`);
     }
@@ -697,6 +728,8 @@ const WindowManager: IWindowManager = (function () {
         bringToFront,
         makeDraggable,
         destroyDraggable,
+        destroyResizable,
+        destroyWindowInteractions,
         initializeControls: initializeWindowControls,
         destroy: destroyWindowControls,
         getActive: getActiveWindows,

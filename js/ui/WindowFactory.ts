@@ -202,8 +202,15 @@ export const WindowFactory: IWindowFactory = (function () {
                 iframe.src = 'about:blank';
             });
 
-            // Clean up drag events to prevent memory leaks
-            WindowManager.destroyDraggable(windowId);
+            // Clean up drag and resize events to prevent memory leaks
+            WindowManager.destroyWindowInteractions(windowId);
+
+            // Execute custom onClose callback if registered on the element
+            if ((win as any)._onCloseCallback) {
+                try {
+                    (win as any)._onCloseCallback();
+                } catch (e) { /* ignore */ }
+            }
 
             win.remove();
             createdWindows.delete(windowId);
