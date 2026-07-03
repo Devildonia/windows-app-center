@@ -51,7 +51,6 @@ function onDocumentClick(e: MouseEvent): void {
         const url = wpEl.dataset.wallpaper;
         const dm: any = Services.get('DesktopManager');
         if (dm && url !== undefined) dm.setWallpaper(url);
-        else if (window.setWallpaper && url !== undefined) window.setWallpaper(url);
         return;
     }
 
@@ -61,7 +60,6 @@ function onDocumentClick(e: MouseEvent): void {
         const color = tcEl.dataset.taskbarColor;
         const dm: any = Services.get('DesktopManager');
         if (dm && color !== undefined) dm.setTaskbarColor(color);
-        else if (window.setTaskbarColor && color !== undefined) window.setTaskbarColor(color);
         return;
     }
 
@@ -101,13 +99,11 @@ function onDocumentClick(e: MouseEvent): void {
 function onWallpaperUploadChange(): void {
     const dm: any = Services.get('DesktopManager');
     if (dm && boundWallpaperUpload) dm.handleWallpaperUpload(boundWallpaperUpload);
-    else if (window.handleWallpaperUpload && boundWallpaperUpload) window.handleWallpaperUpload(boundWallpaperUpload);
 }
 
 function onColorPickerChange(): void {
     const dm: any = Services.get('DesktopManager');
     if (dm && boundColorPicker) dm.setTaskbarColor(boundColorPicker.value);
-    else if (window.setTaskbarColor && boundColorPicker) window.setTaskbarColor(boundColorPicker.value);
 }
 
 function onIeAddressKeypress(e: KeyboardEvent): void {
@@ -130,9 +126,9 @@ function _playBlip(freq: number = 800): void {
 
 /** Navigate Internet Explorer iframe */
 function _navigateIE(url: string): void {
-    // InternetExplorer.js registers window.navigateIE — call it if available
-    if (window.navigateIE) {
-        window.navigateIE(url);
+    const ie: any = Services.get('InternetExplorerApp');
+    if (ie?.navigate) {
+        ie.navigate(url);
     }
 }
 
