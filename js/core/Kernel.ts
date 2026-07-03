@@ -51,9 +51,6 @@ export const Kernel: IKernel = (() => {
         Utils.Logger.log(`Kernel: App registered [${id}]`);
     }
 
-    /**
-     * Launches an application
-     */
     function launch(appId: string, params: Record<string, unknown> = {}): IProcess | null {
         const appInfo = registry.apps[appId];
         if (!appInfo) {
@@ -62,6 +59,23 @@ export const Kernel: IKernel = (() => {
         }
 
         Utils.Logger.log(`Kernel: Launching ${appId}...`);
+        
+        // Prevent launching duplicate instances of windowed apps
+        const existingProcess = Array.from(registry.processes.values()).find(
+            p => p.appId === appId && p.status === 'running'
+        );
+
+        if (existingProcess && existingProcess.windowId) {
+            Utils.Logger.log(`Kernel: App ${appId} is already running. Focusing window ${existingProcess.windowId}`);
+            const wm: any = Services.get('WindowManager');
+            if (wm) {
+                wm.open(existingProcess.windowId);
+                const win = document.getElementById(existingProcess.windowId);
+                if (win) wm.bringToFront(win);
+            }
+            return existingProcess;
+        }
+
         try {
             const instance = new appInfo.appClass(params);
             const pid = _nextPid++;
