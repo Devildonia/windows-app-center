@@ -164,9 +164,11 @@ function bindCurrentDom(): void {
     const colorPicker = document.getElementById('taskbar-color-picker') as HTMLInputElement;
     if (boundColorPicker && boundColorPicker !== colorPicker) {
         boundColorPicker.removeEventListener('change', onColorPickerChange);
+        boundColorPicker.removeEventListener('input', onColorPickerChange);
     }
     if (colorPicker && boundColorPicker !== colorPicker) {
         colorPicker.addEventListener('change', onColorPickerChange);
+        colorPicker.addEventListener('input', onColorPickerChange);
     }
     boundColorPicker = colorPicker;
 
@@ -197,6 +199,7 @@ export function destroyEventDelegation(): void {
 
     if (boundColorPicker) {
         boundColorPicker.removeEventListener('change', onColorPickerChange);
+        boundColorPicker.removeEventListener('input', onColorPickerChange);
         boundColorPicker = null;
     }
 
