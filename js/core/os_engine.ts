@@ -20,6 +20,7 @@ import { ShaderWallpaper } from '../ui/ShaderWallpaper';
 import { AudioManager } from '../audio/AudioManager';
 import { initEventDelegation } from './EventDelegation';
 import { initSystemState, initAudioBridge, initLegacyWrappers, initClock } from './SystemBridge';
+import { buildDynamicFolderWindows, buildDynamicGameWindows } from '../ui/WindowRegistry';
 
 Utils.Logger.log("[OS_ENGINE] Module loaded");
 
@@ -81,6 +82,12 @@ window.initOS = function (): void {
     // 3. Desktop (wallpaper, drag-drop, shader)
     bootStep('Desktop Manager', () => {
         if (DesktopManager) DesktopManager.init();
+    });
+
+    // 3.5 Dynamic Windows Creation
+    bootStep('Window Registry Generation', () => {
+        buildDynamicFolderWindows();
+        buildDynamicGameWindows();
     });
 
     // 4. Core systems
