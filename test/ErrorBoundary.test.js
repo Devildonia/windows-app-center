@@ -4,6 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { VFS } from '../js/core/VFS.js';
+import { showBSOD, initErrorBoundary, __resetErrorBoundaryState } from '../js/core/ErrorBoundary.js';
 
 // ─── DOM Setup ────────────────────────────────────────────────────────────────
 
@@ -18,16 +20,12 @@ function setupBSODDom() {
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('ErrorBoundary — showBSOD()', () => {
-    let showBSOD;
-
-    beforeEach(async () => {
-        vi.resetModules();
+    beforeEach(() => {
         setupBSODDom();
-
-        const mod = await import('../js/core/ErrorBoundary.js');
-        showBSOD = mod.showBSOD;
-
-        // Reset internal _activated flag by re-importing fresh module
+        localStorage.clear();
+        VFS.__reset();
+        VFS.init();
+        __resetErrorBoundaryState();
     });
 
     it('shows the bsod-screen element', () => {
@@ -56,11 +54,55 @@ describe('ErrorBoundary — showBSOD()', () => {
         expect(content.innerHTML).toContain('&lt;script&gt;');
     });
 
-    it('handles missing BSOD DOM gracefully (no throw)', async () => {
+    it('handles missing BSOD DOM gracefully (no throw)', () => {
         document.body.innerHTML = '';  // remove BSOD elements
-        vi.resetModules();
-        const mod = await import('../js/core/ErrorBoundary.js');
-        expect(() => mod.showBSOD('error', 'f.js', 1)).not.toThrow();
+        __resetErrorBoundaryState();
+        expect(() => showBSOD('error', 'f.js', 1)).not.toThrow();
+    });
+
+    describe('VFS logging', () => {
+        it('saves crash log to VFS', () => {
+            showBSOD('VFS Error message', 'test_vfs.js', 99, 'Dummy Stack');
+            const logContent = VFS.readFile('C:\\WINDOWS\\SYSTEM\\crash.log');
+            expect(logContent).not.toBeNull();
+            expect(logContent).toContain('VFS Error message');
+            expect(logContent).toContain('test_vfs.js:99');
+            expect(logContent).toContain('Dummy Stack');
+        });
+
+        it('appends multiple crashes to the log without overwriting', () => {
+            showBSOD('First error', 'file1.js', 10, 'Stack 1');
+            
+            __resetErrorBoundaryState();
+            showBSOD('Second error', 'file2.js', 20, 'Stack 2');
+
+            const logContent = VFS.readFile('C:\\WINDOWS\\SYSTEM\\crash.log');
+            expect(logContent).toContain('First error');
+            expect(logContent).toContain('Second error');
+        });
+
+        it('truncates log if it exceeds 50KB', () => {
+            const padding = 'a'.repeat(52 * 1024); // 52KB (exceeds 50KB limit)
+            VFS.writeFile('C:\\WINDOWS\\SYSTEM', 'crash.log', padding);
+
+            showBSOD('Triggers truncation', 'file.js', 30, 'Stack trace');
+
+            const logContent = VFS.readFile('C:\\WINDOWS\\SYSTEM\\crash.log');
+            expect(logContent.length).toBeLessThan(51 * 1024);
+            expect(logContent).toContain('Triggers truncation');
+        });
+
+        it('still displays BSOD even if VFS.writeFile throws', () => {
+            const spy = vi.spyOn(VFS, 'writeFile').mockImplementation(() => {
+                throw new Error('Disk full simulated');
+            });
+
+            showBSOD('Should not crash showBSOD itself', 'file.js', 40);
+            
+            const screen = document.getElementById('bsod-screen');
+            expect(screen.style.display).toBe('flex');
+            spy.mockRestore();
+        });
     });
 });
 

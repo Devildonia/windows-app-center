@@ -15,6 +15,7 @@
 import { CONFIG } from '../config.js';
 import { Services } from './ServiceContainer.js';
 import { Utils } from '../utils.js';
+import { VFS } from './VFS.js';
 
 // ─── Internals ───────────────────────────────────────────────────────────────
 
@@ -64,6 +65,7 @@ function _buildBSODContent(message: string, source: string, line: number | strin
 
         <div class="bsod-footer">
             <p>Press any key to restart, or wait 10 seconds for automatic reload.</p>
+            <p style="font-size:10px; opacity:0.6; margin-top:8px;">Crash details saved to C:\\WINDOWS\\SYSTEM\\crash.log</p>
         </div>
     `;
 }
@@ -97,6 +99,33 @@ function showBSOD(message: string = 'Unknown error', source: string = '', line: 
     content.innerHTML = _buildBSODContent(message, source, line, stack);
     screen.style.display = 'flex';
     Utils.announce('System error occurred');
+
+    // Write crash details to simulated log best-effort
+    try {
+        const crashLogPath = 'C:\\WINDOWS\\SYSTEM\\crash.log';
+        const timestamp = new Date().toISOString();
+        const divider = '----------------------------------------';
+        const newEntry = `[${timestamp}] ${message}\nSource: ${source}:${line}\nStack: ${stack || 'N/A'}\n${divider}\n`;
+        
+        let currentLog = VFS.readFile(crashLogPath) || '';
+        let fullLog = currentLog + newEntry;
+
+        // Truncate if exceeds 50KB (51,200 bytes)
+        const maxSizeBytes = 50 * 1024;
+        if (fullLog.length > maxSizeBytes) {
+            let truncated = fullLog.substring(fullLog.length - maxSizeBytes);
+            const nextDivider = truncated.indexOf(divider);
+            // Ensure we don't truncate the entire new entry if the divider is near the end
+            if (nextDivider !== -1 && nextDivider < truncated.length - 200) {
+                truncated = truncated.substring(nextDivider + divider.length + 1);
+            }
+            fullLog = truncated;
+        }
+        
+        VFS.writeFile('C:\\WINDOWS\\SYSTEM', 'crash.log', fullLog);
+    } catch (e) {
+        console.error('[ErrorBoundary] Failed to write crash log to VFS:', e);
+    }
 
     // Stop the shader / audio to free resources
     try {
@@ -151,3 +180,8 @@ export function initErrorBoundary(): void {
 
 // Expose showBSOD for manual triggering (e.g. from bootStep failures)
 export { showBSOD };
+
+export function __resetErrorBoundaryState(): void {
+    _activated = false;
+    _errorCount = 0;
+}
