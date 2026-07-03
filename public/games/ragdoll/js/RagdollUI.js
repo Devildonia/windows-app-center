@@ -110,7 +110,7 @@ export class RagdollUI {
             globalScaleSlider.addEventListener('input', (e) => {
                 const val = e.target.value;
                 if (globalScaleVal) globalScaleVal.textContent = val;
-                this.stickman.setGlobalScale(val);
+                if (RagdollUI.stickman) RagdollUI.stickman.setGlobalScale(val);
                 if (window.playBlip) window.playBlip(1000);
             });
         }
@@ -119,7 +119,7 @@ export class RagdollUI {
             globalWidthSlider.addEventListener('input', (e) => {
                 const val = e.target.value;
                 if (globalWidthVal) globalWidthVal.textContent = val;
-                this.stickman.setGlobalWidthScale(val);
+                if (RagdollUI.stickman) RagdollUI.stickman.setGlobalWidthScale(val);
                 if (window.playBlip) window.playBlip(1000);
             });
         }
@@ -133,20 +133,20 @@ export class RagdollUI {
 
         if (scaleSlider) {
             scaleSlider.addEventListener('input', (e) => {
-                if (!this.selectedPart) return;
+                if (!RagdollUI.selectedPart) return;
                 const val = e.target.value;
                 if (scaleVal) scaleVal.textContent = val;
-                this.stickman.updateSkinConfig(this.selectedPart, 'scale', val);
+                if (RagdollUI.stickman) RagdollUI.stickman.updateSkinConfig(RagdollUI.selectedPart, 'scale', val);
                 if (window.playBlip) window.playBlip(1100);
             });
         }
 
         if (heightSlider) {
             heightSlider.addEventListener('input', (e) => {
-                if (!this.selectedPart) return;
+                if (!RagdollUI.selectedPart) return;
                 const val = e.target.value;
                 if (heightVal) heightVal.textContent = val;
-                this.stickman.updateSkinConfig(this.selectedPart, 'y', val);
+                if (RagdollUI.stickman) RagdollUI.stickman.updateSkinConfig(RagdollUI.selectedPart, 'y', val);
                 if (window.playBlip) window.playBlip(1100);
             });
         }
@@ -162,7 +162,7 @@ export class RagdollUI {
             const part = zone.getAttribute('data-part');
 
             zone.addEventListener('click', () => {
-                this.selectedPart = part;
+                RagdollUI.selectedPart = part;
                 if (label) label.textContent = part.charAt(0).toUpperCase() + part.slice(1);
 
                 // Highlight selected
@@ -170,19 +170,21 @@ export class RagdollUI {
                 zone.style.outline = '2px solid #000080';
 
                 // Enable and update sliders
-                const config = this.stickman.skinConfig[part] || { scale: 1.0, y: 0 };
-                if (scaleSlider) {
-                    scaleSlider.disabled = false;
-                    scaleSlider.value = config.scale;
-                    if (document.getElementById('skin-scale-val')) {
-                        document.getElementById('skin-scale-val').textContent = scaleSlider.value;
+                if (RagdollUI.stickman) {
+                    const config = RagdollUI.stickman.skinConfig[part] || { scale: 1.0, y: 0 };
+                    if (scaleSlider) {
+                        scaleSlider.disabled = false;
+                        scaleSlider.value = config.scale;
+                        if (document.getElementById('skin-scale-val')) {
+                            document.getElementById('skin-scale-val').textContent = scaleSlider.value;
+                        }
                     }
-                }
-                if (heightSlider) {
-                    heightSlider.disabled = false;
-                    heightSlider.value = config.y;
-                    if (document.getElementById('skin-height-val')) {
-                        document.getElementById('skin-height-val').textContent = heightSlider.value;
+                    if (heightSlider) {
+                        heightSlider.disabled = false;
+                        heightSlider.value = config.y;
+                        if (document.getElementById('skin-height-val')) {
+                            document.getElementById('skin-height-val').textContent = heightSlider.value;
+                        }
                     }
                 }
                 if (window.playBlip) window.playBlip(1300);
@@ -205,14 +207,9 @@ export class RagdollUI {
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         const src = event.target.result;
-                        let name; // Declare 'name' here to ensure it's in scope
-                        if (part === 'leftHand') name = 'l_hand.webp';
-                        else if (part === 'rightHand') name = 'r_hand.webp';
-                        else if (part === 'leftLeg') name = 'l_leg.webp';
-                        else if (part === 'rightLeg') name = 'r_leg.webp';
-                        else if (part === 'shirt') name = 'cami.webp';
-                        else if (part === 'trousers') name = 'trousers.webp';
-                        this.stickman.updatePartImage(part, src);
+                        if (RagdollUI.stickman) {
+                            RagdollUI.stickman.updatePartImage(part, src);
+                        }
 
                         // Update preview
                         zone.innerHTML = '';
@@ -240,12 +237,14 @@ export class RagdollUI {
         const resetBtn = document.getElementById('reset-global-scale');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
-                this.stickman.resetCustomSkin();
-                this.syncUIState();
+                if (RagdollUI.stickman) {
+                    RagdollUI.stickman.resetCustomSkin();
+                }
+                RagdollUI.syncUIState();
 
                 document.querySelectorAll('.drop-zone').forEach(zone => {
                     const part = zone.getAttribute('data-part');
-                    zone.innerHTML = `<span style="font-size: 16px;">${this.getPartEmoji(part)}</span><span style="font-size: 9px;">${part}</span>`;
+                    zone.innerHTML = `<span style="font-size: 16px;">${RagdollUI.getPartEmoji(part)}</span><span style="font-size: 9px;">${part}</span>`;
                     zone.style.background = '#fff';
                     zone.style.outline = 'none';
                 });
@@ -256,7 +255,6 @@ export class RagdollUI {
     }
 
     static setupPhysicsControls() {
-        if (!this.manager) return;
         const handle = (id, prop) => {
             const slider = document.getElementById(`slider-${id}`);
             const valSpan = document.getElementById(`val-${id}`);
@@ -264,7 +262,9 @@ export class RagdollUI {
                 slider.addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
                     if (valSpan) valSpan.textContent = val.toFixed(1);
-                    this.manager.setProportion(prop, val);
+                    if (RagdollUI.manager) {
+                        RagdollUI.manager.setProportion(prop, val);
+                    }
                     if (window.playBlip) window.playBlip(1050);
                 });
             }
@@ -277,12 +277,12 @@ export class RagdollUI {
     }
 
     static setupVFXControls() {
-        if (!this.manager) return;
-
         const softCheck = document.getElementById('check-soft');
         if (softCheck) {
             softCheck.addEventListener('change', (e) => {
-                this.manager.config.softJoints = e.target.checked;
+                if (RagdollUI.manager) {
+                    RagdollUI.manager.config.softJoints = e.target.checked;
+                }
                 if (window.playBlip) window.playBlip(800);
             });
         }
@@ -290,7 +290,9 @@ export class RagdollUI {
         const shadowCheck = document.getElementById('check-shadow');
         if (shadowCheck) {
             shadowCheck.addEventListener('change', (e) => {
-                this.manager.config.showShadow = e.target.checked;
+                if (RagdollUI.manager) {
+                    RagdollUI.manager.config.showShadow = e.target.checked;
+                }
                 if (window.playBlip) window.playBlip(800);
             });
         }
@@ -303,7 +305,9 @@ export class RagdollUI {
                 slider.addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
                     if (valSpan) valSpan.textContent = val.toFixed(1);
-                    this.manager.config[prop] = val;
+                    if (RagdollUI.manager) {
+                        RagdollUI.manager.config[prop] = val;
+                    }
                 });
             }
         };
@@ -313,18 +317,20 @@ export class RagdollUI {
 
         document.querySelectorAll('.vfx-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const type = btn.getAttribute('data-type');
-                const active = this.manager.toggleEmanator(type, 'waist');
+                if (RagdollUI.manager) {
+                    const type = btn.getAttribute('data-type');
+                    const active = RagdollUI.manager.toggleEmanator(type, 'waist');
 
-                this.updateVFXButtonStates();
-                if (window.playBlip) window.playBlip(active ? 1500 : 700);
+                    RagdollUI.updateVFXButtonStates();
+                    if (window.playBlip) window.playBlip(active ? 1500 : 700);
+                }
             });
         });
     }
 
     static updateVFXButtonStates() {
-        if (!this.manager) return;
-        const activeTypes = this.manager.config.emanators.map(e => e.type);
+        if (!RagdollUI.manager) return;
+        const activeTypes = RagdollUI.manager.config.emanators.map(e => e.type);
         document.querySelectorAll('.vfx-btn').forEach(btn => {
             const type = btn.getAttribute('data-type');
             const isActive = activeTypes.includes(type);
@@ -347,8 +353,8 @@ export class RagdollUI {
         grid.querySelectorAll('.color-cell').forEach(cell => {
             cell.addEventListener('click', () => {
                 const color = cell.getAttribute('data-color');
-                if (this.manager) {
-                    this.manager.layers.base.tint = color;
+                if (RagdollUI.manager) {
+                    RagdollUI.manager.layers.base.tint = color;
                     if (window.playBlip) window.playBlip(1200);
                 }
             });

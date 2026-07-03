@@ -53,3 +53,15 @@ Kernel.registerApp('doom', class extends GameApp {
 Kernel.registerApp('tetris-tryhard', class extends GameApp {
     constructor() { super({ windowId: 'win-tetris-tryhard', iframeId: 'tetris-tryhard-frame', url: 'games/tetris_tryhard/index.html' }); }
 }, { name: 'Tetris Tryhard', icon: 'assets/icons/tetris.webp', singleton: true });
+
+Kernel.registerApp('chapas-prime', class extends GameApp {
+    constructor() { super({ windowId: 'win-chapas-game', iframeId: 'chapas-game-frame', url: 'games/chapas-prime/index.html' }); }
+}, { name: 'Chapas Prime', icon: 'assets/icons/chapas.webp', singleton: true });
+
+Kernel.registerApp('nocturna', class extends GameApp {
+    constructor() { super({ windowId: 'win-nocturna-game', iframeId: 'nocturna-game-frame', url: 'games/nocturna/index.html' }); }
+}, { name: 'Nocturna', icon: '🌙', singleton: true });
+
+Kernel.registerApp('gameboy', class extends GameApp {
+    constructor() { super({ windowId: 'win-gameboy-game', iframeId: 'gameboy-game-frame', url: 'games/hip-gb/index.html' }); }
+}, { name: 'H.I.P. Game Boy', icon: 'assets/icons/gameboy.png', singleton: true });

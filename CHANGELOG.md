@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-07-03
+
+### Added
+- **Chapas Prime 3D Football Game**: Compiled and integrated the Three.js button football game into `public/games/chapas-prime/`. Created its window settings ($1024 \times 600$), VFS files mapping under `C:\GAMES` and `C:\WINDOWS\DESKTOP\GAMES`, and icon actions.
+- **Nocturna Rhythm Game**: Integrated the procedural Web Audio rhythm game into `public/games/nocturna/`. Configured its window settings ($900 \times 700$), VFS mapping under `C:\GAMES` and `C:\WINDOWS\DESKTOP\GAMES`, and icon actions.
+- **H.I.P. Game Boy Emulator**: Compiled and integrated the 3D WebGL Game Boy emulator into `public/games/hip-gb/`. Configured its window settings ($800 \times 600$), VFS mappings, and icon actions.
+- **Recycle Bin Post-it Restoration**: Dragging sticky notes onto the Recycle Bin now hides them, lists them inside the Recycle Bin dialog, and provides a "Restore" button to return them to their original desktop coordinates.
+- **System Icon Double-Clicks**: Bounded double-click triggers for both `My Computer` and `Recycle Bin` desktop icons.
+
 ## [1.6.1] - 2026-07-03
 
 ### Fixed

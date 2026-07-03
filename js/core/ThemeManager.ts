@@ -73,7 +73,7 @@ export class ThemeManager {
         // Update Sticky Note Text
         const welcomeText = document.getElementById('welcome-text');
         if (welcomeText) {
-            welcomeText.textContent = themeName === 'modern' ? 'Welcome to Windows UI App Center!' : 'Welcome to Windows App Center!';
+            welcomeText.textContent = themeName === 'modern' ? 'Welcome to Windows UI App Center v1.6.2!' : 'Welcome to Windows App Center v1.6.2!';
         }
 
         // Swap Icons

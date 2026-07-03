@@ -8,6 +8,7 @@ import { Services } from './ServiceContainer';
 import { EventBus, createStateBridge } from './EventBus';
 import { AudioManager } from '../audio/AudioManager';
 import { i18n } from '../services/i18n';
+import { updateRecycleBinUI } from './StickyNotesController';
 
 type LegacyStateBridge = {
     lang: string;
@@ -169,6 +170,9 @@ export function initLegacyWrappers(): void {
 
     bindLegacyAction('openDialog', (dialogId: string): void => {
         legacyWindow.playBlip?.();
+        if (dialogId === 'dialog-recyclebin') {
+            updateRecycleBinUI();
+        }
         setDialogVisibility(dialogId, true);
     });
     bindLegacyAction('closeDialog', (dialogId: string): void => {

@@ -27,13 +27,22 @@ describe('Games', () => {
             <div id="win-tetris-tryhard" class="win95-window" style="display:none;">
                 <div class="window-body"><iframe id="tetris-tryhard-frame" src="about:blank"></iframe></div>
             </div>
+            <div id="win-chapas-game" class="win95-window" style="display:none;">
+                <div class="window-body"><iframe id="chapas-game-frame" src="about:blank"></iframe></div>
+            </div>
+            <div id="win-nocturna-game" class="win95-window" style="display:none;">
+                <div class="window-body"><iframe id="nocturna-game-frame" src="about:blank"></iframe></div>
+            </div>
+            <div id="win-gameboy-game" class="win95-window" style="display:none;">
+                <div class="window-body"><iframe id="gameboy-game-frame" src="about:blank"></iframe></div>
+            </div>
         `;
     });
 
     describe('registration', () => {
-        it('should register all 5 games with Kernel', () => {
+        it('should register all 8 games with Kernel', () => {
             const registry = Kernel.getRegistry();
-            const gameIds = ['vlrs', 'flappy-neon', 'football-rush', 'doom', 'tetris-tryhard'];
+            const gameIds = ['vlrs', 'flappy-neon', 'football-rush', 'doom', 'tetris-tryhard', 'chapas-prime', 'nocturna', 'gameboy'];
 
             gameIds.forEach(id => {
                 expect(registry.apps[id]).toBeDefined();
@@ -55,6 +64,21 @@ describe('Games', () => {
         it('should have correct metadata for Tetris', () => {
             const app = Kernel.getRegistry().apps['tetris-tryhard'];
             expect(app.metadata.name).toBe('Tetris Tryhard');
+        });
+
+        it('should have correct metadata for Chapas Prime', () => {
+            const app = Kernel.getRegistry().apps['chapas-prime'];
+            expect(app.metadata.name).toBe('Chapas Prime');
+        });
+
+        it('should have correct metadata for Nocturna', () => {
+            const app = Kernel.getRegistry().apps['nocturna'];
+            expect(app.metadata.name).toBe('Nocturna');
+        });
+
+        it('should have correct metadata for Game Boy', () => {
+            const app = Kernel.getRegistry().apps['gameboy'];
+            expect(app.metadata.name).toBe('H.I.P. Game Boy');
         });
     });
 

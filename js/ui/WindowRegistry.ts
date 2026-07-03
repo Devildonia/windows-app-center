@@ -34,7 +34,10 @@ const FOLDER_DEFS: IFolderDef[] = [
             { id: 'icon-flappy-folder', name: 'Flappy Neon', emoji: '📂' },
             { id: 'icon-football-folder', name: 'Football Rush', emoji: '📂' },
             { id: 'icon-doom-folder', name: 'Ultimate DOOM', emoji: '📂' },
-            { id: 'icon-tetris-folder', name: 'Tetris Tryhard', emoji: '📂' }
+            { id: 'icon-tetris-folder', name: 'Tetris Tryhard', emoji: '📂' },
+            { id: 'icon-chapas-folder', name: 'Chapas Prime', emoji: '📂' },
+            { id: 'icon-nocturna-folder', name: 'Nocturna', emoji: '📂' },
+            { id: 'icon-gameboy-folder', name: 'H.I.P. Game Boy', emoji: '📂' }
         ]
     },
     {
@@ -86,6 +89,36 @@ const FOLDER_DEFS: IFolderDef[] = [
             { id: 'icon-tetris-exe', name: 'Tetris_Tryhard.exe', img: 'assets/icons/tetris.webp' },
             { id: 'icon-tetris-readme', name: 'README.TXT', emoji: '📄' }
         ]
+    },
+    {
+        id: 'win-chapas-folder',
+        title: 'C:\\GAMES\\CHAPAS_PRIME',
+        address: 'C:\\GAMES\\CHAPAS_PRIME',
+        backBtnId: 'back-to-games-from-chapas',
+        icons: [
+            { id: 'icon-chapas-exe', name: 'Chapas_Prime.exe', img: 'assets/icons/chapas.webp' },
+            { id: 'icon-chapas-readme', name: 'README.TXT', emoji: '📄' }
+        ]
+    },
+    {
+        id: 'win-nocturna-folder',
+        title: 'C:\\GAMES\\NOCTURNA',
+        address: 'C:\\GAMES\\NOCTURNA',
+        backBtnId: 'back-to-games-from-nocturna',
+        icons: [
+            { id: 'icon-nocturna-exe', name: 'Nocturna.exe', emoji: '🌙' },
+            { id: 'icon-nocturna-readme', name: 'README.TXT', emoji: '📄' }
+        ]
+    },
+    {
+        id: 'win-gameboy-folder',
+        title: 'C:\\GAMES\\GAME_BOY',
+        address: 'C:\\GAMES\\GAME_BOY',
+        backBtnId: 'back-to-games-from-gameboy',
+        icons: [
+            { id: 'icon-gameboy-exe', name: 'HIP_Game_Boy.exe', img: 'assets/icons/gameboy.png' },
+            { id: 'icon-gameboy-readme', name: 'README.TXT', emoji: '📄' }
+        ]
     }
 ];
 
@@ -93,7 +126,7 @@ const GAME_DEFS: IGameDef[] = [
     {
         id: 'win-vlrs-game',
         title: 'Virtual Life Restart Simulator',
-        src: 'games/virtual-life/index.html',
+        src: 'games/vlrs/index.html',
         width: 1500,
         height: 800
     },
@@ -125,6 +158,27 @@ const GAME_DEFS: IGameDef[] = [
         src: 'games/tetris_tryhard/index.html',
         width: 960,
         height: 860
+    },
+    {
+        id: 'win-chapas-game',
+        title: 'Chapas Prime',
+        src: 'games/chapas-prime/index.html',
+        width: 1024,
+        height: 600
+    },
+    {
+        id: 'win-nocturna-game',
+        title: 'Nocturna',
+        src: 'games/nocturna/index.html',
+        width: 900,
+        height: 700
+    },
+    {
+        id: 'win-gameboy-game',
+        title: 'H.I.P. Game Boy',
+        src: 'games/hip-gb/index.html',
+        width: 800,
+        height: 600
     }
 ];
 

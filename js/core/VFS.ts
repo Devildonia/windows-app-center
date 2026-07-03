@@ -43,12 +43,37 @@ export const VFS: IVFS = (() => {
         children: {
             'WINDOWS': {
                 name: 'WINDOWS', type: 'dir', children: {
-                    'SYSTEM': { name: 'SYSTEM', type: 'dir', children: {} }
+                    'SYSTEM': { name: 'SYSTEM', type: 'dir', children: {} },
+                    'DESKTOP': {
+                        name: 'DESKTOP',
+                        type: 'dir',
+                        children: {
+                            'GAMES': {
+                                name: 'GAMES',
+                                type: 'dir',
+                                children: {
+                                    'Virtual Life Restart Simulator': { name: 'Virtual Life Restart Simulator', type: 'dir', children: {}, actionType: 'openWindow', actionTarget: 'win-vlrs-folder' },
+                                    'Flappy Neon': { name: 'Flappy Neon', type: 'dir', children: {}, actionType: 'openWindow', actionTarget: 'win-flappy-folder' },
+                                    'Football Rush': {
+                                        name: 'Football Rush',
+                                        type: 'dir',
+                                        children: {
+                                            'README.TXT': { name: 'README.TXT', type: 'file', content: 'FOOTBALL RUSH\n\nA high-speed football game for Windows 95.\nUse ARROW KEYS to move and SPACE to kick.\n\nGood luck!' }
+                                        },
+                                        actionType: 'openWindow',
+                                        actionTarget: 'win-football-folder'
+                                    },
+                                    'Ultimate DOOM': { name: 'Ultimate DOOM', type: 'dir', children: {}, actionType: 'openWindow', actionTarget: 'win-doom-folder' },
+                                    'Tetris Tryhard': { name: 'Tetris Tryhard', type: 'dir', children: {}, actionType: 'openWindow', actionTarget: 'win-tetris-folder' }
+                                }
+                            }
+                        }
+                    }
                 }
             },
             'DOCUMENTS': {
                 name: 'DOCUMENTS', type: 'dir', children: {
-                    'README.txt': { name: 'README.txt', type: 'file', content: 'Welcome to Windows App Center v1.6.1' }
+                    'README.txt': { name: 'README.txt', type: 'file', content: 'Welcome to Windows App Center v1.6.2' }
                 }
             },
             'GAMES': {
@@ -65,7 +90,12 @@ export const VFS: IVFS = (() => {
                         },
                         actionType: 'openWindow',
                         actionTarget: 'win-football-folder'
-                    }
+                    },
+                    'Ultimate DOOM': { name: 'Ultimate DOOM', type: 'dir', children: {}, actionType: 'openWindow', actionTarget: 'win-doom-folder' },
+                    'Tetris Tryhard': { name: 'Tetris Tryhard', type: 'dir', children: {}, actionType: 'openWindow', actionTarget: 'win-tetris-folder' },
+                    'Chapas Prime': { name: 'Chapas Prime', type: 'dir', children: {}, actionType: 'openWindow', actionTarget: 'win-chapas-folder' },
+                    'Nocturna': { name: 'Nocturna', type: 'dir', children: {}, actionType: 'openWindow', actionTarget: 'win-nocturna-folder' },
+                    'H.I.P. Game Boy': { name: 'H.I.P. Game Boy', type: 'dir', children: {}, actionType: 'openWindow', actionTarget: 'win-gameboy-folder' }
                 }
             },
             'DESKTOP': {
@@ -110,6 +140,92 @@ export const VFS: IVFS = (() => {
                 if (!desktopFolder || !desktopFolder.children || Object.keys(desktopFolder.children).length === 0) {
                     Utils.Logger.log('VFS: DESKTOP folder empty, resetting...');
                     needsReset = true;
+                }
+
+                // Dynamic updates & migrations for existing localStorage
+                if (root && root.children && !needsReset) {
+                    // Update README.txt version if needed
+                    const docs = root.children['DOCUMENTS'];
+                    if (docs && docs.children && docs.children['README.txt']) {
+                        docs.children['README.txt'].content = 'Welcome to Windows App Center v1.6.2';
+                    }
+
+                    // Populate C:\GAMES
+                    const games = root.children['GAMES'];
+                    if (games && games.children) {
+                        const expectedGames = ['Virtual Life Restart Simulator', 'Flappy Neon', 'Football Rush', 'Ultimate DOOM', 'Tetris Tryhard', 'Chapas Prime', 'Nocturna', 'H.I.P. Game Boy'];
+                        expectedGames.forEach(gName => {
+                            if (!games.children![gName]) {
+                                let actionTarget = '';
+                                if (gName === 'Virtual Life Restart Simulator') actionTarget = 'win-vlrs-folder';
+                                else if (gName === 'Flappy Neon') actionTarget = 'win-flappy-folder';
+                                else if (gName === 'Football Rush') actionTarget = 'win-football-folder';
+                                else if (gName === 'Ultimate DOOM') actionTarget = 'win-doom-folder';
+                                else if (gName === 'Tetris Tryhard') actionTarget = 'win-tetris-folder';
+                                else if (gName === 'Chapas Prime') actionTarget = 'win-chapas-folder';
+                                else if (gName === 'Nocturna') actionTarget = 'win-nocturna-folder';
+                                else if (gName === 'H.I.P. Game Boy') actionTarget = 'win-gameboy-folder';
+
+                                games.children![gName] = {
+                                    name: gName,
+                                    type: 'dir',
+                                    children: gName === 'Football Rush' ? {
+                                        'README.TXT': { name: 'README.TXT', type: 'file', content: 'FOOTBALL RUSH\n\nA high-speed football game for Windows 95.\nUse ARROW KEYS to move and SPACE to kick.\n\nGood luck!' }
+                                    } : {},
+                                    actionType: 'openWindow',
+                                    actionTarget
+                                };
+                            }
+                        });
+                    }
+
+                    // Populate C:\WINDOWS\DESKTOP\GAMES
+                    let windows = root.children['WINDOWS'];
+                    if (!windows) {
+                        root.children['WINDOWS'] = { name: 'WINDOWS', type: 'dir', children: {} };
+                        windows = root.children['WINDOWS'];
+                    }
+                    if (windows && windows.children) {
+                        let winDesktop = windows.children['DESKTOP'];
+                        if (!winDesktop) {
+                            windows.children['DESKTOP'] = { name: 'DESKTOP', type: 'dir', children: {} };
+                            winDesktop = windows.children['DESKTOP'];
+                        }
+                        if (winDesktop && winDesktop.children) {
+                            let winGames = winDesktop.children['GAMES'];
+                            if (!winGames) {
+                                winDesktop.children['GAMES'] = { name: 'GAMES', type: 'dir', children: {} };
+                                winGames = winDesktop.children['GAMES'];
+                            }
+                            if (winGames && winGames.children) {
+                                const expectedGames = ['Virtual Life Restart Simulator', 'Flappy Neon', 'Football Rush', 'Ultimate DOOM', 'Tetris Tryhard', 'Chapas Prime', 'Nocturna', 'H.I.P. Game Boy'];
+                                expectedGames.forEach(gName => {
+                                    if (!winGames.children![gName]) {
+                                        let actionTarget = '';
+                                        if (gName === 'Virtual Life Restart Simulator') actionTarget = 'win-vlrs-folder';
+                                        else if (gName === 'Flappy Neon') actionTarget = 'win-flappy-folder';
+                                        else if (gName === 'Football Rush') actionTarget = 'win-football-folder';
+                                        else if (gName === 'Ultimate DOOM') actionTarget = 'win-doom-folder';
+                                        else if (gName === 'Tetris Tryhard') actionTarget = 'win-tetris-folder';
+                                        else if (gName === 'Chapas Prime') actionTarget = 'win-chapas-folder';
+                                        else if (gName === 'Nocturna') actionTarget = 'win-nocturna-folder';
+                                        else if (gName === 'H.I.P. Game Boy') actionTarget = 'win-gameboy-folder';
+
+                                        winGames.children![gName] = {
+                                            name: gName,
+                                            type: 'dir',
+                                            children: gName === 'Football Rush' ? {
+                                                'README.TXT': { name: 'README.TXT', type: 'file', content: 'FOOTBALL RUSH\n\nA high-speed football game for Windows 95.\nUse ARROW KEYS to move and SPACE to kick.\n\nGood luck!' }
+                                            } : {},
+                                            actionType: 'openWindow',
+                                            actionTarget
+                                        };
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    save();
                 }
             } catch (e) {
                 Utils.Logger.error('VFS: Corrupted storage, resetting...');

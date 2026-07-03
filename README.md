@@ -1,4 +1,4 @@
-# 🖥️ Windows App Center v1.6.1 (Prototyping Lab)
+# 🖥️ Windows App Center v1.6.2 (Prototyping Lab)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=flat&logo=vite&logoColor=white)](https://vitejs.dev/)

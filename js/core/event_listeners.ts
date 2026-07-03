@@ -50,19 +50,24 @@ export function setupEventListeners(): void {
     // --- Start Menu ---
     setupStartMenu();
 
-    // --- Icon handlers ---
     setupIconAction('icon-games-folder', () => openLegacyWindow('win-games-folder'));
     setupIconAction('icon-vlrs-folder', () => closeWindowThenOpen('win-games-folder', 'win-vlrs-folder'));
     setupIconAction('icon-flappy-folder', () => closeWindowThenOpen('win-games-folder', 'win-flappy-folder'));
     setupIconAction('icon-football-folder', () => closeWindowThenOpen('win-games-folder', 'win-football-folder'));
     setupIconAction('icon-doom-folder', () => closeWindowThenOpen('win-games-folder', 'win-doom-folder'));
     setupIconAction('icon-tetris-folder', () => closeWindowThenOpen('win-games-folder', 'win-tetris-folder'));
+    setupIconAction('icon-chapas-folder', () => closeWindowThenOpen('win-games-folder', 'win-chapas-folder'));
+    setupIconAction('icon-nocturna-folder', () => closeWindowThenOpen('win-games-folder', 'win-nocturna-folder'));
+    setupIconAction('icon-gameboy-folder', () => closeWindowThenOpen('win-games-folder', 'win-gameboy-folder'));
 
     // EXE icons actions
     setupIconAction('icon-flappy-neon-exe', () => { WindowManager.close('win-flappy-folder'); launchKernelApp('flappy-neon'); });
     setupIconAction('icon-football-rush-exe', () => { WindowManager.close('win-football-folder'); launchKernelApp('football-rush'); });
     setupIconAction('icon-doom-exe', () => { WindowManager.close('win-doom-folder'); launchKernelApp('doom'); });
     setupIconAction('icon-tetris-exe', () => { WindowManager.close('win-tetris-folder'); launchKernelApp('tetris-tryhard'); });
+    setupIconAction('icon-chapas-exe', () => { WindowManager.close('win-chapas-folder'); launchKernelApp('chapas-prime'); });
+    setupIconAction('icon-nocturna-exe', () => { WindowManager.close('win-nocturna-folder'); launchKernelApp('nocturna'); });
+    setupIconAction('icon-gameboy-exe', () => { WindowManager.close('win-gameboy-folder'); launchKernelApp('gameboy'); });
 
     // Back navigation
     const setupBackBtn = (btnId: string, hideId: string, showId: string): void => {
@@ -76,6 +81,9 @@ export function setupEventListeners(): void {
     setupBackBtn('back-to-games-from-football', 'win-football-folder', 'win-games-folder');
     setupBackBtn('back-to-games-from-doom', 'win-doom-folder', 'win-games-folder');
     setupBackBtn('back-to-games-from-tetris', 'win-tetris-folder', 'win-games-folder');
+    setupBackBtn('back-to-games-from-chapas', 'win-chapas-folder', 'win-games-folder');
+    setupBackBtn('back-to-games-from-nocturna', 'win-nocturna-folder', 'win-games-folder');
+    setupBackBtn('back-to-games-from-gameboy', 'win-gameboy-folder', 'win-games-folder');
     setupBackBtn('back-to-games', 'win-vlrs-folder', 'win-games-folder');
     setupBackBtn('back-to-vlrs-from-project', 'win-project-folder', 'win-vlrs-folder');
     setupBackBtn('back-to-vlrs-from-family', 'win-family-folder', 'win-vlrs-folder');
@@ -92,12 +100,18 @@ export function setupEventListeners(): void {
     const FOOTBALL_README = "FOOTBALL RUSH\n=============\n\nRun, dodge, and score!\n\nInstructions:\n- Use arrow keys to move.\n- Press SPACE to kick/shoot.";
     const DOOM_README = "DOOM CLASSIC\n============\n\nThe legendary 90s FPS.\n\nInstructions:\n- W/A/S/D to move.\n- Click/Ctrl to shoot.\n- Space to interact.";
     const TETRIS_README = "TETRIS TRYHARD\n==============\n\nPure block-stacking action.\n\nInstructions:\n- Use arrow keys to move/rotate blocks.\n- Space to drop.";
+    const CHAPAS_README = "CHAPAS PRIME\n============\n\nA 3D physics-based button football game (Chapas).\n\nInstructions:\n- Click and drag on your cap to aim and set power.\n- Release to shoot!\n- Score more goals than your opponent to win.";
+    const NOCTURNA_README = "NOCTURNA\n========\n\nEl Jardín Silente - A procedural, atmospheric rhythm game.\n\nInstructions:\n- Connect flowing energy nodes matching the beat.\n- Maintain your rhythm flow to blossom the quiet garden.\n- Use keys or tap controls to interact with visual elements.";
+    const GAMEBOY_README = "H.I.P. GAME BOY EMULATOR\n========================\n\nA fully-featured Game Boy emulator in 3D using Three.js and WebGL.\n\nInstructions:\n- Load ROM files (.gb) directly into the virtual cartridge slot.\n- Use customizable keyboard binds to play GB classics.\n- Modify video/render options in the system preferences panel.";
 
     setupReadme('icon-vlrs-readme', 'README_VLRS.TXT', VLRS_README);
     setupReadme('icon-flappy-readme', 'README_FLAPPY.TXT', FLAPPY_README);
     setupReadme('icon-football-readme', 'README_FOOTBALL.TXT', FOOTBALL_README);
     setupReadme('icon-doom-readme', 'README_DOOM.TXT', DOOM_README);
     setupReadme('icon-tetris-readme', 'README_TETRIS.TXT', TETRIS_README);
+    setupReadme('icon-chapas-readme', 'README_CHAPAS.TXT', CHAPAS_README);
+    setupReadme('icon-nocturna-readme', 'README_NOCTURNA.TXT', NOCTURNA_README);
+    setupReadme('icon-gameboy-readme', 'README_GAMEBOY.TXT', GAMEBOY_README);
 
     // Folder icons actions
     setupIconAction('icon-display', () => openLegacyWindow('win-display-props'));
@@ -108,6 +122,8 @@ export function setupEventListeners(): void {
     setupIconAction('icon-ragdoll-skins', () => openLegacyWindow('win-ragdoll-skins'));
     setupIconAction('icon-secrets-file', () => openLegacyDialog('dialog-encryption'));
     setupIconAction('icon-winamp', () => launchKernelApp('webamp'));
+    setupIconAction('icon-mycomputer', () => openLegacyDialog('dialog-mycomputer'));
+    setupIconAction('icon-recyclebin', () => openLegacyDialog('dialog-recyclebin'));
 
     // Generic Close Buttons
     document.querySelectorAll('.close-btn').forEach(btn => {
