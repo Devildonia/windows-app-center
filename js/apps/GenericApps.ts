@@ -23,11 +23,11 @@ class GenericWindowApp {
 // Register generic windows
 Kernel.registerApp('games-folder', class extends GenericWindowApp {
     constructor() { super({ windowId: 'win-games-folder' }); }
-}, { name: 'Games', icon: '📂' });
+}, { name: 'Games', icon: '📂', singleton: true });
 
 Kernel.registerApp('display-props', class extends GenericWindowApp {
     constructor() { super({ windowId: 'win-display-props' }); }
-}, { name: 'Display Properties', icon: 'assets/icons/Display.webp' });
+}, { name: 'Display Properties', icon: 'assets/icons/Display.webp', singleton: true });
 
 Kernel.registerApp('ragdoll-skins', class extends GenericWindowApp {
     constructor() { 
@@ -37,4 +37,4 @@ Kernel.registerApp('ragdoll-skins', class extends GenericWindowApp {
             ragdollViewerBootstrapped = true;
         }
     }
-}, { name: 'Ragdoll Workshop', icon: 'assets/icons/ragdoll_skins.webp' });
+}, { name: 'Ragdoll Workshop', icon: 'assets/icons/ragdoll_skins.webp', singleton: true });

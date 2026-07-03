@@ -2,6 +2,7 @@ export interface IAppMetadata {
     name: string;
     icon: string;
     description?: string;
+    singleton?: boolean;
 }
 
 export interface IWindowsApp {

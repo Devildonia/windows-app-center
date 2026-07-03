@@ -216,7 +216,8 @@ class FileExplorer {
 Kernel.registerApp('explorer', FileExplorer, {
     name: 'Windows Explorer',
     icon: '📂',
-    description: 'File management'
+    description: 'File management',
+    singleton: true
 });
 
 export { FileExplorer };

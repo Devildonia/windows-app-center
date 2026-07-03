@@ -261,5 +261,68 @@ describe('Kernel', () => {
             expect(proc.pid).toBe(0);
         });
     });
+
+    describe('launch — singleton dedup', () => {
+        it('should return same pid when launching singleton app twice, and not increment active count', () => {
+            const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+            class SingletonApp {
+                get windowId() { return 'win-singleton'; }
+            }
+            Kernel.registerApp('singleton-app', SingletonApp, { name: 'Singleton', icon: '📝', singleton: true });
+
+            const p1 = Kernel.launch('singleton-app');
+            const p2 = Kernel.launch('singleton-app');
+
+            expect(p1.pid).toBe(p2.pid);
+            expect(Kernel.getActiveCount()).toBe(1);
+            
+            // Check process started event dispatched only once
+            const startEvents = dispatchSpy.mock.calls.filter(call => call[0].type === 'kernel:process-started');
+            expect(startEvents.length).toBe(1);
+        });
+
+        it('should launch separate instances for non-singleton apps', () => {
+            class MultiApp {}
+            Kernel.registerApp('multi-app', MultiApp, { name: 'Multi', icon: '📝', singleton: false });
+
+            const p1 = Kernel.launch('multi-app');
+            const p2 = Kernel.launch('multi-app');
+
+            expect(p1.pid).not.toBe(p2.pid);
+            expect(Kernel.getActiveCount()).toBe(2);
+        });
+
+        it('should invoke bringToFront on WindowManager on second launch of singleton', () => {
+            const dummyElement = document.createElement('div');
+            vi.spyOn(document, 'getElementById').mockReturnValue(dummyElement);
+            global.WindowManager.bringToFront = vi.fn();
+
+            class SingletonApp {
+                get windowId() { return 'win-singleton-btf'; }
+            }
+            Kernel.registerApp('singleton-btf', SingletonApp, { name: 'Singleton BTF', icon: '📝', singleton: true });
+
+            Kernel.launch('singleton-btf');
+            Kernel.launch('singleton-btf');
+
+            expect(global.WindowManager.bringToFront).toHaveBeenCalledWith(dummyElement);
+        });
+
+        it('should only have one running process to kill for a singleton app launched multiple times', () => {
+            class SingletonApp {
+                get windowId() { return 'win-singleton-kill'; }
+            }
+            Kernel.registerApp('singleton-kill', SingletonApp, { name: 'Singleton Kill', icon: '📝', singleton: true });
+
+            const p1 = Kernel.launch('singleton-kill');
+            const p2 = Kernel.launch('singleton-kill');
+            const p3 = Kernel.launch('singleton-kill');
+
+            expect(Kernel.getActiveCount()).toBe(1);
+
+            Kernel.kill(p1.pid);
+            expect(Kernel.getActiveCount()).toBe(0);
+        });
+    });
 });
 

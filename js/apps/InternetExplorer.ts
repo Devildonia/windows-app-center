@@ -168,7 +168,8 @@ class InternetExplorerApp {
 // ─── Kernel registration ──────────────────────────────────────────────────────
 Kernel.registerApp('internet-explorer', InternetExplorerApp, {
     name: 'Internet Explorer',
-    icon: 'assets/icons/iexplorer.webp'
+    icon: 'assets/icons/iexplorer.webp',
+    singleton: true
 });
 
 export { InternetExplorerApp };

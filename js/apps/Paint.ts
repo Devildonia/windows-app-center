@@ -324,7 +324,8 @@ class Paint {
 Kernel.registerApp('paint', Paint, {
     name: 'Paint',
     icon: '🎨',
-    description: 'Basic drawing application with Undo/Redo'
+    description: 'Basic drawing application with Undo/Redo',
+    singleton: true
 });
 
 export { Paint };

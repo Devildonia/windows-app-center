@@ -522,7 +522,8 @@ class Notepad {
 Kernel.registerApp('notepad', Notepad, {
     name: 'Notepad',
     icon: '📝',
-    description: 'Simple text editor'
+    description: 'Simple text editor',
+    singleton: true
 });
 
 export { Notepad };

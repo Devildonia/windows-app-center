@@ -36,20 +36,20 @@ class GameApp {
 // Register with Kernel
 Kernel.registerApp('vlrs', class extends GameApp {
     constructor() { super({ windowId: 'win-vlrs-game', iframeId: 'vlrs-game-frame', url: 'games/vlrs/index.html' }); }
-}, { name: 'Virtual Life Restart Simulator', icon: 'assets/icons/vlrs_icon.webp' });
+}, { name: 'Virtual Life Restart Simulator', icon: 'assets/icons/vlrs_icon.webp', singleton: true });
 
 Kernel.registerApp('flappy-neon', class extends GameApp {
     constructor() { super({ windowId: 'win-flappy-neon', iframeId: 'flappy-neon-frame', url: 'games/flappy-neon/index.html' }); }
-}, { name: 'Flappy Neon', icon: 'assets/icons/neon.webp' });
+}, { name: 'Flappy Neon', icon: 'assets/icons/neon.webp', singleton: true });
 
 Kernel.registerApp('football-rush', class extends GameApp {
     constructor() { super({ windowId: 'win-football-rush', iframeId: 'football-rush-frame', url: 'games/rush_v3/index.html' }); }
-}, { name: 'Football Rush', icon: 'assets/icons/rush.webp' });
+}, { name: 'Football Rush', icon: 'assets/icons/rush.webp', singleton: true });
 
 Kernel.registerApp('doom', class extends GameApp {
     constructor() { super({ windowId: 'win-doom', iframeId: 'doom-frame', url: 'games/doom/ultimate_doom.html' }); }
-}, { name: 'Ultimate DOOM', icon: 'assets/icons/doom.webp' });
+}, { name: 'Ultimate DOOM', icon: 'assets/icons/doom.webp', singleton: true });
 
 Kernel.registerApp('tetris-tryhard', class extends GameApp {
     constructor() { super({ windowId: 'win-tetris-tryhard', iframeId: 'tetris-tryhard-frame', url: 'games/tetris_tryhard/index.html' }); }
-}, { name: 'Tetris Tryhard', icon: 'assets/icons/tetris.webp' });
+}, { name: 'Tetris Tryhard', icon: 'assets/icons/tetris.webp', singleton: true });

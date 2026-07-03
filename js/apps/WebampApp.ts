@@ -128,7 +128,8 @@ Kernel.registerApp('webamp', class {
 }, {
     name: 'Winamp',
     icon: 'assets/icons/winamp_icon.webp',
-    description: '90s Media Player'
+    description: '90s Media Player',
+    singleton: true
 });
 
 export { WebampApp };
