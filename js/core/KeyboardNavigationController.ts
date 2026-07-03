@@ -1,10 +1,11 @@
 import { Services } from './ServiceContainer';
 
 let globalKeyboardListenersAttached = false;
+let keyboardHandler: ((e: KeyboardEvent) => void) | null = null;
 
 export function setupKeyboardNavigation(): void {
     if (!globalKeyboardListenersAttached) {
-        document.addEventListener('keydown', (e: KeyboardEvent) => {
+        keyboardHandler = (e: KeyboardEvent) => {
             // Alt+Tab window switcher
             if (e.altKey && e.key === 'Tab') {
                 e.preventDefault();
@@ -69,11 +70,16 @@ export function setupKeyboardNavigation(): void {
                     target.dispatchEvent(event);
                 }
             }
-        });
+        };
+        document.addEventListener('keydown', keyboardHandler);
         globalKeyboardListenersAttached = true;
     }
 }
 
 export function resetKeyboardNavigationState(): void {
+    if (keyboardHandler) {
+        document.removeEventListener('keydown', keyboardHandler);
+        keyboardHandler = null;
+    }
     globalKeyboardListenersAttached = false;
 }

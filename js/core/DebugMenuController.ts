@@ -1,9 +1,10 @@
 let windowControlListenersAttached = false;
+let debugKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
 export function setupDebugMenu(): void {
     // --- Debug Menu (Ctrl + Alt + W) ---
     if (!windowControlListenersAttached) {
-        document.addEventListener('keydown', (e: KeyboardEvent) => {
+        debugKeydownHandler = (e: KeyboardEvent) => {
             if (e.ctrlKey && e.altKey && (e.key === 'w' || e.key === 'W')) {
                 e.preventDefault();
                 if (window.playBlip) window.playBlip(600);
@@ -15,14 +16,15 @@ export function setupDebugMenu(): void {
                     debugDialog.style.transform = 'translate(-50%, -50%)';
                 }
             }
-        });
+        };
+        document.addEventListener('keydown', debugKeydownHandler);
         windowControlListenersAttached = true;
     }
 
     // Debug Menu Actions
     const btnResetDesktop = document.getElementById('btn-reset-desktop');
     if (btnResetDesktop) {
-        btnResetDesktop.addEventListener('click', () => {
+        btnResetDesktop.onclick = () => {
             if (confirm("Are you sure? This will delete all settings and restart the system.")) {
                 // Full System Reset: Clear all localStorage
                 localStorage.clear();
@@ -31,10 +33,18 @@ export function setupDebugMenu(): void {
                 if (window.playBlip) window.playBlip(900);
                 setTimeout(() => location.reload(), 200);
             }
-        });
+        };
     }
 }
 
 export function resetDebugMenuState(): void {
+    if (debugKeydownHandler) {
+        document.removeEventListener('keydown', debugKeydownHandler);
+        debugKeydownHandler = null;
+    }
+    const btnResetDesktop = document.getElementById('btn-reset-desktop');
+    if (btnResetDesktop) {
+        btnResetDesktop.onclick = null;
+    }
     windowControlListenersAttached = false;
 }

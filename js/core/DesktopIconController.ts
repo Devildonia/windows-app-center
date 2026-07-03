@@ -1,6 +1,8 @@
 import { Utils } from '../utils';
 
 let draggableListenersAttached = false;
+let mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
+let mouseUpHandler: (() => void) | null = null;
 
 export function initializeDraggableIcons(): void {
     Utils.Logger.log("[DRAG] Initializing draggable icons...");
@@ -56,7 +58,7 @@ export function initializeDraggableIcons(): void {
     });
 
     if (!draggableListenersAttached) {
-        document.addEventListener('mousemove', (e: MouseEvent) => {
+        mouseMoveHandler = (e: MouseEvent) => {
             if (!draggedIcon) return;
             let currentX = e.clientX - offsetX;
             let currentY = e.clientY - offsetY;
@@ -69,9 +71,9 @@ export function initializeDraggableIcons(): void {
 
             draggedIcon.style.left = currentX + 'px';
             draggedIcon.style.top = currentY + 'px';
-        });
+        };
 
-        document.addEventListener('mouseup', () => {
+        mouseUpHandler = () => {
             if (!draggedIcon) return;
             draggedIcon.style.cursor = 'default';
             draggedIcon.style.zIndex = '';
@@ -80,12 +82,23 @@ export function initializeDraggableIcons(): void {
             localStorage.setItem(`icon-pos-${draggedIcon.id}`, JSON.stringify(position));
             if (window.playBlip) window.playBlip(800);
             draggedIcon = null;
-        });
+        };
+
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
 
         draggableListenersAttached = true;
     }
 }
 
 export function resetDraggableIconsState(): void {
+    if (mouseMoveHandler) {
+        document.removeEventListener('mousemove', mouseMoveHandler);
+        mouseMoveHandler = null;
+    }
+    if (mouseUpHandler) {
+        document.removeEventListener('mouseup', mouseUpHandler);
+        mouseUpHandler = null;
+    }
     draggableListenersAttached = false;
 }

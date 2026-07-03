@@ -2,6 +2,9 @@ import { Services } from './ServiceContainer';
 import { EventBus } from './EventBus';
 
 let globalClickListenersAttached = false;
+let globalClickHandler: ((e: MouseEvent) => void) | null = null;
+let ragdollStateUnsubscribe: (() => void) | null = null;
+let ragdoll3dStateUnsubscribe: (() => void) | null = null;
 
 export function setupStartMenu(): void {
     const startBtn = document.getElementById('start-button');
@@ -57,18 +60,20 @@ export function setupStartMenu(): void {
             };
         }
 
-        EventBus.on('ragdoll:state', (isActive: boolean) => {
+        if (ragdollStateUnsubscribe) ragdollStateUnsubscribe();
+        ragdollStateUnsubscribe = EventBus.on('ragdoll:state', (isActive: boolean) => {
             ragdollToggle.classList.toggle('active', !!isActive);
         });
         
-        EventBus.on('ragdoll3d:state', (isActive: boolean) => {
+        if (ragdoll3dStateUnsubscribe) ragdoll3dStateUnsubscribe();
+        ragdoll3dStateUnsubscribe = EventBus.on('ragdoll3d:state', (isActive: boolean) => {
             ragdollToggle.classList.toggle('active', !!isActive);
         });
     }
 
     if (!globalClickListenersAttached) {
         // Global Click Sound & Start Menu Close Logic
-        document.addEventListener('click', (e: MouseEvent) => {
+        globalClickHandler = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             // 1. Play button sound & trigger haptics
             const isClickableIcon = target.closest('.icon') || target.closest('.icon-box');
@@ -103,11 +108,24 @@ export function setupStartMenu(): void {
                     ragMenu.style.display = 'none';
                 }
             }
-        });
+        };
+        document.addEventListener('click', globalClickHandler);
         globalClickListenersAttached = true;
     }
 }
 
 export function resetStartMenuState(): void {
+    if (globalClickHandler) {
+        document.removeEventListener('click', globalClickHandler);
+        globalClickHandler = null;
+    }
+    if (ragdollStateUnsubscribe) {
+        ragdollStateUnsubscribe();
+        ragdollStateUnsubscribe = null;
+    }
+    if (ragdoll3dStateUnsubscribe) {
+        ragdoll3dStateUnsubscribe();
+        ragdoll3dStateUnsubscribe = null;
+    }
     globalClickListenersAttached = false;
 }
