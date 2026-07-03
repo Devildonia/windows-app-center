@@ -26,6 +26,7 @@ export interface IVFS {
     deleteNode(parentPath: string, name: string): boolean;
     rename(parentPath: string, oldName: string, newName: string): boolean;
     listDir(path: string): string[] | null;
+    flushSync(): void;
     getRoot(): IVFSNode | null;
     __reset(): void;
 }
@@ -83,6 +84,7 @@ export const VFS: IVFS = (() => {
     };
 
     let root: IVFSNode | null = null;
+    let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
     function cloneDefaultFS(): IVFSNode {
         return structuredClone(DEFAULT_FS);
@@ -126,6 +128,20 @@ export const VFS: IVFS = (() => {
     }
 
     function save(): void {
+        if (saveTimer) {
+            clearTimeout(saveTimer);
+        }
+        saveTimer = setTimeout(() => {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
+            saveTimer = null;
+        }, 100);
+    }
+
+    function flushSync(): void {
+        if (saveTimer) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
     }
 
@@ -220,12 +236,22 @@ export const VFS: IVFS = (() => {
         deleteNode,
         rename,
         listDir,
+        flushSync,
         getRoot: () => root,
-        __reset: () => { root = null; }
+        __reset: () => {
+            if (saveTimer) {
+                clearTimeout(saveTimer);
+                saveTimer = null;
+            }
+            root = null;
+        }
     };
 })();
 
 if (typeof window !== 'undefined') {
     window.VFS = VFS;
     Services.register('VFS', VFS);
+    window.addEventListener('beforeunload', () => {
+        VFS.flushSync();
+    });
 }
