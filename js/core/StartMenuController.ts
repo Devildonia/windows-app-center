@@ -1,4 +1,5 @@
 import { Services } from './ServiceContainer';
+import { EventBus } from './EventBus';
 
 let globalClickListenersAttached = false;
 
@@ -19,6 +20,50 @@ export function setupStartMenu(): void {
                 menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
             }
         };
+    }
+
+    // Ragdoll Toggle Button & Menu Setup
+    const ragdollToggle = document.getElementById('ragdollToggle');
+    const ragdollMenu = document.getElementById('ragdoll-popup-menu');
+    if (ragdollToggle && ragdollMenu) {
+        ragdollToggle.onclick = (e: MouseEvent): void => {
+            const tm: any = Services.get('ThemeManager');
+            const isModern = tm?.currentTheme === 'modern';
+            if (isModern) {
+                const audio: any = Services.get('AudioManager');
+                if (audio) audio.play('menu_modern', { volume: 0.8 });
+            } else {
+                if (window.playBlip) window.playBlip(600);
+            }
+            ragdollMenu.style.display = ragdollMenu.style.display === 'flex' ? 'none' : 'flex';
+            e.stopPropagation(); // Prevent global click from immediately closing it
+        };
+
+        const spawn2d = document.getElementById('spawn-ragdoll-2d');
+        if (spawn2d) {
+            spawn2d.onclick = (): void => {
+                if (window.playBlip) window.playBlip(600);
+                ragdollMenu.style.display = 'none';
+                EventBus.emit('ragdoll:toggle');
+            };
+        }
+
+        const spawn3d = document.getElementById('spawn-ragdoll-3d');
+        if (spawn3d) {
+            spawn3d.onclick = (): void => {
+                if (window.playBlip) window.playBlip(600);
+                ragdollMenu.style.display = 'none';
+                EventBus.emit('ragdoll3d:toggle');
+            };
+        }
+
+        EventBus.on('ragdoll:state', (isActive: boolean) => {
+            ragdollToggle.classList.toggle('active', !!isActive);
+        });
+        
+        EventBus.on('ragdoll3d:state', (isActive: boolean) => {
+            ragdollToggle.classList.toggle('active', !!isActive);
+        });
     }
 
     if (!globalClickListenersAttached) {
