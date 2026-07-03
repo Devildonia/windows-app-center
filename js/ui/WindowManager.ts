@@ -369,7 +369,7 @@ const WindowManager: IWindowManager = (function () {
                 win.classList.remove('window-closing');
                 
                 const wf: any = Services.get('WindowFactory');
-                if (wf && wf.getCreated().has(windowId)) {
+                if (wf && (win as any)._onCloseCallback) {
                     wf.destroy(windowId);
                 } else {
                     win.style.display = 'none';
