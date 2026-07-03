@@ -122,6 +122,7 @@ export function destroyLegacyWrappers(): void {
     });
 
     delete (legacyWindow as any).RagdollMemory;
+    delete (legacyWindow as any).AudioManager;
 
     legacyWindow.__legacyWrappersInitialized = false;
 }
@@ -137,6 +138,14 @@ export function initLegacyWrappers(): void {
     const ragdollMemory = Services.get('RagdollMemory');
     if (ragdollMemory) {
         (legacyWindow as any).RagdollMemory = ragdollMemory;
+    }
+
+    // Bridge AudioManager for legacy games/code (like RagdollPet.js)
+    const audioManager = Services.get('AudioManager');
+    if (audioManager) {
+        (legacyWindow as any).AudioManager = {
+            getInstance: () => audioManager
+        };
     }
 
     bindLegacyAction('setWallpaper', (url: string, silent: boolean = false): void => {
