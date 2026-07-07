@@ -6,6 +6,29 @@
 
 import { Utils } from '../utils.js';
 import { Kernel } from '../core/Kernel.js';
+import { Services } from '../core/ServiceContainer.js';
+
+const PAINT_BODY_HTML = `
+    <div class="window-menu">
+        <span class="menu-item">File</span>
+        <span class="menu-item">Edit</span>
+        <span class="menu-item">View</span>
+        <span class="menu-item">Image</span>
+        <span class="menu-item">Colors</span>
+        <span class="menu-item">Help</span>
+    </div>
+    <div class="paint-main-area">
+        <div class="paint-toolbar">
+            <!-- Toolbar buttons will be added by JS -->
+        </div>
+        <div class="paint-canvas-container">
+            <canvas id="paint-canvas" width="400" height="300"></canvas>
+        </div>
+    </div>
+    <div class="paint-color-bar">
+        <!-- Color palette will be added by JS -->
+    </div>
+`;
 
 const MAX_HISTORY = 30;
 
@@ -58,7 +81,27 @@ class Paint {
         this.init();
     }
 
+    private _ensureWindow(): void {
+        if (document.getElementById(this.windowId)) return;
+        const wf = Services.get('WindowFactory');
+        if (!wf) return;
+        wf.create({
+            id: this.windowId,
+            title: 'untitled - Paint',
+            width: 600,
+            height: 450,
+            icon: '🎨'
+        });
+        const body = wf.getBody(this.windowId);
+        if (body) {
+            body.classList.add('paint-body');
+            body.innerHTML = PAINT_BODY_HTML;
+        }
+    }
+
     private init(): void {
+        this._ensureWindow();
+
         this.canvas = document.getElementById(this.canvasId) as HTMLCanvasElement;
         if (!this.canvas) return;
 

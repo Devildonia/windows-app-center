@@ -15,6 +15,8 @@ import { Kernel } from '../js/core/Kernel.js';
 
 // Import apps under test
 import '../js/apps/GenericApps.js';
+import '../js/apps/DisplayProperties.js';
+import '../js/apps/Ragdoll3DViewer.js';
 import { WebampApp } from '../js/apps/WebampApp.js';
 
 describe('Application Modules', () => {

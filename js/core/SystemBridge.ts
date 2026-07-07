@@ -9,6 +9,103 @@ import { EventBus, createStateBridge } from './EventBus';
 import { AudioManager } from '../audio/AudioManager';
 import { i18n } from '../services/i18n';
 import { updateRecycleBinUI } from './StickyNotesController';
+import { setupDebugMenu } from './DebugMenuController';
+
+const DIALOG_CONFIGS: Record<string, { title: string, html: string }> = {
+    'dialog-mycomputer': {
+        title: 'System Error',
+        html: `
+            <div class="dialog-content">
+                <span class="dialog-icon">❌</span>
+                <span class="dialog-message">Access Denied. Unauthorized User.</span>
+            </div>
+            <div class="dialog-buttons">
+                <button class="win95-btn" data-close-dialog="dialog-mycomputer">OK</button>
+            </div>
+        `
+    },
+    'dialog-recyclebin': {
+        title: 'Recycle Bin',
+        html: `
+            <div class="dialog-content">
+                <span class="dialog-icon">🗑️</span>
+                <span class="dialog-message">The Recycle Bin is empty.</span>
+            </div>
+            <div class="dialog-buttons">
+                <button class="win95-btn" data-close-dialog="dialog-recyclebin">OK</button>
+            </div>
+        `
+    },
+    'dialog-shutdown': {
+        title: 'Critical Error',
+        html: `
+            <div class="dialog-content">
+                <span class="dialog-icon">❌</span>
+                <span class="dialog-message">FATAL ERROR: System shutdown failed. Rebooting...</span>
+            </div>
+        `
+    },
+    'dialog-debug': {
+        title: 'Debug Menu',
+        html: `
+            <div class="dialog-content" style="flex-direction: column; text-align: center; gap: 10px;">
+                <span class="dialog-icon">⚠</span>
+                <span class="dialog-message" style="width: 100%;">Debug Menu</span>
+                <hr style="width: 100%; border-top: 1px solid #808080; border-bottom: 1px solid #fff;">
+                <p>Restore the desktop to its initial state?</p>
+                <p style="font-size: 11px; color: #555;">(All positions and settings will be deleted)</p>
+            </div>
+            <div class="dialog-buttons">
+                <button class="win95-btn" id="btn-reset-desktop">Reset All</button>
+                <button class="win95-btn" data-close-dialog="dialog-debug">Cancel</button>
+            </div>
+        `
+    },
+    'dialog-encryption': {
+        title: 'Secrets File',
+        html: `
+            <div class="dialog-content">
+                <span class="dialog-icon">🔒</span>
+                <span class="dialog-message">This file is encrypted. Access denied.</span>
+            </div>
+            <div class="dialog-buttons">
+                <button class="win95-btn" data-close-dialog="dialog-encryption">OK</button>
+            </div>
+        `
+    }
+};
+
+function _ensureDialog(dialogId: string): void {
+    if (document.getElementById(dialogId)) return;
+    const config = DIALOG_CONFIGS[dialogId];
+    if (!config) return;
+
+    const dialog = document.createElement('div');
+    dialog.className = 'win95-dialog';
+    dialog.id = dialogId;
+    dialog.style.display = 'none';
+    if (dialogId === 'dialog-debug') {
+        dialog.style.width = '300px';
+        dialog.style.zIndex = '99999';
+    }
+
+    const showClose = dialogId !== 'dialog-shutdown';
+    dialog.innerHTML = `
+        <div class="window-header">
+            <span>${config.title}</span>
+            ${showClose ? `<button class="close-btn" data-close-dialog="${dialogId}">×</button>` : ''}
+        </div>
+        <div class="window-body">
+            ${config.html}
+        </div>
+    `;
+
+    document.getElementById('desktop')?.appendChild(dialog);
+
+    if (dialogId === 'dialog-debug') {
+        setupDebugMenu();
+    }
+}
 
 type LegacyStateBridge = {
     lang: string;
@@ -170,6 +267,7 @@ export function initLegacyWrappers(): void {
 
     bindLegacyAction('openDialog', (dialogId: string): void => {
         legacyWindow.playBlip?.();
+        _ensureDialog(dialogId);
         if (dialogId === 'dialog-recyclebin') {
             updateRecycleBinUI();
         }

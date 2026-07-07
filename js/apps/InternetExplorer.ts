@@ -22,6 +22,41 @@ export interface IIEParams {
     [key: string]: any;
 }
 
+const IE_BODY_HTML = `
+    <!-- IE Toolbar -->
+    <div class="ie-toolbar">
+        <div class="ie-menu-bar">
+            <span><u>F</u>ile</span>
+            <span><u>E</u>dit</span>
+            <span><u>V</u>iew</span>
+            <span><u>G</u>o</span>
+            <span><u>F</u>favorites</span>
+            <span><u>H</u>elp</span>
+        </div>
+        <div class="ie-button-bar">
+            <button class="ie-btn" title="Back" data-action="ie-back">⬅ Back</button>
+            <button class="ie-btn" title="Forward" data-action="ie-forward">➡ Forward</button>
+            <button class="ie-btn" title="Stop" data-action="ie-stop">❌ Stop</button>
+            <button class="ie-btn" title="Refresh" data-action="ie-refresh">♻ Refresh</button>
+            <button class="ie-btn" title="Home" data-action="ie-home">🏠 Home</button>
+        </div>
+        <div class="ie-address-bar">
+            <span data-i18n="folder.address">Address:</span>
+            <input type="text" id="ie-address-input" value="https://www.google.com/webhp?igu=1">
+            <button class="ie-go-btn" data-action="ie-go">Go</button>
+        </div>
+    </div>
+    <!-- Content Area -->
+    <div class="ie-content">
+        <iframe id="ie-frame" src="about:blank"
+            sandbox="allow-scripts allow-forms allow-popups"
+            style="width: 100%; height: 100%; border: none; background: white;"></iframe>
+    </div>
+    <div class="window-statusbar">
+        <span id="ie-status">Done</span>
+    </div>
+`;
+
 class InternetExplorerApp extends WindowApp {
     public windowId: string = 'win-internet-explorer';
     private frameId: string = 'ie-frame';
@@ -30,6 +65,7 @@ class InternetExplorerApp extends WindowApp {
 
     constructor(params: IIEParams = {}) {
         super();
+        this._ensureWindow();
         this._setupAddressBarListener();
         this._setupEventBusListeners();
 
@@ -38,6 +74,24 @@ class InternetExplorerApp extends WindowApp {
 
         // Navegar a home si no hay URL inicial
         this.navigate(params.url || 'https://www.google.com/webhp?igu=1');
+    }
+
+    private _ensureWindow(): void {
+        if (document.getElementById(this.windowId)) return;
+        const wf = Services.get('WindowFactory');
+        if (!wf) return;
+        wf.create({
+            id: this.windowId,
+            title: 'The Internet',
+            width: 800,
+            height: 600,
+            icon: '🌐'
+        });
+        const body = wf.getBody(this.windowId);
+        if (body) {
+            body.setAttribute('style', 'display: flex; flex-direction: column; height: 100%; padding: 0;');
+            body.innerHTML = IE_BODY_HTML;
+        }
     }
 
     // ─── Listeners ────────────────────────────────────────────────────────────

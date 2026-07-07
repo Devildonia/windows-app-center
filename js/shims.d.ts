@@ -1,6 +1,9 @@
 declare module '*/RagdollPet.js' {
     export const RagdollPet: any;
 }
+declare module '*/RagdollUI.js' {
+    export const RagdollUI: any;
+}
 declare module '*/Stickman.js' {
     export const Stickman: any;
 }

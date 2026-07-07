@@ -8,6 +8,9 @@ export function setupDebugMenu(): void {
             if (e.ctrlKey && e.altKey && (e.key === 'w' || e.key === 'W')) {
                 e.preventDefault();
                 if (window.playBlip) window.playBlip(600);
+                if (window.openDialog) {
+                    window.openDialog('dialog-debug');
+                }
                 const debugDialog = document.getElementById('dialog-debug');
                 if (debugDialog) {
                     debugDialog.style.display = 'block';
@@ -21,9 +24,13 @@ export function setupDebugMenu(): void {
         windowControlListenersAttached = true;
     }
 
-    // Debug Menu Actions
+    // Bind debug action if already present
+    bindDebugResetButton();
+}
+
+function bindDebugResetButton(): void {
     const btnResetDesktop = document.getElementById('btn-reset-desktop');
-    if (btnResetDesktop) {
+    if (btnResetDesktop && !btnResetDesktop.dataset.listening) {
         btnResetDesktop.onclick = () => {
             if (confirm("Are you sure? This will delete all settings and restart the system.")) {
                 // Full System Reset: Clear all localStorage
@@ -34,6 +41,7 @@ export function setupDebugMenu(): void {
                 setTimeout(() => location.reload(), 200);
             }
         };
+        btnResetDesktop.dataset.listening = 'true';
     }
 }
 
@@ -45,6 +53,7 @@ export function resetDebugMenuState(): void {
     const btnResetDesktop = document.getElementById('btn-reset-desktop');
     if (btnResetDesktop) {
         btnResetDesktop.onclick = null;
+        delete btnResetDesktop.dataset.listening;
     }
     windowControlListenersAttached = false;
 }

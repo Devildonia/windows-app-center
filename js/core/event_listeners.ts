@@ -108,12 +108,12 @@ export function setupEventListeners(): void {
     setupReadme('icon-gameboy-readme', 'README_GAMEBOY.TXT', 'readme.gameboy');
 
     // Folder icons actions
-    setupIconAction('icon-display', () => openLegacyWindow('win-display-props'));
+    setupIconAction('icon-display', () => launchKernelApp('display-props'));
     setupIconAction('icon-notepad', () => launchKernelApp('notepad'));
     setupIconAction('icon-paint', () => launchKernelApp('paint'));
     setupIconAction('icon-explorer', () => launchKernelApp('explorer'));
     setupIconAction('icon-internet', () => launchKernelApp('internet-explorer'));
-    setupIconAction('icon-ragdoll-skins', () => openLegacyWindow('win-ragdoll-skins'));
+    setupIconAction('icon-ragdoll-skins', () => launchKernelApp('ragdoll-skins'));
     setupIconAction('icon-secrets-file', () => openLegacyDialog('dialog-encryption'));
     setupIconAction('icon-winamp', () => launchKernelApp('webamp'));
     setupIconAction('icon-mycomputer', () => openLegacyDialog('dialog-mycomputer'));

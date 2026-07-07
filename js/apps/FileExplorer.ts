@@ -21,6 +21,23 @@ export interface IFileExplorerParams {
     path?: string;
 }
 
+const EXPLORER_BODY_HTML = `
+    <div class="explorer-toolbar">
+        <button class="win95-btn" id="explorer-back" data-i18n="folder.back">⬅ Back</button>
+        <span class="explorer-menu-hint" data-i18n="folder.menu">📁 File 📝 Edit 👁️ View ❓ Help</span>
+    </div>
+    <div class="explorer-address">
+        <span data-i18n="folder.address">Address:</span>
+        <input type="text" id="explorer-address-input" value="C:\\" readonly>
+    </div>
+    <div class="explorer-content" id="explorer-view-area">
+        <!-- Dynamic icons here -->
+    </div>
+    <div class="window-statusbar">
+        <span id="explorer-status">0 object(s)</span>
+    </div>
+`;
+
 class FileExplorer extends WindowApp {
     public windowId: string = 'win-explorer';
     private viewId: string = 'explorer-view-area';
@@ -37,7 +54,27 @@ class FileExplorer extends WindowApp {
         this.init();
     }
 
+    private _ensureWindow(): void {
+        if (document.getElementById(this.windowId)) return;
+        const wf = Services.get('WindowFactory');
+        if (!wf) return;
+        wf.create({
+            id: this.windowId,
+            title: 'C:\\',
+            width: 600,
+            height: 400,
+            icon: '🗂️'
+        });
+        const body = wf.getBody(this.windowId);
+        if (body) {
+            body.classList.add('explorer-window');
+            body.innerHTML = EXPLORER_BODY_HTML;
+        }
+    }
+
     private init(): void {
+        this._ensureWindow();
+
         this.view = document.getElementById(this.viewId);
         this.addressInput = document.getElementById(this.addressId) as HTMLInputElement | null;
         this.backBtn = document.getElementById('explorer-back');

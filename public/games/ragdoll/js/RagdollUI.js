@@ -6,8 +6,12 @@
 export class RagdollUI {
     static init(ragdollPet) {
         this.ragdollPet = ragdollPet;
-        this.stickman = ragdollPet.stickman;
-        this.manager = this.stickman.skinManager;
+        // stickman/manager are null until the 2D pet is actually spawned. Keep them
+        // nullable so the Workshop UI can wire its tabs and sliders on open — every
+        // listener below already guards on RagdollUI.manager / RagdollUI.stickman,
+        // and RagdollPet.init() re-runs this with a live stickman once spawned.
+        this.stickman = ragdollPet.stickman || null;
+        this.manager = this.stickman ? this.stickman.skinManager : null;
         this.selectedPart = null;
 
         this.setupTabs();

@@ -20,21 +20,9 @@ class GenericWindowApp {
     }
 }
 
-// Register generic windows
+// Generic windows
 Kernel.registerApp('games-folder', class extends GenericWindowApp {
     constructor() { super({ windowId: 'win-games-folder' }); }
 }, { name: 'Games', icon: '📂', singleton: true });
 
-Kernel.registerApp('display-props', class extends GenericWindowApp {
-    constructor() { super({ windowId: 'win-display-props' }); }
-}, { name: 'Display Properties', icon: 'assets/icons/Display.webp', singleton: true });
-
-Kernel.registerApp('ragdoll-skins', class extends GenericWindowApp {
-    constructor() { 
-        super({ windowId: 'win-ragdoll-skins' }); 
-        if (!ragdollViewerBootstrapped) {
-            new Ragdoll3DViewer();
-            ragdollViewerBootstrapped = true;
-        }
-    }
-}, { name: 'Ragdoll Workshop', icon: 'assets/icons/ragdoll_skins.webp', singleton: true });
+// Games folder registration remains here
