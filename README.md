@@ -10,7 +10,17 @@ A high-fidelity **Windows 95/98 Simulator & Prototyping Environment** built with
 > [!NOTE]
 > This project was audited for stability and performance on March 2026, and the roadmap keeps tightening lifecycle edges and regressions.
 >
-> See the [CHANGELOG.md](file:///f:/Seaverse/Proyectos/Windows%20App%20Center%20v1.5.50/CHANGELOG.md) for the detailed version history and recent upgrades.
+> See the [CHANGELOG.md](CHANGELOG.md) for the detailed version history and recent upgrades.
+
+---
+
+## 📸 Screenshots
+
+| Classic Win95 | Modern (Windows UI) |
+|:---:|:---:|
+| ![Classic Win95 desktop](docs/screenshots/desktop-win95.png) | ![Modern Windows UI desktop](docs/screenshots/desktop-modern.png) |
+| **Start Menu** | **Multitasking — Task Manager & MS-DOS Prompt** |
+| ![Start Menu](docs/screenshots/start-menu-win95.png) | ![Task Manager and MS-DOS Prompt windows](docs/screenshots/apps-win95.png) |
 
 ---
 
