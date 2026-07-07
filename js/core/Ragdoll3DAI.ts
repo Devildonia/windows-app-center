@@ -119,12 +119,13 @@ export class Ragdoll3DAI {
         ];
         
         const act = actions[Math.floor(Math.random() * actions.length)];
-        
-        this.controller.playAnimation(act.anim);
-        if (act.msg) this.controller.speak(act.msg, act.time);
-        if (act.sound) this.controller.playSound(act.sound);
-        
-        this.timer = act.time;
+        if (act) {
+            this.controller.playAnimation(act.anim);
+            if (act.msg) this.controller.speak(act.msg, act.time);
+            if (act.sound) this.controller.playSound(act.sound);
+            
+            this.timer = act.time;
+        }
     }
 
     private resetTimer(): void {

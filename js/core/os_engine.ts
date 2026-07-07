@@ -38,7 +38,13 @@ initLegacyWrappers();
 // INITIALIZATION — SINGLE ENTRY POINT
 // Order: Audio → Boot → Desktop → Kernel → UI → Events → Clock
 // ============================================
+let _booted = false;
+
 window.initOS = function (): void {
+    const isTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+    if (_booted && !isTest) return;
+    _booted = true;
+
     Utils.Logger.log("[INIT] ========================================");
     Utils.Logger.log("[INIT] OS v3.0 — Starting initialization...");
     Utils.Logger.log("[INIT] ========================================");

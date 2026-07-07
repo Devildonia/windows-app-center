@@ -231,13 +231,15 @@ class MessageLibrary implements IMessageLibrary {
 
             if (available.length > 0) {
                 const message = available[Math.floor(Math.random() * available.length)];
-                this.addToHistory(message);
-                return message;
+                if (message) {
+                    this.addToHistory(message);
+                    return message;
+                }
             }
         }
 
         // If none available or not avoiding repetition, pick random
-        const message = messages[Math.floor(Math.random() * messages.length)];
+        const message = messages[Math.floor(Math.random() * messages.length)] || '';
         this.addToHistory(message);
         return message;
     }

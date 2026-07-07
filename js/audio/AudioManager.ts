@@ -1,7 +1,7 @@
 import { CONFIG } from '../config.js';
 import { Utils } from '../utils.js';
 import { Services } from '../core/ServiceContainer.js';
-import { ISoundConfig, IPlayOptions, IAudioManager } from './AudioTypes.js';
+import type { ISoundConfig, IPlayOptions, IAudioManager } from './AudioTypes.js';
 import { DEFAULT_SOUNDS } from './SoundLibrary.js';
 import { ProceduralSynth } from './ProceduralSynth.js';
 import { SamplePlayer } from './SamplePlayer.js';

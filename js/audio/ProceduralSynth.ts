@@ -1,5 +1,5 @@
 import { Utils } from '../utils.js';
-import { ISoundConfig, IPlayOptions } from './AudioTypes.js';
+import type { ISoundConfig, IPlayOptions } from './AudioTypes.js';
 
 // ============================================
 // PROCEDURAL SYNTH — motor de síntesis Web Audio

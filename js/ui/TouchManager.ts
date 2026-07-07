@@ -39,6 +39,20 @@ const TouchManager: ITouchManager = (() => {
         touchend: EventListener;
     }>();
 
+    const _registeredListeners: { element: any, event: string, handler: any }[] = [];
+
+    function addListener(element: any, event: string, handler: any, options?: any): void {
+        Utils.eventManager.add(element, event, handler, options);
+        _registeredListeners.push({ element, event, handler });
+    }
+
+    function clearRegisteredListeners(): void {
+        _registeredListeners.forEach(({ element, event, handler }) => {
+            Utils.eventManager.remove(element, event, handler);
+        });
+        _registeredListeners.length = 0;
+    }
+
     /**
      * Initialize touch support
      */
@@ -67,6 +81,13 @@ const TouchManager: ITouchManager = (() => {
 
         _lastTapTime = 0;
         _lastTapTarget = null;
+
+        // Clean up all active window drag listeners
+        for (const windowId of _touchDragRegistry.keys()) {
+            destroyDraggable(windowId);
+        }
+
+        clearRegisteredListeners();
 
         const wm: any = Services.get('WindowManager');
         if (wm && _originalMakeDraggable) {
@@ -124,6 +145,7 @@ const TouchManager: ITouchManager = (() => {
                 if ((e.target as HTMLElement).closest('.window-btn')) return;
 
                 const touch = e.touches[0];
+                if (!touch) return;
                 isDragging = true;
                 hasMoved = false;
                 startX = touch.clientX;
@@ -146,6 +168,7 @@ const TouchManager: ITouchManager = (() => {
                 if (!isDragging) return;
 
                 const touch = e.touches[0];
+                if (!touch) return;
                 const deltaX = touch.clientX - startX;
                 const deltaY = touch.clientY - startY;
 
@@ -195,13 +218,14 @@ const TouchManager: ITouchManager = (() => {
 
         icons.forEach(iconEl => {
             const icon = iconEl as HTMLElement;
-            icon.addEventListener('touchstart', ((e: TouchEvent) => {
+            
+            const onStart = ((e: TouchEvent) => {
                 const touch = e.touches[0];
+                if (!touch) return;
                 startTouchX = touch.clientX;
                 startTouchY = touch.clientY;
                 hasMoved = false;
 
-                // Start long press timer for potential drag
                 _longPressTimer = setTimeout(() => {
                     draggedIcon = icon;
                     icon.style.cursor = 'move';
@@ -212,22 +236,19 @@ const TouchManager: ITouchManager = (() => {
                     icon.style.transition = 'none';
                     icon.style.opacity = '0.8';
                 }, LONG_PRESS_DELAY);
+            }) as EventListener;
 
-                // Don't preventDefault here to allow double-tap detection
-            }) as EventListener, { passive: true });
-
-            icon.addEventListener('touchmove', ((e: TouchEvent) => {
+            const onMove = ((e: TouchEvent) => {
                 const touch = e.touches[0];
+                if (!touch) return;
                 const dx = touch.clientX - startTouchX;
                 const dy = touch.clientY - startTouchY;
 
-                // If moved beyond threshold, cancel long-press and start immediate drag
                 if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
                     hasMoved = true;
                     if (_longPressTimer) clearTimeout(_longPressTimer);
 
                     if (!draggedIcon) {
-                        // Start dragging immediately after threshold
                         draggedIcon = icon;
                         const rect = icon.getBoundingClientRect();
                         offsetX = startTouchX - rect.left;
@@ -254,9 +275,9 @@ const TouchManager: ITouchManager = (() => {
 
                 icon.style.left = currentX + 'px';
                 icon.style.top = currentY + 'px';
-            }) as EventListener, { passive: false });
+            }) as EventListener;
 
-            icon.addEventListener('touchend', () => {
+            const onEnd = (() => {
                 if (_longPressTimer) clearTimeout(_longPressTimer);
 
                 if (draggedIcon) {
@@ -272,7 +293,11 @@ const TouchManager: ITouchManager = (() => {
                     localStorage.setItem(`icon-pos-${draggedIcon.id}`, JSON.stringify(position));
                     draggedIcon = null;
                 }
-            });
+            }) as EventListener;
+
+            addListener(icon, 'touchstart', onStart, { passive: true });
+            addListener(icon, 'touchmove', onMove, { passive: false });
+            addListener(icon, 'touchend', onEnd);
         });
     }
 
@@ -284,7 +309,7 @@ const TouchManager: ITouchManager = (() => {
 
         icons.forEach(iconEl => {
             const icon = iconEl as HTMLElement;
-            icon.addEventListener('touchend', ((e: TouchEvent) => {
+            const onEnd = ((e: TouchEvent) => {
                 // Don't trigger dblclick if we were dragging
                 if ((e.target as HTMLElement).closest && parseInt(icon.style.zIndex || '0') === 100) return;
 
@@ -307,7 +332,9 @@ const TouchManager: ITouchManager = (() => {
                     _lastTapTime = now;
                     _lastTapTarget = icon;
                 }
-            }) as EventListener);
+            }) as EventListener;
+
+            addListener(icon, 'touchend', onEnd);
         });
     }
 
@@ -320,28 +347,38 @@ const TouchManager: ITouchManager = (() => {
         const { onStart, onMove, onEnd } = handlers;
 
         // Mouse
-        if (onStart) element.addEventListener('mousedown', onStart as EventListener);
-        if (onMove) document.addEventListener('mousemove', onMove);
-        if (onEnd) document.addEventListener('mouseup', onEnd as EventListener);
+        if (onStart) addListener(element, 'mousedown', onStart as EventListener);
+        if (onMove) addListener(document, 'mousemove', onMove);
+        if (onEnd) addListener(document, 'mouseup', onEnd as EventListener);
 
         // Touch
-        if (onStart) element.addEventListener('touchstart', ((e: TouchEvent) => {
-            const touch = e.touches[0];
-            const synth = { clientX: touch.clientX, clientY: touch.clientY, target: e.target, preventDefault: () => e.preventDefault() };
-            onStart(synth);
-        }) as EventListener, { passive: false });
+        if (onStart) {
+            const onTouchStart = ((e: TouchEvent) => {
+                const touch = e.touches[0];
+                if (!touch) return;
+                const synth = { clientX: touch.clientX, clientY: touch.clientY, target: e.target, preventDefault: () => e.preventDefault() };
+                onStart(synth);
+            }) as EventListener;
+            addListener(element, 'touchstart', onTouchStart, { passive: false });
+        }
 
-        if (onMove) document.addEventListener('touchmove', ((e: TouchEvent) => {
-            if (!e.touches[0]) return;
-            const touch = e.touches[0];
-            const synth = { clientX: touch.clientX, clientY: touch.clientY, target: e.target, preventDefault: () => e.preventDefault() };
-            onMove(synth);
-        }) as EventListener, { passive: false });
+        if (onMove) {
+            const onTouchMove = ((e: TouchEvent) => {
+                if (!e.touches[0]) return;
+                const touch = e.touches[0];
+                const synth = { clientX: touch.clientX, clientY: touch.clientY, target: e.target, preventDefault: () => e.preventDefault() };
+                onMove(synth);
+            }) as EventListener;
+            addListener(document, 'touchmove', onTouchMove, { passive: false });
+        }
 
-        if (onEnd) document.addEventListener('touchend', ((e: TouchEvent) => {
-            const synth = { target: e.target, preventDefault: () => e.preventDefault() };
-            onEnd(synth);
-        }) as EventListener);
+        if (onEnd) {
+            const onTouchEnd = ((e: TouchEvent) => {
+                const synth = { target: e.target, preventDefault: () => e.preventDefault() };
+                onEnd(synth);
+            }) as EventListener;
+            addListener(document, 'touchend', onTouchEnd);
+        }
     }
 
     return {

@@ -170,6 +170,7 @@ export abstract class Ragdoll3DCore {
         }
         if (this.renderer) {
             this.renderer.dispose();
+            this.renderer.forceContextLoss();
             if (this.container && this.renderer.domElement.parentNode === this.container) {
                 this.container.removeChild(this.renderer.domElement);
             }
@@ -271,8 +272,14 @@ export abstract class Ragdoll3DCore {
                     });
 
                     if (gltf.animations.length > 0) {
-                        this.activeAction = this.actions[gltf.animations[0].name];
-                        this.activeAction.play();
+                        const firstAnim = gltf.animations[0];
+                        if (firstAnim) {
+                            const action = this.actions[firstAnim.name];
+                            if (action) {
+                                this.activeAction = action;
+                                this.activeAction.play();
+                            }
+                        }
                     }
 
                     this.onModelLoaded();
@@ -319,7 +326,10 @@ export abstract class Ragdoll3DCore {
         // Necesario antes de renderer.render() porque skeleton.update() dentro del
         // AnimationMixer puede resetear este flag al recalcular el skinning.
         for (let i = 0; i < this._skinnedMeshes.length; i++) {
-            this._skinnedMeshes[i].frustumCulled = false;
+            const mesh = this._skinnedMeshes[i];
+            if (mesh) {
+                mesh.frustumCulled = false;
+            }
         }
 
         if (this.renderer && this.scene && this.camera) {

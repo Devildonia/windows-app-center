@@ -1,4 +1,4 @@
-import { IWindowOptions } from '../ui/WindowFactory';
+import type { IWindowOptions } from '../ui/WindowFactory';
 
 export interface IAppMetadata {
     name: string;

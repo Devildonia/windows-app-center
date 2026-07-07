@@ -10,6 +10,9 @@
         "resolveJsonModule": true,
         "noImplicitOverride": true,
         "useUnknownInCatchVariables": true,
+        "noUncheckedIndexedAccess": true,
+        "exactOptionalPropertyTypes": true,
+        "verbatimModuleSyntax": true,
         "outDir": "./dist",
         "baseUrl": ".",
         "paths": {
@@ -27,7 +30,6 @@
         "js/**/*.ts",
         "test/**/*.ts",
         "main.ts",
-        "ragdoll.ts",
         "types/**/*.d.ts"
     ],
     "exclude": [

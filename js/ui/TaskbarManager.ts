@@ -2,7 +2,7 @@ import { Utils } from '../utils';
 import { Services } from '../core/ServiceContainer';
 import { WindowManager } from './WindowManager';
 import { Kernel } from '../core/Kernel';
-import { IProcess } from '../core/Types';
+import type { IProcess } from '../core/Types';
 
 export interface ITaskbarManager {
     init(): void;

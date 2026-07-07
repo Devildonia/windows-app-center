@@ -1503,13 +1503,29 @@ button:disabled {
 }
 
 .paint-toolbar {
-    width: 50px;
+    width: 56px;
     background: #c0c0c0;
     border-right: 1px solid #808080;
-    padding: 2px;
+    padding: 3px;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 24px 24px;
+    grid-gap: 2px;
     grid-auto-rows: 24px;
+}
+
+.paint-tool-btn {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.paint-tool-btn:active {
+    padding: 1px 0 0 1px !important;
 }
 
 .paint-canvas-container {

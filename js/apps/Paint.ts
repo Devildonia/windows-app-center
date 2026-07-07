@@ -26,6 +26,8 @@ class Paint {
     private currentTool: PaintTool = 'pencil';
     private startX: number = 0;
     private startY: number = 0;
+    private canvasRectLeft: number = 0;
+    private canvasRectTop: number = 0;
     private startImageData: ImageData | null = null;
     private resizeObserver: ResizeObserver | null = null;
     private onResize = (): void => this.resizeCanvas();
@@ -211,7 +213,7 @@ class Paint {
             }
 
             const btn = document.createElement('button');
-            btn.className = 'win95-btn';
+            btn.className = 'win95-btn paint-tool-btn';
             btn.style.cssText = 'width: 24px; height: 24px; padding: 0;';
             btn.title = tool.id;
             const iconSpan = document.createElement('span');
@@ -261,29 +263,28 @@ class Paint {
         Utils.eventManager.add(document, 'mouseup', this.onMouseUp);
     }
 
-    private getMousePos(e: MouseEvent): { x: number, y: number } {
-        if (!this.canvas) return { x: 0, y: 0 };
-        const rect = this.canvas.getBoundingClientRect();
-        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    }
-
     private startDrawing(e: MouseEvent): void {
         if (!this.ctx || !this.canvas) return;
         this.isDrawing = true;
-        const pos = this.getMousePos(e);
-        this.startX = pos.x;
-        this.startY = pos.y;
+        
+        const rect = this.canvas.getBoundingClientRect();
+        this.canvasRectLeft = rect.left;
+        this.canvasRectTop = rect.top;
+        
+        this.startX = e.clientX - rect.left;
+        this.startY = e.clientY - rect.top;
 
         // Save state/snapshot for line and rect preview
         this.startImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
 
         this.ctx.beginPath();
-        this.ctx.moveTo(pos.x, pos.y);
+        this.ctx.moveTo(this.startX, this.startY);
     }
 
     private draw(e: MouseEvent): void {
         if (!this.isDrawing || !this.ctx || !this.canvas) return;
-        const pos = this.getMousePos(e);
+        const x = e.clientX - this.canvasRectLeft;
+        const y = e.clientY - this.canvasRectTop;
 
         if (this.currentTool === 'line' || this.currentTool === 'rect') {
             if (this.startImageData) {
@@ -295,15 +296,15 @@ class Paint {
             if (this.currentTool === 'line') {
                 this.ctx.beginPath();
                 this.ctx.moveTo(this.startX, this.startY);
-                this.ctx.lineTo(pos.x, pos.y);
+                this.ctx.lineTo(x, y);
                 this.ctx.stroke();
             } else if (this.currentTool === 'rect') {
                 this.ctx.beginPath();
-                this.ctx.rect(this.startX, this.startY, pos.x - this.startX, pos.y - this.startY);
+                this.ctx.rect(this.startX, this.startY, x - this.startX, y - this.startY);
                 this.ctx.stroke();
             }
         } else {
-            this.ctx.lineTo(pos.x, pos.y);
+            this.ctx.lineTo(x, y);
             this.ctx.strokeStyle = this.color;
             this.ctx.lineWidth = this.brushSize;
             this.ctx.lineCap = 'round';

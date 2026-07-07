@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: *; media-src 'self' blob: data: *; connect-src 'self' *; frame-src 'self' * data: about:blank; worker-src 'self' blob:;">
     <title>Windows App Center v1.6.2</title>
     <meta name="description"
         content="Retro Windows 95 desktop simulator with games, apps, and a ragdoll pet. Built with Vite and Vanilla JS.">
@@ -843,7 +844,7 @@
             <!-- Content Area -->
             <div class="ie-content">
                 <iframe id="ie-frame" src="about:blank"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                    sandbox="allow-scripts allow-forms allow-popups"
                     style="width: 100%; height: 100%; border: none; background: white;"></iframe>
             </div>
             <div class="window-statusbar">
@@ -958,15 +959,6 @@
         </div>
     </div>
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('SW Registered'))
-                    .catch(err => console.log('SW Registration failed', err));
-            });
-        }
-    </script>
     <!-- A11y announcer -->
     <div aria-live="assertive" class="sr-only" id="a11y-announcer"></div>
 </body>

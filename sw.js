@@ -9,72 +9,13 @@ const CACHE_NAME = `win95-app-center-v${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `win95-dynamic-v${CACHE_VERSION}`;
 const MAX_DYNAMIC_ITEMS = 80;
 
-// Core shell — always cached on install
+// Core shell — always cached on install, dynamically resolved from manifest
 const CORE_ASSETS = [
     '/',
-    '/index.html',
-    '/main.js',
-    '/style.css',
-    '/favicon.ico',
-    '/manifest.json',
-    // JS modules
-    '/js/config.js',
-    '/js/utils.js',
-    '/js/RagdollMemory.js',
-    '/js/core/ServiceContainer.js',
-    '/js/core/EventBus.js',
-    '/js/core/Kernel.js',
-    '/js/core/VFS.js',
-    '/js/core/BootLoader.js',
-    '/js/core/HDRManager.js',
-    '/js/core/os_engine.js',
-    '/js/core/SystemBridge.js',
-    '/js/core/EventDelegation.js',
-    '/js/core/event_listeners.js',
-    '/js/ui/windows.js',
-    '/js/ui/WindowFactory.js',
-    '/js/ui/TaskbarManager.js',
-    '/js/ui/DesktopManager.js',
-    '/js/ui/ShaderWallpaper.js',
-    '/js/ui/TouchManager.js',
-    '/js/ui/MessageLibrary.js',
-    '/js/ui/BubbleAnimator.js',
-    '/js/audio/AudioManager.js',
-    '/js/apps/Notepad.js',
-    '/js/apps/Paint.js',
-    '/js/apps/Games.js',
-    '/js/apps/FileExplorer.js',
-    '/js/apps/WebampApp.js',
-    '/js/apps/GenericApps.js',
-    '/js/apps/InternetExplorer.js',
-    '/games/tetris_tryhard/js/Game.js',
-    // Libs
-    '/libs/matter.min.js',
-    '/libs/webamp.bundle.min.js',
-    // Icons
-    '/assets/icons/iexplorer.webp',
-    '/assets/icons/Display.webp',
-    '/assets/icons/ragdoll_skins.webp',
-    '/assets/icons/winamp_icon.webp',
-    '/assets/icons/neon.webp',
-    '/assets/icons/rush.webp',
-    '/assets/icons/vlrs_icon.webp',
-    '/assets/icons/doom.webp',
-    '/assets/icons/tetris.webp',
-    '/assets/icons/brain.webp',
-    '/assets/icons/pwa_icon_512.png',
-    // Audio
-    '/assets/audio/w95_startup.opus',
-    '/assets/audio/w95_shutdown.opus',
-    // Wallpapers (small — cache all)
-    '/assets/wallpapers/w95_1.webp',
-    '/assets/wallpapers/w95_2.webp',
-    '/assets/wallpapers/w95_3.webp',
-    '/assets/wallpapers/w95_4.webp',
-    '/assets/wallpapers/w95_5.webp',
-    '/assets/wallpapers/w95_6.webp',
-    '/assets/wallpapers/w95_7.webp',
-    '/assets/wallpapers/w95_8.webp'
+    ...(self.__WB_MANIFEST || []).map(entry => {
+        const url = entry.url;
+        return url.startsWith('/') ? url : '/' + url;
+    })
 ];
 
 // ============================================

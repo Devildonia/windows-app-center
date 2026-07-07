@@ -307,7 +307,7 @@ function randomChoice<T>(array: T[]): T | null {
         Logger.warn('randomChoice: Invalid or empty array');
         return null;
     }
-    return array[Math.floor(Math.random() * array.length)];
+    return array[Math.floor(Math.random() * array.length)] ?? null;
 }
 
 // ============================================

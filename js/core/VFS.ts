@@ -248,7 +248,15 @@ export const VFS: IVFS = (() => {
             clearTimeout(saveTimer);
         }
         saveTimer = setTimeout(() => {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
+            } catch (err) {
+                Utils.Logger.error('VFS: Failed to save to localStorage', err);
+                const notify: any = Services.get('Notify');
+                if (notify) {
+                    notify.error('VFS write failed: storage quota exceeded!');
+                }
+            }
             saveTimer = null;
         }, 100);
     }
@@ -258,7 +266,15 @@ export const VFS: IVFS = (() => {
             clearTimeout(saveTimer);
             saveTimer = null;
         }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
+        } catch (err) {
+            Utils.Logger.error('VFS: Failed to save to localStorage (flushSync)', err);
+            const notify: any = Services.get('Notify');
+            if (notify) {
+                notify.error('VFS write failed: storage quota exceeded!');
+            }
+        }
     }
 
     /**

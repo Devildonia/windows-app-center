@@ -1,4 +1,4 @@
-import { IWindowsApp } from './Types';
+import type { IWindowsApp } from './Types';
 
 export abstract class WindowApp implements IWindowsApp {
     public abstract readonly windowId: string;
@@ -33,7 +33,8 @@ export abstract class WindowApp implements IWindowsApp {
         // Run cleanups in reverse order
         for (let i = this._cleanups.length - 1; i >= 0; i--) {
             try {
-                this._cleanups[i]();
+                const cleanup = this._cleanups[i];
+                if (cleanup) cleanup();
             } catch (err) {
                 console.error('Error during app cleanup:', err);
             }

@@ -75,8 +75,8 @@ class BubbleAnimator implements IBubbleAnimator {
             const progress = Math.min(elapsed / duration, 1);
 
             // Ease out back for "pop" effect
-            const easedScale = this.easingFunctions.easeOutBack(progress);
-            const easedAlpha = this.easingFunctions.easeOut(progress);
+            const easedScale = (this.easingFunctions.easeOutBack ?? ((t: number) => t))(progress);
+            const easedAlpha = (this.easingFunctions.easeOut ?? ((t: number) => t))(progress);
 
             if (onUpdate) {
                 onUpdate({
@@ -114,8 +114,8 @@ class BubbleAnimator implements IBubbleAnimator {
 
             // Invert progress for fade out
             const fadeProgress = 1 - progress;
-            const easedAlpha = this.easingFunctions.easeIn(fadeProgress);
-            const easedScale = this.easingFunctions.easeIn(fadeProgress);
+            const easedAlpha = (this.easingFunctions.easeIn ?? ((t: number) => t))(fadeProgress);
+            const easedScale = (this.easingFunctions.easeIn ?? ((t: number) => t))(fadeProgress);
 
             if (onUpdate) {
                 onUpdate({
@@ -292,7 +292,7 @@ class BubbleAnimator implements IBubbleAnimator {
      * @returns {number} Eased interpolated value
      */
     easedLerp(start: number, end: number, t: number, easing: string = 'easeInOut'): number {
-        const easingFunc = this.easingFunctions[easing] || this.easingFunctions.linear;
+        const easingFunc = this.easingFunctions[easing] ?? this.easingFunctions.linear ?? ((t: number) => t);
         const easedT = easingFunc(t);
         return this.lerp(start, end, easedT);
     }

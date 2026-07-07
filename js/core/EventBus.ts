@@ -13,7 +13,7 @@
 
 import { Utils } from '../utils.js';
 import { Services } from './ServiceContainer.js';
-import { IEventPayloadMap, IStoreStateMap, EventPayload } from './Types.js';
+import type { IEventPayloadMap, IStoreStateMap, EventPayload } from './Types.js';
 
 // ============================================
 // EVENT BUS — Pub/Sub for decoupled communication

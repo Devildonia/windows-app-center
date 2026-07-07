@@ -1,4 +1,5 @@
 import { Services } from './ServiceContainer';
+import { Utils } from '../utils';
 
 const initialStyles = new Map<HTMLElement, string>();
 
@@ -40,10 +41,11 @@ export function updateRecycleBinUI(): void {
     hiddenStickies.forEach((sticky, idx) => {
         // Extract text preview
         const firstP = sticky.querySelector('p');
-        const text = firstP ? firstP.textContent : `Sticky Note #${idx + 1}`;
+        const text = firstP ? (firstP.textContent || '') : `Sticky Note #${idx + 1}`;
+        const escapedText = Utils.escapeHTML(text);
         listHTML += `
             <div style="display: flex; align-items: center; justify-content: space-between; border: 1px solid #808080; padding: 4px 8px; background: #ffffcc; color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; font-size: 11px; margin-top: 4px;">
-                <span style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">📌 ${text}</span>
+                <span style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">📌 ${escapedText}</span>
                 <button class="win95-btn restore-sticky-btn" data-index="${idx}" style="padding: 2px 6px; font-size: 10px;">Restore</button>
             </div>
         `;
@@ -109,7 +111,7 @@ export function setupStickyNotes(): void {
         activeSticky = this;
         activeSticky.classList.add('dragging');
         activeSticky.style.zIndex = String(++maxZ);
-        const touch: MouseEvent | Touch = e.type === 'touchstart' ? (e as TouchEvent).touches[0] : (e as MouseEvent);
+        const touch: MouseEvent | Touch = (e.type === 'touchstart' ? (e as TouchEvent).touches[0] : (e as MouseEvent)) || (e as MouseEvent);
         const rect = activeSticky.getBoundingClientRect();
         offX = touch.clientX - rect.left;
         offY = touch.clientY - rect.top;
@@ -122,7 +124,7 @@ export function setupStickyNotes(): void {
     function drag(e: MouseEvent | TouchEvent): void {
         if (!activeSticky) return;
         if (e.cancelable) e.preventDefault();
-        const touch: MouseEvent | Touch = e.type === 'touchmove' ? (e as TouchEvent).touches[0] : (e as MouseEvent);
+        const touch: MouseEvent | Touch = (e.type === 'touchmove' ? (e as TouchEvent).touches[0] : (e as MouseEvent)) || (e as MouseEvent);
         let newL = touch.clientX - offX;
         let newT = touch.clientY - offY;
         newL = Math.max(0, Math.min(newL, window.innerWidth - activeSticky.offsetWidth));
@@ -161,7 +163,7 @@ export function setupStickyNotes(): void {
         }
         document.removeEventListener('mousemove', drag as EventListener);
         document.removeEventListener('mouseup', stopDrag);
-        document.removeEventListener('touchmove', drag as EventListener, { passive: false });
+        document.removeEventListener('touchmove', drag as EventListener);
         document.removeEventListener('touchend', stopDrag);
     }
 }

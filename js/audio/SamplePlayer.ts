@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 import { Utils } from '../utils.js';
-import { IPlayOptions } from './AudioTypes.js';
+import type { IPlayOptions } from './AudioTypes.js';
 
 // ============================================
 // SAMPLE PLAYER — reproducción de audio basado en ficheros

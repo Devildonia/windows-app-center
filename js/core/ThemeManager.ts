@@ -131,7 +131,7 @@ export class ThemeManager {
             }
         } as Record<string, Record<string, string>>;
 
-        const themeIcons = icons[theme] || icons['win95'];
+        const themeIcons = icons[theme] || icons['win95'] || {};
 
         for (const [id, content] of Object.entries(themeIcons)) {
             const iconEl = document.getElementById(id);

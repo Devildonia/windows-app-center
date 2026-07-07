@@ -97,3 +97,13 @@ if (document.readyState === 'loading') {
 } else {
     if (window.initOS) window.initOS();
 }
+
+// Service Worker registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('[Kernel] SW Registered'))
+            .catch(err => console.error('[Kernel] SW Registration failed', err));
+    });
+}
+

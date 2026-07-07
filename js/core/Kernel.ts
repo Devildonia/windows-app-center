@@ -10,7 +10,7 @@
 import { Utils } from '../utils';
 import { VFS } from './VFS';
 import { Services } from './ServiceContainer';
-import { IWindowsApp, IAppMetadata, IWindowsAppConstructor, IProcess, IAppPlugin } from './Types';
+import type { IWindowsApp, IAppMetadata, IWindowsAppConstructor, IProcess, IAppPlugin } from './Types';
 import { WindowFactory } from '../ui/WindowFactory';
 
 export interface IAppRegistryEntry {

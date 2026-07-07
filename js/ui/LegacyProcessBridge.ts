@@ -1,5 +1,5 @@
 import { Services } from '../core/ServiceContainer';
-import { IAppMetadata, IProcess } from '../core/Types';
+import type { IAppMetadata, IProcess } from '../core/Types';
 
 // ============================================
 // LEGACY PROCESS BRIDGE

@@ -181,8 +181,9 @@ const i18n: ITranslationService = {
      * Translate a key, with optional interpolation
      */
     t(key: string, params: Record<string, any> = {}): string {
-        const dict = translations[currentLang] || translations.en;
-        let text = dict[key] ?? translations.en[key] ?? key;
+        const dict = translations[currentLang] || translations.en || {};
+        const enDict = translations.en || {};
+        let text = dict[key] ?? enDict[key] ?? key;
 
         // Interpolate {param} placeholders
         if (params && typeof text === 'string') {
@@ -255,7 +256,7 @@ const i18n: ITranslationService = {
             currentLang = saved;
         } else {
             // Auto-detect from browser
-            const browserLang = (navigator.language || 'en').split('-')[0];
+            const browserLang = (navigator.language || 'en').split('-')[0] || 'en';
             currentLang = translations[browserLang] ? browserLang : 'en';
         }
 

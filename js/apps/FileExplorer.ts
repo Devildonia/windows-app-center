@@ -10,11 +10,12 @@
  */
 
 import { Utils } from '../utils.js';
-import { VFS, IVFSNode } from '../core/VFS.js';
+import { VFS } from '../core/VFS.js';
+import type { IVFSNode } from '../core/VFS.js';
 import { Kernel } from '../core/Kernel.js';
 import { Services } from '../core/ServiceContainer.js';
-import { IWindowManager } from '../ui/WindowManager.js';
-import { INotify } from '../ui/NotificationManager.js';
+import type { IWindowManager } from '../ui/WindowManager.js';
+import type { INotify } from '../ui/NotificationManager.js';
 import { WindowApp } from '../core/WindowApp.js';
 
 export interface IFileExplorerParams {
@@ -73,7 +74,9 @@ class FileExplorer extends WindowApp {
         if (folderNode && folderNode.type === 'dir' && folderNode.children) {
             Object.keys(folderNode.children).forEach(name => {
                 const item = (folderNode.children as Record<string, IVFSNode>)[name];
-                this.createIcon(name, item);
+                if (item) {
+                    this.createIcon(name, item);
+                }
             });
         }
 
@@ -183,7 +186,8 @@ class FileExplorer extends WindowApp {
     private executeFile(name: string): void {
         const lowerName = name.toLowerCase();
         if (lowerName.endsWith('.exe')) {
-            const appId = name.split('.')[0].toLowerCase();
+            const firstPart = name.split('.')[0];
+            const appId = (firstPart || '').toLowerCase();
             Kernel.launch(appId);
         } else if (lowerName.endsWith('.txt')) {
             const fullPath = this.currentPath + (this.currentPath.endsWith('\\') ? '' : '\\') + name;

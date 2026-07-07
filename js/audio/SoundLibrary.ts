@@ -1,4 +1,4 @@
-import { ISoundConfig } from './AudioTypes.js';
+import type { ISoundConfig } from './AudioTypes.js';
 
 // ============================================
 // SOUND LIBRARY — catálogo declarativo de sonidos procedurales

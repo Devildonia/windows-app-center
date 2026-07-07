@@ -7,7 +7,8 @@
 
 import { Utils } from '../utils';
 import { Services } from '../core/ServiceContainer';
-import { WindowManager, IWindowManager } from './WindowManager';
+import { WindowManager } from './WindowManager';
+import type { IWindowManager } from './WindowManager';
 
 export interface IWindowOptions {
     id?: string;

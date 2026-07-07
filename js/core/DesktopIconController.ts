@@ -37,8 +37,10 @@ export function initializeDraggableIcons(): void {
             } catch (_) {}
         } else if (defaultPositions[icon.id]) {
             const pos = defaultPositions[icon.id];
-            icon.style.left = pos.x + 'px';
-            icon.style.top = pos.y + 'px';
+            if (pos) {
+                icon.style.left = pos.x + 'px';
+                icon.style.top = pos.y + 'px';
+            }
         }
 
         icon.addEventListener('mousedown', (e: MouseEvent) => {

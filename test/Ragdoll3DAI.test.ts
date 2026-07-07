@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Ragdoll3DAI, Ragdoll3DAIState, IRagdoll3DController } from '../js/core/Ragdoll3DAI';
+import { Ragdoll3DAI, Ragdoll3DAIState } from '../js/core/Ragdoll3DAI';
+import type { IRagdoll3DController } from '../js/core/Ragdoll3DAI';
 
 class MockController implements IRagdoll3DController {
     public playedAnim: string = '';

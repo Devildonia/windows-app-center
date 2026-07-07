@@ -135,11 +135,12 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
             const w = Math.max(1, gl.canvas.width);
             const h = Math.max(1, gl.canvas.height);
             for (let i = 0; i < 2; i++) {
-                if (this.fbos[i].width !== w || this.fbos[i].height !== h) {
-                    gl.bindTexture(gl.TEXTURE_2D, this.fbos[i].tex);
+                const fbo = this.fbos[i];
+                if (fbo && (fbo.width !== w || fbo.height !== h)) {
+                    gl.bindTexture(gl.TEXTURE_2D, fbo.tex);
                     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-                    this.fbos[i].width = w;
-                    this.fbos[i].height = h;
+                    fbo.width = w;
+                    fbo.height = h;
                 }
             }
         }
@@ -152,7 +153,11 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
 
             // Bind FBO or Screen
             if (this.isBuffer) {
-                gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbos[1 - this.pingPong].fbo);
+                const fboIndex = 1 - this.pingPong;
+                const fbo = this.fbos[fboIndex];
+                if (fbo) {
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.fbo);
+                }
             } else {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             }
@@ -175,10 +180,11 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
             // Inputs array: [A_tex, B_tex, C_tex, D_tex]
             for (let i = 0; i < 4; i++) {
                 const input = inputs[i];
-                if (input && input.tex) {
+                const channelLoc = this.channelLocs[i];
+                if (input && input.tex && channelLoc !== undefined) {
                     gl.activeTexture(gl.TEXTURE0 + i);
                     gl.bindTexture(input.type, input.tex);
-                    gl.uniform1i(this.channelLocs[i], i);
+                    gl.uniform1i(channelLoc, i);
                 }
             }
 
@@ -191,15 +197,19 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
 
         getOutputTexture(): { tex: WebGLTexture | null, type: number } | null {
             if (!this.isBuffer) return null;
-            return { tex: this.fbos[this.pingPong].tex, type: this.gl.TEXTURE_2D }; // Return object with type
+            const fbo = this.fbos[this.pingPong];
+            return fbo ? { tex: fbo.tex, type: this.gl.TEXTURE_2D } : null;
         }
 
         destroy(): void {
             if (this.program) this.gl.deleteProgram(this.program);
             if (this.isBuffer && this.fbos) {
                 for (let i = 0; i < 2; i++) {
-                    if (this.fbos[i].tex) this.gl.deleteTexture(this.fbos[i].tex);
-                    if (this.fbos[i].fbo) this.gl.deleteFramebuffer(this.fbos[i].fbo);
+                    const fbo = this.fbos[i];
+                    if (fbo) {
+                        if (fbo.tex) this.gl.deleteTexture(fbo.tex);
+                        if (fbo.fbo) this.gl.deleteFramebuffer(fbo.fbo);
+                    }
                 }
             }
         }
@@ -290,7 +300,10 @@ const ShaderWallpaper: IShaderWallpaper = (() => {
         }
 
         const t = (time - startTime) * 0.001;
-        passes[0].render(t, frameCount, []);
+        const firstPass = passes[0];
+        if (firstPass) {
+            firstPass.render(t, frameCount, []);
+        }
 
         frameCount++;
 

@@ -23,7 +23,8 @@ export function setupKeyboardNavigation(): void {
                         const activeEl = document.activeElement;
                         let focusedWinIndex = -1;
                         for (let i = 0; i < activeIds.length; i++) {
-                            if (activeIds[i] === activeEl || activeIds[i].contains(activeEl)) {
+                            const winEl = activeIds[i];
+                            if (winEl && (winEl === activeEl || winEl.contains(activeEl))) {
                                 focusedWinIndex = i;
                                 break;
                             }
@@ -38,14 +39,16 @@ export function setupKeyboardNavigation(): void {
                         }
 
                         const nextWin = activeIds[nextIndex];
-                        wm.bringToFront(nextWin);
-                        
-                        const interactive = nextWin.querySelector('[tabindex]:not([tabindex="-1"]), button, input, textarea, select') as HTMLElement | null;
-                        if (interactive) {
-                            interactive.focus();
-                        } else {
-                            nextWin.setAttribute('tabindex', '-1');
-                            nextWin.focus();
+                        if (nextWin) {
+                            wm.bringToFront(nextWin);
+                            
+                            const interactive = nextWin.querySelector('[tabindex]:not([tabindex="-1"]), button, input, textarea, select') as HTMLElement | null;
+                            if (interactive) {
+                                interactive.focus();
+                            } else {
+                                nextWin.setAttribute('tabindex', '-1');
+                                nextWin.focus();
+                            }
                         }
                     }
                 }

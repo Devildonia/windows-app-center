@@ -1,15 +1,18 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Ragdoll3DAI, Ragdoll3DAIState, IRagdoll3DController } from './Ragdoll3DAI';
+import { Ragdoll3DAI, Ragdoll3DAIState } from './Ragdoll3DAI';
+import type { IRagdoll3DController } from './Ragdoll3DAI';
 import { Ragdoll3DCore } from './Ragdoll3DCore';
 
 import { Services } from './ServiceContainer';
 
 export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DController {
     private ai!: Ragdoll3DAI;
+    private _boundResize: () => void;
     
     constructor() {
         super();
+        this._boundResize = this.onWindowResize.bind(this);
         this.container = document.getElementById('ragdoll3d-desktop-canvas-container');
         this.bubbleId = 'ragdoll3d-desktop-bubble';
         
@@ -52,6 +55,11 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
         }
     }
 
+    public override terminate(): void {
+        super.terminate();
+        window.removeEventListener('resize', this._boundResize);
+    }
+
     protected override setupThreeJS(): void {
         if (!this.container) return;
         const width = this.container.clientWidth;
@@ -91,7 +99,7 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
         floorMesh.receiveShadow = true;
         this.scene.add(floorMesh);
 
-        window.addEventListener('resize', this.onWindowResize.bind(this));
+        window.addEventListener('resize', this._boundResize);
         
         // El cuboid por defecto se centra en (0,0,0) con semiejes (50, 0.1, 50).
         // Su superficie superior queda en Y=+0.1, pero el plano visual Three.js

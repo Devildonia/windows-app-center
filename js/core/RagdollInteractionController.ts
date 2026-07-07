@@ -64,17 +64,18 @@ export class RagdollInteractionController {
         if (this.deps.getShowDebug()) {
             const debugMeshes = Array.from(this.deps.getDebugMeshMap().values());
             const intersects = this.raycaster.intersectObjects(debugMeshes, false);
-            if (intersects.length > 0) {
-                targetBoneName = intersects[0].object.userData.boneName;
-                intersectPoint = intersects[0].point;
+            const firstHit = intersects[0];
+            if (firstHit) {
+                targetBoneName = firstHit.object.userData.boneName;
+                intersectPoint = firstHit.point;
             }
         }
 
         const model = this.deps.getModel();
         if (!targetBoneName && model) {
             const intersects = this.raycaster.intersectObject(model, true);
-            if (intersects.length > 0) {
-                const hit = intersects[0];
+            const hit = intersects[0];
+            if (hit) {
                 intersectPoint = hit.point;
 
                 let closestDist = Infinity;

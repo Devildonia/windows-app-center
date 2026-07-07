@@ -4,7 +4,7 @@
  */
 
 import { Kernel } from '../core/Kernel.js';
-import { IWindowsApp } from '../core/Types.js';
+import type { IWindowsApp } from '../core/Types.js';
 
 class MyTestApp implements IWindowsApp {
     public windowId: string = 'win-my-test-app';
