@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { i18n } from '../js/services/i18n.js';
+import { i18n, translations } from '../js/services/i18n.js';
 
 describe('i18n', () => {
     beforeEach(() => {
@@ -110,6 +110,39 @@ describe('i18n', () => {
             localStorage.clear();
             i18n.init();
             expect(i18n.getLang()).toBe('en');
+        });
+    });
+
+    // Guards against locales drifting out of sync as new keys are added.
+    describe('key parity across locales', () => {
+        const enKeys = Object.keys(translations.en).sort();
+
+        for (const lang of Object.keys(translations)) {
+            it(`"${lang}" defines exactly the same keys as "en"`, () => {
+                const keys = Object.keys(translations[lang]).sort();
+                const missing = enKeys.filter(k => !keys.includes(k));
+                const extra = keys.filter(k => !enKeys.includes(k));
+                expect({ missing, extra }).toEqual({ missing: [], extra: [] });
+            });
+
+            it(`"${lang}" has no empty values`, () => {
+                const empty = Object.entries(translations[lang])
+                    .filter(([, v]) => typeof v !== 'string' || v.trim() === '')
+                    .map(([k]) => k);
+                expect(empty).toEqual([]);
+            });
+        }
+    });
+
+    describe('setLang side effects', () => {
+        it('should dispatch a languagechanged event carrying the new lang', () => {
+            const spy = vi.spyOn(window, 'dispatchEvent');
+            i18n.setLang('es');
+            const langEvents = spy.mock.calls.map(c => c[0]).filter(e => e && e.type === 'languagechanged');
+            const evt = langEvents[langEvents.length - 1];
+            expect(evt).toBeTruthy();
+            expect(evt.detail.lang).toBe('es');
+            spy.mockRestore();
         });
     });
 });

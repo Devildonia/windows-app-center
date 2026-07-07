@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Settings app**: New Windows-style settings hub launched from the Start Menu (⚙️ Settings), with a category sidebar + content panel designed to host more configuration sections over time. First section is **Language & Region**, a live language switcher that calls `i18n.setLang()`.
+
+### Changed
+- **i18n hardening**:
+  - `t()` keys are now type-checked at compile time (`TranslationKey` union derived from the English dictionary via `satisfies`), while still accepting dynamic runtime keys.
+  - `setLang()` now dispatches a `languagechanged` event so open windows can re-render; the Settings window uses it to update its labels live.
+  - Replaced the repetitive `i18n ? i18n.t(k) : 'English fallback'` pattern in Task Manager and Plugin Manager with a direct `i18n` import (single source of truth; the English fallback already lives inside `t()`).
+  - Exported the `translations` table and added key-parity tests ensuring every locale defines exactly the same keys with no empty values.
+
 ## [1.6.3] - 2026-07-07
 
 ### Added

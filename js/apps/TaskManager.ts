@@ -1,6 +1,7 @@
 import { Kernel } from '../core/Kernel.js';
 import { Services } from '../core/ServiceContainer.js';
 import { Utils } from '../utils.js';
+import { i18n } from '../services/i18n.js';
 import type { IWindowsApp } from '../core/Types.js';
 import { WindowFactory } from '../ui/WindowFactory.js';
 
@@ -20,8 +21,7 @@ export class TaskManager implements IWindowsApp {
     }
 
     private init(): void {
-        const i18n = Services.get('i18n');
-        const title = i18n ? i18n.t('app.taskmanager') : 'Task Manager';
+        const title = i18n.t('app.taskmanager');
 
         this.windowId = WindowFactory.create({
             title: title,
@@ -46,10 +46,9 @@ export class TaskManager implements IWindowsApp {
     private setupLayout(): void {
         if (!this.container) return;
 
-        const i18n = Services.get('i18n');
-        const tabProcName = i18n ? i18n.t('taskmanager.processes') : 'Processes';
-        const tabPerfName = i18n ? i18n.t('taskmanager.performance') : 'Performance';
-        const tabSystName = i18n ? i18n.t('taskmanager.system') : 'System';
+        const tabProcName = i18n.t('taskmanager.processes');
+        const tabPerfName = i18n.t('taskmanager.performance');
+        const tabSystName = i18n.t('taskmanager.system');
 
         this.container.innerHTML = `
             <div id="task-manager">
@@ -219,8 +218,7 @@ export class TaskManager implements IWindowsApp {
         const tbody = this.container.querySelector('#tm-process-list');
         if (!tbody) return;
 
-        const i18n = Services.get('i18n');
-        const endTaskLabel = i18n ? i18n.t('taskmanager.endtask') : 'End Task';
+        const endTaskLabel = i18n.t('taskmanager.endtask');
 
         // 1. Render processes
         const registry = Kernel.getRegistry();

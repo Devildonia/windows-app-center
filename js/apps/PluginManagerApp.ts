@@ -1,6 +1,6 @@
 import { Kernel } from '../core/Kernel.js';
-import { Services } from '../core/ServiceContainer.js';
 import { Utils } from '../utils.js';
+import { i18n } from '../services/i18n.js';
 import type { IWindowsApp } from '../core/Types.js';
 import { WindowFactory } from '../ui/WindowFactory.js';
 
@@ -16,8 +16,7 @@ export class PluginManagerApp implements IWindowsApp {
     }
 
     private init(): void {
-        const i18n = Services.get('i18n');
-        const title = i18n ? i18n.t('app.pluginmanager') : 'Plugin Manager';
+        const title = i18n.t('app.pluginmanager');
 
         this.windowId = WindowFactory.create({
             title: title,
@@ -39,8 +38,7 @@ export class PluginManagerApp implements IWindowsApp {
     private setupLayout(): void {
         if (!this.container) return;
 
-        const i18n = Services.get('i18n');
-        const installText = i18n ? i18n.t('pluginmanager.install') : 'Install';
+        const installText = i18n.t('pluginmanager.install');
 
         this.container.innerHTML = `
             <div id="plugin-manager">
@@ -138,9 +136,8 @@ export class PluginManagerApp implements IWindowsApp {
         const listEl = this.container.querySelector('#pm-installed-list');
         if (!listEl) return;
 
-        const i18n = Services.get('i18n');
-        const uninstallText = i18n ? i18n.t('pluginmanager.uninstall') : 'Uninstall';
-        const coreAppText = i18n ? i18n.t('pluginmanager.coreapp') : 'core app';
+        const uninstallText = i18n.t('pluginmanager.uninstall');
+        const coreAppText = i18n.t('pluginmanager.coreapp');
 
         const registry = Kernel.getRegistry();
         const apps = registry.apps;

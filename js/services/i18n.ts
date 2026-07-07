@@ -19,7 +19,7 @@ export interface ITranslations {
     [lang: string]: ITranslationDict;
 }
 
-const translations: ITranslations = {
+export const translations = {
     en: {
         // Boot
         'boot.bios_title': 'AMIBIOS (C) 1995 American Megatrends, Inc.',
@@ -99,7 +99,16 @@ const translations: ITranslations = {
         'taskmanager.endtask': 'End Task',
         'pluginmanager.install': 'Install',
         'pluginmanager.uninstall': 'Uninstall',
-        'pluginmanager.coreapp': 'core app'
+        'pluginmanager.coreapp': 'core app',
+
+        // Settings
+        'app.settings': 'Settings',
+        'settings.title': 'Settings',
+        'settings.nav_language': 'Language & Region',
+        'settings.language_label': 'Display language',
+        'settings.language_desc': 'Select the language for menus, dialogs and apps.',
+        'settings.applied': 'Language applied',
+        'settings.more_soon': 'More settings coming soon.'
     },
 
     es: {
@@ -181,16 +190,32 @@ const translations: ITranslations = {
         'taskmanager.endtask': 'Finalizar tarea',
         'pluginmanager.install': 'Instalar',
         'pluginmanager.uninstall': 'Desinstalar',
-        'pluginmanager.coreapp': 'app del sistema'
+        'pluginmanager.coreapp': 'app del sistema',
+
+        // Settings
+        'app.settings': 'Configuración',
+        'settings.title': 'Configuración',
+        'settings.nav_language': 'Idioma y región',
+        'settings.language_label': 'Idioma de la interfaz',
+        'settings.language_desc': 'Elige el idioma de menús, diálogos y aplicaciones.',
+        'settings.applied': 'Idioma aplicado',
+        'settings.more_soon': 'Más opciones próximamente.'
     }
-};
+} satisfies ITranslations;
+
+// Canonical key set derived from the English dictionary (single source of truth).
+// Using `satisfies` above preserves literal keys so this is a strict union, not `string`.
+export type TranslationKey = keyof typeof translations['en'];
+type LangCode = keyof typeof translations;
 
 // ============================================
 // i18n ENGINE
 // ============================================
 
 export interface ITranslationService {
-    t(key: string, params?: Record<string, any>): string;
+    // `TranslationKey` gives autocomplete/typo-checking for known keys, while
+    // `(string & {})` still permits dynamic runtime keys (e.g. notification keys).
+    t(key: TranslationKey | (string & {}), params?: Record<string, string | number>): string;
     getLang(): string;
     setLang(lang: string): void;
     updateDOM(): void;
@@ -204,10 +229,10 @@ const i18n: ITranslationService = {
     /**
      * Translate a key, with optional interpolation
      */
-    t(key: string, params: Record<string, any> = {}): string {
-        const dict = translations[currentLang] || translations.en || {};
-        const enDict = translations.en || {};
-        let text = dict[key] ?? enDict[key] ?? key;
+    t(key: TranslationKey | (string & {}), params: Record<string, string | number> = {}): string {
+        const dict = translations[currentLang as LangCode] || translations.en;
+        const enDict = translations.en;
+        let text: string = (dict as ITranslationDict)[key] ?? enDict[key as TranslationKey] ?? key;
 
         // Interpolate {param} placeholders
         if (params && typeof text === 'string') {
@@ -230,7 +255,7 @@ const i18n: ITranslationService = {
      * Switch language and update all data-i18n elements
      */
     setLang(lang: string): void {
-        if (!translations[lang]) {
+        if (!translations[lang as LangCode]) {
             Utils.Logger.warn(`[i18n] Unknown language: ${lang}, falling back to 'en'`);
             lang = 'en';
         }
@@ -242,6 +267,11 @@ const i18n: ITranslationService = {
 
         // Update all DOM elements with data-i18n attribute
         this.updateDOM();
+
+        // Notify components (open windows, apps) so they can re-render their labels
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('languagechanged', { detail: { lang } }));
+        }
 
         Utils.Logger.log(`[i18n] Language set to: ${lang}`);
     },
@@ -276,12 +306,12 @@ const i18n: ITranslationService = {
      */
     init(): void {
         const saved = Utils.getStorage<string>('win95-lang', null);
-        if (saved && translations[saved]) {
+        if (saved && translations[saved as LangCode]) {
             currentLang = saved;
         } else {
             // Auto-detect from browser
             const browserLang = (navigator.language || 'en').split('-')[0] || 'en';
-            currentLang = translations[browserLang] ? browserLang : 'en';
+            currentLang = translations[browserLang as LangCode] ? browserLang : 'en';
         }
 
         if (window.state) window.state.lang = currentLang;
