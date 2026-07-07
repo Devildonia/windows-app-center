@@ -36,9 +36,6 @@ jobs:
     name: End-to-End Tests (Playwright)
     needs: quality
     runs-on: ubuntu-latest
-    # e2e job is non-blocking (continue-on-error: true) because Playwright visual snapshots
-    # are highly sensitive to font rendering engine and environment variations between CI and local dev.
-    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('OS Boot Sequence', () => {
 
-    test('should boot successfully and match desktop visual snapshot', async ({ page }) => {
+    test('should boot successfully and reach the desktop', async ({ page }) => {
         // Go to the main page
         await page.goto('/');
 
@@ -20,44 +20,24 @@ test.describe('OS Boot Sequence', () => {
         // 4. Ensure Start button is visible
         const startBtn = page.locator('#start-button');
         await expect(startBtn).toBeVisible();
-
-        // Wait a bit for animations/shaders to stabilize
-        await page.waitForTimeout(1000);
-
-        // 5. Take full page snapshot for visual regression
-        // We mask the clock since time changes
-        await expect(page).toHaveScreenshot('desktop-boot.png', {
-            mask: [page.locator('.clock')],
-            maxDiffPixelRatio: 0.15,
-            timeout: 10000
-        });
     });
 
-    test('should open start menu on click and match visual snapshot', async ({ page }) => {
+    test('should open the Start menu on click', async ({ page }) => {
         await page.goto('/');
 
-        // Wait for boot 
+        // Wait for boot to finish
         await expect(page.locator('#boot-screen')).toBeHidden({ timeout: 15000 });
 
         const startBtn = page.locator('#start-button');
         const startMenu = page.locator('#start-menu');
 
+        // Menu starts hidden
         await expect(startMenu).toBeHidden();
 
-        // Click start button
+        // Click the Start button
         await startBtn.click();
 
-        // Expect menu to be visible
+        // Menu should now be visible
         await expect(startMenu).toBeVisible();
-
-        // Wait for animation
-        await page.waitForTimeout(500);
-
-        // Snapshot
-        await expect(page).toHaveScreenshot('start-menu-open.png', {
-            mask: [page.locator('.clock')],
-            maxDiffPixelRatio: 0.15,
-            timeout: 10000
-        });
     });
 });
