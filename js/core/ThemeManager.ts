@@ -1,10 +1,13 @@
 import { Services } from './ServiceContainer';
+import { i18n } from '../services/i18n';
 
 export class ThemeManager {
     public currentTheme: string;
     public themes: string[];
     private initialized: boolean;
     private onDomReady: (() => void) | null;
+
+    private boundLanguageChanged = () => this.swapIcons(this.currentTheme);
 
     constructor() {
         this.currentTheme = localStorage.getItem('os-theme') || 'win95';
@@ -28,6 +31,7 @@ export class ThemeManager {
             document.removeEventListener('DOMContentLoaded', this.onDomReady);
             this.onDomReady = null;
         }
+        window.addEventListener('languagechanged', this.boundLanguageChanged);
         this.applyTheme(this.currentTheme);
     }
 
@@ -36,6 +40,7 @@ export class ThemeManager {
             document.removeEventListener('DOMContentLoaded', this.onDomReady);
             this.onDomReady = null;
         }
+        window.removeEventListener('languagechanged', this.boundLanguageChanged);
         this.initialized = false;
     }
 
@@ -73,7 +78,9 @@ export class ThemeManager {
         // Update Sticky Note Text
         const welcomeText = document.getElementById('welcome-text');
         if (welcomeText) {
-            welcomeText.textContent = themeName === 'modern' ? 'Welcome to Windows UI App Center v1.6.3!' : 'Welcome to Windows App Center v1.6.3!';
+            const key = themeName === 'modern' ? 'sticky.welcome_modern' : 'sticky.welcome_win95';
+            welcomeText.setAttribute('data-i18n', key);
+            welcomeText.textContent = i18n.t(key);
         }
 
         // Swap Icons
@@ -105,13 +112,13 @@ export class ThemeManager {
                 'icon-pluginmanager': '🧩',
                 // Start Menu Items
                 'start-menu-btn-icon': win95StartSvg,
-                'menu-icon-notepad': '📝 Notepad',
-                'menu-icon-paint': '🎨 Paint',
-                'menu-icon-explorer': '📂 Windows Explorer',
-                'menu-icon-games-folder': '📂 Games',
-                'menu-icon-terminal': '<img src="assets/icons/ms-dos.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> MS-DOS',
-                'menu-icon-taskmanager': '<img src="assets/icons/task_manager.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Task Manager',
-                'menu-icon-pluginmanager': '🧩 Plugin Manager',
+                'menu-icon-notepad': '📝 ' + i18n.t('app.notepad'),
+                'menu-icon-paint': '🎨 ' + i18n.t('app.paint'),
+                'menu-icon-explorer': '📂 ' + i18n.t('app.explorer'),
+                'menu-icon-games-folder': '📂 ' + i18n.t('app.games_folder'),
+                'menu-icon-terminal': '<img src="assets/icons/ms-dos.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> ' + i18n.t('app.terminal'),
+                'menu-icon-taskmanager': '<img src="assets/icons/task_manager.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> ' + i18n.t('app.taskmanager'),
+                'menu-icon-pluginmanager': '🧩 ' + i18n.t('app.pluginmanager'),
                 'menu-img-internet': 'assets/icons/iexplorer.webp',
                 'menu-img-display': 'assets/icons/Display.webp'
             },
@@ -131,13 +138,13 @@ export class ThemeManager {
                 'icon-pluginmanager': '<span style="font-size: 38px; display: block; text-align: center;">🧩</span>',
                 // Start Menu Items
                 'start-menu-btn-icon': '<img src="assets/themes/winui/start.webp" style="width:28px; height:28px; object-fit:contain;">',
-                'menu-icon-notepad': '<img src="assets/themes/winui/notepad.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Notepad',
-                'menu-icon-paint': '<img src="assets/themes/winui/paint.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Paint',
-                'menu-icon-explorer': '<img src="assets/themes/winui/file_explorer.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Windows Explorer',
-                'menu-icon-games-folder': '<img src="assets/themes/winui/games.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Games',
-                'menu-icon-terminal': '<img src="assets/themes/winui/ms-dos.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> MS-DOS',
-                'menu-icon-taskmanager': '<img src="assets/themes/winui/task_manager.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Task Manager',
-                'menu-icon-pluginmanager': '🧩 Plugin Manager',
+                'menu-icon-notepad': '<img src="assets/themes/winui/notepad.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> ' + i18n.t('app.notepad'),
+                'menu-icon-paint': '<img src="assets/themes/winui/paint.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> ' + i18n.t('app.paint'),
+                'menu-icon-explorer': '<img src="assets/themes/winui/file_explorer.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> ' + i18n.t('app.explorer'),
+                'menu-icon-games-folder': '<img src="assets/themes/winui/games.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> ' + i18n.t('app.games_folder'),
+                'menu-icon-terminal': '<img src="assets/themes/winui/ms-dos.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> ' + i18n.t('app.terminal'),
+                'menu-icon-taskmanager': '<img src="assets/themes/winui/task_manager.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> ' + i18n.t('app.taskmanager'),
+                'menu-icon-pluginmanager': '🧩 ' + i18n.t('app.pluginmanager'),
                 'menu-img-internet': 'assets/themes/winui/brave.webp',
                 'menu-img-display': 'assets/themes/winui/display.webp'
             }

@@ -185,8 +185,8 @@ const GAME_DEFS: IGameDef[] = [
 export function buildDynamicFolderWindows(): void {
     FOLDER_DEFS.forEach(def => {
         const backBtnHtml = def.backBtnId 
-            ? `<button class="win95-btn" id="${def.backBtnId}" style="padding: 2px 8px; font-size: 11px;">⬅ Back</button>`
-            : `<button class="win95-btn" disabled style="padding: 2px 8px; font-size: 11px; opacity: 0.5;">⬅ Back</button>`;
+            ? `<button class="win95-btn" id="${def.backBtnId}" style="padding: 2px 8px; font-size: 11px;" data-i18n="folder.back">⬅ Back</button>`
+            : `<button class="win95-btn" disabled style="padding: 2px 8px; font-size: 11px; opacity: 0.5;" data-i18n="folder.back">⬅ Back</button>`;
 
         let iconsHtml = '';
         def.icons.forEach(icon => {
@@ -213,10 +213,10 @@ export function buildDynamicFolderWindows(): void {
             <div class="explorer-window" style="height: 100%; display: flex; flex-direction: column;">
                 <div class="explorer-toolbar" style="display: flex; align-items: center; background: #c0c0c0; padding: 4px; border-bottom: 1px solid #808080;">
                     ${backBtnHtml}
-                    <span style="padding: 2px 5px; font-size: 11px; margin-left: 10px;">📁 File 📝 Edit 👁️ View ❓ Help</span>
+                    <span style="padding: 2px 5px; font-size: 11px; margin-left: 10px;" data-i18n="folder.menu">📁 File 📝 Edit 👁️ View ❓ Help</span>
                 </div>
                 <div class="explorer-address" style="display: flex; align-items: center; padding: 4px; background: #c0c0c0; border-bottom: 1px solid #808080;">
-                    <span style="font-weight: bold; margin-right: 5px; font-size: 11px;">Address:</span>
+                    <span style="font-weight: bold; margin-right: 5px; font-size: 11px;" data-i18n="folder.address">Address:</span>
                     <input type="text" value="${def.address}" readonly style="flex: 1; border: 1px solid #808080; padding: 2px 4px; font-family: 'MS Sans Serif', Arial; font-size: 11px;">
                 </div>
                 <div class="explorer-content" style="flex: 1; background: white; padding: 10px; display: flex; flex-wrap: wrap; gap: 20px; overflow-y: auto; align-content: flex-start;">

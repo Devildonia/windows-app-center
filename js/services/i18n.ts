@@ -108,7 +108,34 @@ export const translations = {
         'settings.language_label': 'Display language',
         'settings.language_desc': 'Select the language for menus, dialogs and apps.',
         'settings.applied': 'Language applied',
-        'settings.more_soon': 'More settings coming soon.'
+        'settings.more_soon': 'More settings coming soon.',
+
+        // Desktop Icons and UI extensions
+        'app.games_folder': 'Games',
+        'app.ragdoll_skins': 'Ragdoll Workshop',
+        'menu.programs_header': '📁 Programs ▸',
+        'menu.settings': '⚙️ Settings',
+        'menu.shutdown_btn': '🔴 Shut Down...',
+        'folder.back': '⬅ Back',
+        'folder.address': 'Address:',
+        'folder.menu': '📁 File 📝 Edit 👁️ View ❓ Help',
+
+        // Sticky Notes
+        'sticky.welcome_win95': 'Welcome to Windows App Center v1.6.3!',
+        'sticky.welcome_modern': 'Welcome to Windows UI App Center v1.6.3!',
+        'sticky.games_hint': 'Check out the Games folder to get started.',
+        'sticky.admin': '- Admin',
+        'sticky.ragdoll_hint': 'Please be kind to the ragdoll pet.',
+
+        // Game Readmes
+        'readme.vlrs': 'VIRTUAL LIFE RESTART SIMULATOR\n================================\n\nTake control of a new life! Make choices, manage your stats, and see where your decisions take you.\n\nInstructions:\n- Use the mouse to interact with the UI.\n- Make decisions carefully!\n- Manage your health, wealth, and happiness.',
+        'readme.flappy': 'FLAPPY NEON\n===========\n\nNavigate the neon bird through the pipes!\n\nInstructions:\n- Press SPACE or Click to jump.\n- Avoid the pipes.\n- Get the highest score!',
+        'readme.football': 'FOOTBALL RUSH\n=============\n\nRun, dodge, and score!\n\nInstructions:\n- Use arrow keys to move.\n- Press SPACE to kick/shoot.',
+        'readme.doom': 'DOOM CLASSIC\n============\n\nThe legendary 90s FPS.\n\nInstructions:\n- W/A/S/D to move.\n- Click/Ctrl to shoot.\n- Space to interact.',
+        'readme.tetris': 'TETRIS TRYHARD\n==============\n\nPure block-stacking action.\n\nInstructions:\n- Use arrow keys to move/rotate blocks.\n- Space to drop.',
+        'readme.chapas': 'CHAPAS PRIME\n============\n\nA 3D physics-based button football game (Chapas).\n\nInstructions:\n- Click and drag on your cap to aim and set power.\n- Release to shoot!\n- Score more goals than your opponent to win.',
+        'readme.nocturna': 'NOCTURNA\n========\n\nEl Jardín Silente - A procedural, atmospheric rhythm game.\n\nInstructions:\n- Connect flowing energy nodes matching the beat.\n- Maintain your rhythm flow to blossom the quiet garden.\n- Use keys or tap controls to interact with visual elements.',
+        'readme.gameboy': 'H.I.P. GAME BOY EMULATOR\n========================\n\nA fully-featured Game Boy emulator in 3D using Three.js and WebGL.\n\nInstructions:\n- Load ROM files (.gb) directly into the virtual cartridge slot.\n- Use customizable keyboard binds to play GB classics.\n- Modify video/render options in the system preferences panel.'
     },
 
     es: {
@@ -182,7 +209,7 @@ export const translations = {
 
         // Apps & System
         'app.taskmanager': 'Administrador de tareas',
-        'app.terminal': 'Símbolo del sistema',
+        'app.terminal': 'MS-DOS',
         'app.pluginmanager': 'Administrador de extensiones',
         'taskmanager.processes': 'Procesos',
         'taskmanager.performance': 'Rendimiento',
@@ -199,7 +226,34 @@ export const translations = {
         'settings.language_label': 'Idioma de la interfaz',
         'settings.language_desc': 'Elige el idioma de menús, diálogos y aplicaciones.',
         'settings.applied': 'Idioma aplicado',
-        'settings.more_soon': 'Más opciones próximamente.'
+        'settings.more_soon': 'Más opciones próximamente.',
+
+        // Desktop Icons and UI extensions
+        'app.games_folder': 'Juegos',
+        'app.ragdoll_skins': 'Taller Ragdoll',
+        'menu.programs_header': '📁 Programas ▸',
+        'menu.settings': '⚙️ Configuración',
+        'menu.shutdown_btn': '🔴 Apagar...',
+        'folder.back': '⬅ Atrás',
+        'folder.address': 'Dirección:',
+        'folder.menu': '📁 Archivo 📝 Edición 👁️ Ver ❓ Ayuda',
+
+        // Sticky Notes
+        'sticky.welcome_win95': '¡Bienvenido a Windows App Center v1.6.3!',
+        'sticky.welcome_modern': '¡Bienvenido a Windows UI App Center v1.6.3!',
+        'sticky.games_hint': 'Echa un vistazo a la carpeta Juegos para empezar.',
+        'sticky.admin': '- Adm.',
+        'sticky.ragdoll_hint': 'Por favor, sé amable con la mascota ragdoll.',
+
+        // Game Readmes
+        'readme.vlrs': 'SIMULADOR DE REINICIO DE VIDA VIRTUAL\n======================================\n\n¡Toma el control de una nueva vida! Toma decisiones, gestiona tus estadísticas y mira a dónde te llevan tus elecciones.\n\nInstrucciones:\n- Usa el ratón para interactuar con la interfaz.\n- ¡Toma decisiones con cuidado!\n- Gestiona tu salud, riqueza y felicidad.',
+        'readme.flappy': 'FLAPPY NEON\n===========\n\n¡Guía al pájaro de neón a través de las tuberías!\n\nInstrucciones:\n- Presiona ESPACIO o haz Clic para saltar.\n- Evita las tuberías.\n- ¡Consigue la puntuación más alta!',
+        'readme.football': 'FOOTBALL RUSH\n=============\n\n¡Corre, esquiva y marca gol!\n\nInstrucciones:\n- Usa las teclas de flecha para moverte.\n- Presiona ESPACIO para chutar/disparar.',
+        'readme.doom': 'DOOM CLÁSICO\n============\n\nEl legendario FPS de los 90.\n\nInstrucciones:\n- W/A/S/D para moverte.\n- Clic/Ctrl para disparar.\n- Espacio para interactuar.',
+        'readme.tetris': 'TETRIS TRYHARD\n==============\n\nAcción pura de apilar bloques.\n\nInstrucciones:\n- Usa las teclas de flecha para mover/rotar bloques.\n- Espacio para soltar.',
+        'readme.chapas': 'CHAPAS PRIME\n============\n\nUn juego de fútbol de chapa en 3D basado en físicas.\n\nInstrucciones:\n- Haz clic y arrastra sobre tu chapa para apuntar y definir la potencia.\n- ¡Suelta para chutar!\n- ¡Marca más goles que tu oponente para ganar!',
+        'readme.nocturna': 'NOCTURNA\n========\n\nEl Jardín Silente - Un juego de ritmo procedural y atmosférico.\n\nInstrucciones:\n- Conecta los nodos de energía que fluyen siguiendo el ritmo.\n- Mantén el ritmo para hacer florecer el silencioso jardín.\n- Usa las teclas o los controles táctiles para interactuar con los elementos visuales.',
+        'readme.gameboy': 'EMULADOR H.I.P. GAME BOY\n========================\n\nUn emulador de Game Boy completo en 3D usando Three.js y WebGL.\n\nInstrucciones:\n- Carga archivos ROM (.gb) directamente en la ranura del cartucho virtual.\n- Usa teclas configurables para jugar clásicos de GB.\n- Modifica las opciones de video/renderizado en el panel de preferencias del sistema.'
     }
 } satisfies ITranslations;
 

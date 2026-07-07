@@ -13,6 +13,7 @@ import { setupDisplayProperties } from './DisplayPropertiesController';
 import { setupKeyboardNavigation, resetKeyboardNavigationState } from './KeyboardNavigationController';
 import { setupDebugMenu, resetDebugMenuState } from './DebugMenuController';
 import { setupStickyNotes } from './StickyNotesController';
+import { i18n } from '../services/i18n';
 
 export function setupEventListeners(): void {
     const openLegacyWindow = (windowId: string): void => {
@@ -68,6 +69,7 @@ export function setupEventListeners(): void {
     setupIconAction('icon-chapas-exe', () => { WindowManager.close('win-chapas-folder'); launchKernelApp('chapas-prime'); });
     setupIconAction('icon-nocturna-exe', () => { WindowManager.close('win-nocturna-folder'); launchKernelApp('nocturna'); });
     setupIconAction('icon-gameboy-exe', () => { WindowManager.close('win-gameboy-folder'); launchKernelApp('gameboy'); });
+    setupIconAction('icon-game-inside', () => { WindowManager.close('win-vlrs-folder'); launchKernelApp('vlrs'); });
 
     // Back navigation
     const setupBackBtn = (btnId: string, hideId: string, showId: string): void => {
@@ -89,29 +91,21 @@ export function setupEventListeners(): void {
     setupBackBtn('back-to-vlrs-from-family', 'win-family-folder', 'win-vlrs-folder');
 
     // READMEs
-    const setupReadme = (iconId: string, filename: string, contentText: string): void => {
+    const setupReadme = (iconId: string, filename: string, key: string): void => {
         const icon = document.getElementById(iconId);
-        if (icon) icon.ondblclick = () => launchKernelApp('notepad', { file: filename, content: contentText });
+        if (icon) {
+            icon.ondblclick = () => launchKernelApp('notepad', { file: filename, content: i18n.t(key) });
+        }
     };
 
-    // README Content
-    const VLRS_README = "VIRTUAL LIFE RESTART SIMULATOR\n================================\n\nTake control of a new life! Make choices, manage your stats, and see where your decisions take you.\n\nInstructions:\n- Use the mouse to interact with the UI.\n- Make decisions carefully!\n- Manage your health, wealth, and happiness.";
-    const FLAPPY_README = "FLAPPY NEON\n===========\n\nNavigate the neon bird through the pipes!\n\nInstructions:\n- Press SPACE or Click to jump.\n- Avoid the pipes.\n- Get the highest score!";
-    const FOOTBALL_README = "FOOTBALL RUSH\n=============\n\nRun, dodge, and score!\n\nInstructions:\n- Use arrow keys to move.\n- Press SPACE to kick/shoot.";
-    const DOOM_README = "DOOM CLASSIC\n============\n\nThe legendary 90s FPS.\n\nInstructions:\n- W/A/S/D to move.\n- Click/Ctrl to shoot.\n- Space to interact.";
-    const TETRIS_README = "TETRIS TRYHARD\n==============\n\nPure block-stacking action.\n\nInstructions:\n- Use arrow keys to move/rotate blocks.\n- Space to drop.";
-    const CHAPAS_README = "CHAPAS PRIME\n============\n\nA 3D physics-based button football game (Chapas).\n\nInstructions:\n- Click and drag on your cap to aim and set power.\n- Release to shoot!\n- Score more goals than your opponent to win.";
-    const NOCTURNA_README = "NOCTURNA\n========\n\nEl Jardín Silente - A procedural, atmospheric rhythm game.\n\nInstructions:\n- Connect flowing energy nodes matching the beat.\n- Maintain your rhythm flow to blossom the quiet garden.\n- Use keys or tap controls to interact with visual elements.";
-    const GAMEBOY_README = "H.I.P. GAME BOY EMULATOR\n========================\n\nA fully-featured Game Boy emulator in 3D using Three.js and WebGL.\n\nInstructions:\n- Load ROM files (.gb) directly into the virtual cartridge slot.\n- Use customizable keyboard binds to play GB classics.\n- Modify video/render options in the system preferences panel.";
-
-    setupReadme('icon-vlrs-readme', 'README_VLRS.TXT', VLRS_README);
-    setupReadme('icon-flappy-readme', 'README_FLAPPY.TXT', FLAPPY_README);
-    setupReadme('icon-football-readme', 'README_FOOTBALL.TXT', FOOTBALL_README);
-    setupReadme('icon-doom-readme', 'README_DOOM.TXT', DOOM_README);
-    setupReadme('icon-tetris-readme', 'README_TETRIS.TXT', TETRIS_README);
-    setupReadme('icon-chapas-readme', 'README_CHAPAS.TXT', CHAPAS_README);
-    setupReadme('icon-nocturna-readme', 'README_NOCTURNA.TXT', NOCTURNA_README);
-    setupReadme('icon-gameboy-readme', 'README_GAMEBOY.TXT', GAMEBOY_README);
+    setupReadme('icon-readme-inside', 'README_VLRS.TXT', 'readme.vlrs');
+    setupReadme('icon-flappy-readme', 'README_FLAPPY.TXT', 'readme.flappy');
+    setupReadme('icon-football-readme', 'README_FOOTBALL.TXT', 'readme.football');
+    setupReadme('icon-doom-readme', 'README_DOOM.TXT', 'readme.doom');
+    setupReadme('icon-tetris-readme', 'README_TETRIS.TXT', 'readme.tetris');
+    setupReadme('icon-chapas-readme', 'README_CHAPAS.TXT', 'readme.chapas');
+    setupReadme('icon-nocturna-readme', 'README_NOCTURNA.TXT', 'readme.nocturna');
+    setupReadme('icon-gameboy-readme', 'README_GAMEBOY.TXT', 'readme.gameboy');
 
     // Folder icons actions
     setupIconAction('icon-display', () => openLegacyWindow('win-display-props'));
