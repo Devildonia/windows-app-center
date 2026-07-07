@@ -373,6 +373,20 @@ export abstract class Ragdoll3DCore {
     // ── Delegación hacia colaboradores (superficie protected preservada) ─────
 
     protected setRagdollMode(enabled: boolean): void {
+        // Transición física → animación: antes de devolver el control al mixer,
+        // mover el modelo raíz a donde la física dejó las caderas. Sin esto, el
+        // mixer recoloca los huesos relativos al origen del modelo y el personaje
+        // "teletransporta" al punto de spawn en vez de levantarse donde cayó.
+        // Solo X/Z — la Y se mantiene en _modelGroundY para que no se hunda con
+        // cada ciclo de agarre/soltar. Centralizado aquí para que TODOS los
+        // caminos de recuperación (IA y RagdollFallReactions) lo apliquen.
+        if (!enabled && this.isRagdollMode) {
+            const hipsBody = this.rigidBodies.get('Hips');
+            if (hipsBody && this.model) {
+                const ht = hipsBody.translation();
+                this.model.position.set(ht.x, this._modelGroundY, ht.z);
+            }
+        }
         this.physicsRig.setRagdollMode(enabled);
     }
 

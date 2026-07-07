@@ -79,16 +79,10 @@ export class RagdollFallReactions {
                 this.deps.setStandUpTimeout(setTimeout(() => {
                     this.deps.setStandUpTimeout(null);
                     if (!this.deps.getGrabbedBody() && this.deps.getRagdollMode()) {
-                        // Move root model to the hips physics position so it doesn't teleport back to original start position
-                        const hipsBody = this.deps.getRigidBodies().get('Hips');
-                        const model = this.deps.getModel();
-                        if (hipsBody && model) {
-                            const ht = hipsBody.translation();
-                            // Solo mover X/Z — Y se preserva como _modelGroundY para
-                            // que el personaje no se hunda con cada agarre/soltar.
-                            model.position.set(ht.x, this.deps.getModelGroundY(), ht.z);
-                        }
-
+                        // El reposicionamiento del modelo raíz a la posición física
+                        // de las caderas ahora vive de forma centralizada en
+                        // Ragdoll3DCore.setRagdollMode(false), para que todos los
+                        // caminos de recuperación (este y el de la IA) lo compartan.
                         this.deps.setRagdollMode(false);
                         this.deps.fadeToAction('sleep');
                     }

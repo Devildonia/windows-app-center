@@ -40,8 +40,11 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
         try {
             await RAPIER.init();
             
-            // Need a specific gravity for Desktop?
-            this.world = new RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
+            // Gravedad reducida respecto a la terrestre (-9.81): a la escala de los
+            // huesos del ragdoll, la gravedad real lo estampaba contra el suelo de
+            // forma violenta al soltarlo. -5.0 lo hace caer con peso pero de forma
+            // natural, sin dar el pelotazo.
+            this.world = new RAPIER.World({ x: 0.0, y: -5.0, z: 0.0 });
             
             this.setupThreeJS();
             await this.loadModelCore();
