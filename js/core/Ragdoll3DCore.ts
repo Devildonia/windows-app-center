@@ -168,9 +168,15 @@ export abstract class Ragdoll3DCore {
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
         }
-        if (this.renderer) {
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            resManager.disposeOwner('ragdoll3d');
+        } else if (this.renderer) {
             this.renderer.dispose();
             this.renderer.forceContextLoss();
+        }
+
+        if (this.renderer) {
             if (this.container && this.renderer.domElement.parentNode === this.container) {
                 this.container.removeChild(this.renderer.domElement);
             }

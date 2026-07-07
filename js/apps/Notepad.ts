@@ -15,8 +15,7 @@
  */
 
 import { Utils } from '../utils.js';
-import { WindowManager } from '../ui/WindowManager.js';
-import type { IWindowManager } from '../ui/WindowManager.js';
+import { WindowManager, type IWindowManager } from '../ui/WindowManager.js';
 import type { INotify } from '../ui/NotificationManager.js';
 import { Kernel } from '../core/Kernel.js';
 import { Services } from '../core/ServiceContainer.js';

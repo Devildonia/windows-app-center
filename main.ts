@@ -20,6 +20,7 @@ import { VFS } from './js/core/VFS';
 import { Kernel } from './js/core/Kernel';
 import { BootLoader } from './js/core/BootLoader';
 import { HDRManager } from './js/core/HDRManager';
+import { ResourceManager } from './js/core/ResourceManager';
 import { HapticService } from './js/services/HapticService';
 
 Services.register('HapticService', new HapticService());

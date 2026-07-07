@@ -17,7 +17,10 @@ export function initializeDraggableIcons(): void {
         'icon-internet': { x: 20, y: 620 },
         'icon-ragdoll-skins': { x: 20, y: 720 },
         'icon-winamp': { x: 20, y: 820 },
-        'icon-games-folder': { x: window.innerWidth / 2 - 40, y: window.innerHeight / 2 - 60 }
+        'icon-games-folder': { x: 120, y: 20 },
+        'icon-terminal': { x: 120, y: 120 },
+        'icon-taskmanager': { x: 120, y: 220 },
+        'icon-pluginmanager': { x: 120, y: 320 }
     };
 
     const icons = document.querySelectorAll('#system-icons .icon, #app-launch-zone .icon');

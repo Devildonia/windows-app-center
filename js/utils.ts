@@ -335,6 +335,10 @@ class EventManager {
         this.listeners = new Map();
     }
 
+    count(): number {
+        return this.listeners.size;
+    }
+
     /**
      * Adds an event listener and tracks it
      */
@@ -375,12 +379,7 @@ class EventManager {
         Logger.groupEnd();
     }
 
-    /**
-     * Gets count of registered listeners
-     */
-    count(): number {
-        return this.listeners.size;
-    }
+
 
     /**
      * Generates unique key for listener (collision-safe)

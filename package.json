@@ -1,6 +1,6 @@
 {
   "name": "windows-app-center",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "type": "module",
   "description": "Windows 95 style simulator and prototyping environment. A sandbox for developing modular features (VFS, 3D Physics) ported to other projects.",
   "main": "main.ts",

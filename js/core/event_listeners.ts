@@ -162,7 +162,7 @@ export function initializeWindowControls(): void {
         const win = winEl as HTMLElement;
         const setupBtn = (selector: string, action: EventListener): void => {
             const btn = win.querySelector(selector) as HTMLElement | null;
-            if (btn) btn.addEventListener('click', action);
+            if (btn) Utils.eventManager.add(btn, 'click', action);
         };
 
         setupBtn('.maximize-btn', (e: Event) => {
@@ -197,4 +197,11 @@ export function __resetEventListenersState(): void {
     resetDraggableIconsState();
     resetKeyboardNavigationState();
     resetDebugMenuState();
+}
+
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        Utils.eventManager.removeAll();
+        __resetEventListenersState();
+    });
 }

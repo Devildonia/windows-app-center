@@ -83,6 +83,22 @@ class AudioManager implements IAudioManager {
                 this.masterGain.connect(this.context.destination);
                 this.masterGain.gain.value = CONFIG.AUDIO?.MASTER_VOLUME || 0.3;
 
+                const resManager = Services.get('ResourceManager');
+                if (resManager) {
+                    resManager.register('audio-manager', 'audio', {
+                        dispose: () => {
+                            if (this.masterGain) {
+                                try {
+                                    this.masterGain.disconnect();
+                                } catch (_) {}
+                            }
+                            if (this.context && this.context.state !== 'closed') {
+                                this.context.close().catch(() => {});
+                            }
+                        }
+                    });
+                }
+
                 this.registerSounds();
                 this.initialized = true;
 
@@ -175,8 +191,13 @@ class AudioManager implements IAudioManager {
     }
 
     public cleanup(): void {
-        if (this.context && this.context.state !== 'closed') {
-            this.context.close();
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            resManager.disposeOwner('audio-manager');
+        } else {
+            if (this.context && this.context.state !== 'closed') {
+                this.context.close();
+            }
         }
         this.initialized = false;
         Utils.Logger.audio('AudioManager cleaned up');

@@ -12,6 +12,7 @@ import { VFS } from './VFS';
 import { Services } from './ServiceContainer';
 import type { IWindowsApp, IAppMetadata, IWindowsAppConstructor, IProcess, IAppPlugin } from './Types';
 import { WindowFactory } from '../ui/WindowFactory';
+import { PluginManager } from './PluginManager';
 
 export interface IAppRegistryEntry {
     appClass: IWindowsAppConstructor;
@@ -26,7 +27,9 @@ export interface IKernelRegistry {
 export interface IKernel {
     init(): void;
     registerApp(id: string, appClass: IWindowsAppConstructor, metadata: IAppMetadata): void;
+    unregisterApp(id: string): boolean;
     installPlugin(plugin: IAppPlugin): void;
+    uninstallPlugin(id: string): boolean;
     launch(appId: string, params?: Record<string, unknown>): IProcess | null;
     kill(pid: number): boolean;
     getRegistry(): { apps: Record<string, IAppRegistryEntry>, processes: IProcess[] };
@@ -53,16 +56,49 @@ export const Kernel: IKernel = (() => {
         Utils.Logger.log(`Kernel: App registered [${id}]`);
     }
 
+    function unregisterApp(id: string): boolean {
+        if (registry.apps[id]) {
+            delete registry.apps[id];
+            Utils.Logger.log(`Kernel: App unregistered [${id}]`);
+            return true;
+        }
+        return false;
+    }
+
     function installPlugin(plugin: IAppPlugin): void {
-        registerApp(plugin.id, plugin.component, plugin.metadata);
+        const validation = PluginManager.validatePlugin(plugin);
+        if (!validation.ok) {
+            Utils.Logger.error(`Kernel: Plugin validation failed for [${plugin?.id}]: ${validation.error}`);
+            return;
+        }
+
+        registerApp(plugin.id, plugin.component, { ...plugin.metadata, isPlugin: true });
         if (plugin.windowDef) {
             if (plugin.windowDef.src) {
-                WindowFactory.createGameWindow(plugin.windowDef);
+                const sandboxedDef = {
+                    ...plugin.windowDef,
+                    sandbox: 'allow-scripts allow-forms'
+                };
+                WindowFactory.createGameWindow(sandboxedDef);
             } else {
                 WindowFactory.create(plugin.windowDef);
             }
         }
         Utils.Logger.log(`Kernel: Plugin installed [${plugin.id}]`);
+    }
+
+    function uninstallPlugin(id: string): boolean {
+        // Kill active processes of that appId
+        const procs = getRegistry().processes.filter(p => p.appId === id);
+        procs.forEach(p => kill(p.pid));
+
+        const success = unregisterApp(id);
+        if (success) {
+            window.dispatchEvent(new CustomEvent('kernel:plugin-uninstalled', { detail: { id } }));
+            Utils.Logger.log(`Kernel: Plugin uninstalled [${id}]`);
+            return true;
+        }
+        return false;
     }
 
     function launch(appId: string, params: Record<string, unknown> = {}): IProcess | null {
@@ -166,7 +202,9 @@ export const Kernel: IKernel = (() => {
     return {
         init,
         registerApp,
+        unregisterApp,
         installPlugin,
+        uninstallPlugin,
         launch,
         kill,
         getRegistry,

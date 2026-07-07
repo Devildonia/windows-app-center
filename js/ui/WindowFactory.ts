@@ -7,8 +7,7 @@
 
 import { Utils } from '../utils';
 import { Services } from '../core/ServiceContainer';
-import { WindowManager } from './WindowManager';
-import type { IWindowManager } from './WindowManager';
+import { WindowManager, type IWindowManager } from './WindowManager';
 
 export interface IWindowOptions {
     id?: string;
@@ -25,6 +24,7 @@ export interface IWindowOptions {
     statusBar?: { id?: string, text?: string };
     iframeId?: string;
     src?: string;
+    sandbox?: string;
 }
 
 export interface IWindowFactory {
@@ -175,7 +175,10 @@ export const WindowFactory: IWindowFactory = (function () {
         iframe.id = iframeId;
         iframe.className = 'game-frame';
         iframe.style.cssText = 'width:100%; height:100%; border:none; background:#000;';
-        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
+        const sandboxValue = opts.sandbox !== undefined ? opts.sandbox : 'allow-scripts allow-same-origin allow-popups';
+        if (sandboxValue) {
+            iframe.setAttribute('sandbox', sandboxValue);
+        }
         iframe.setAttribute('loading', 'lazy');
         // Don't set src yet — only load when window opens (lazy)
         iframe.setAttribute('data-src', opts.src || '');

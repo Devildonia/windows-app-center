@@ -396,3 +396,9 @@ export { TouchManager };
 if (typeof window !== 'undefined') {
     Services.register('TouchManager', TouchManager);
 }
+
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        TouchManager.destroy();
+    });
+}

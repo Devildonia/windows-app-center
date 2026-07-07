@@ -10,8 +10,7 @@
  */
 
 import { Utils } from '../utils.js';
-import { VFS } from '../core/VFS.js';
-import type { IVFSNode } from '../core/VFS.js';
+import { VFS, type IVFSNode } from '../core/VFS.js';
 import { Kernel } from '../core/Kernel.js';
 import { Services } from '../core/ServiceContainer.js';
 import type { IWindowManager } from '../ui/WindowManager.js';

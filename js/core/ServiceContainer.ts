@@ -23,6 +23,7 @@ import type { IEventBus, IStore } from './EventBus';
 import type { IBootLoader } from './BootLoader';
 import type { IHDRManager } from './HDRManager';
 import type { IVFS } from './VFS';
+import type { IResourceManager } from './ResourceManager';
 import type { IWindowManager } from '../ui/WindowManager';
 import type { IWindowFactory } from '../ui/WindowFactory';
 import type { ITaskbarManager } from '../ui/TaskbarManager';
@@ -54,6 +55,7 @@ export interface IServiceRegistry {
     'VFS':              IVFS;
     'BootLoader':       IBootLoader;
     'HDRManager':       IHDRManager;
+    'ResourceManager':  IResourceManager;
     // UI
     'WindowManager':    IWindowManager;
     'WindowFactory':    IWindowFactory;

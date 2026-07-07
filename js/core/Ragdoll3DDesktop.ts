@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Ragdoll3DAI, Ragdoll3DAIState } from './Ragdoll3DAI';
-import type { IRagdoll3DController } from './Ragdoll3DAI';
+import { Ragdoll3DAI, Ragdoll3DAIState, type IRagdoll3DController } from './Ragdoll3DAI';
 import { Ragdoll3DCore } from './Ragdoll3DCore';
 
 import { Services } from './ServiceContainer';
@@ -57,7 +56,12 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
 
     public override terminate(): void {
         super.terminate();
-        window.removeEventListener('resize', this._boundResize);
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            resManager.disposeOwner('ragdoll3d-desktop');
+        } else {
+            window.removeEventListener('resize', this._boundResize);
+        }
     }
 
     protected override setupThreeJS(): void {
@@ -77,6 +81,18 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.shadowMap.enabled = true;
         this.container.appendChild(this.renderer.domElement);
+
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            resManager.register('ragdoll3d', 'webgl', {
+                dispose: () => {
+                    if (this.renderer) {
+                        this.renderer.dispose();
+                        this.renderer.forceContextLoss();
+                    }
+                }
+            });
+        }
 
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
         hemiLight.position.set(0, 20, 0);
@@ -100,6 +116,13 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
         this.scene.add(floorMesh);
 
         window.addEventListener('resize', this._boundResize);
+        if (resManager) {
+            resManager.register('ragdoll3d-desktop', 'listener', {
+                dispose: () => {
+                    window.removeEventListener('resize', this._boundResize);
+                }
+            });
+        }
         
         // El cuboid por defecto se centra en (0,0,0) con semiejes (50, 0.1, 50).
         // Su superficie superior queda en Y=+0.1, pero el plano visual Three.js

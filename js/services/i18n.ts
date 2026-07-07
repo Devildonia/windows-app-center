@@ -87,7 +87,19 @@ const translations: ITranslations = {
         'notify.file_too_large': 'File is too large! Please choose an image under 2MB.',
         'notify.storage_error': 'Could not save. Storage may be full.',
         'notify.offline': 'You are offline. Some features may not work.',
-        'notify.update_available': 'A new version is available. Refresh to update.'
+        'notify.update_available': 'A new version is available. Refresh to update.',
+
+        // Apps & System
+        'app.taskmanager': 'Task Manager',
+        'app.terminal': 'MS-DOS Prompt',
+        'app.pluginmanager': 'Plugin Manager',
+        'taskmanager.processes': 'Processes',
+        'taskmanager.performance': 'Performance',
+        'taskmanager.system': 'System',
+        'taskmanager.endtask': 'End Task',
+        'pluginmanager.install': 'Install',
+        'pluginmanager.uninstall': 'Uninstall',
+        'pluginmanager.coreapp': 'core app'
     },
 
     es: {
@@ -157,7 +169,19 @@ const translations: ITranslations = {
         'notify.file_too_large': '¡Archivo muy grande! Elige una imagen de menos de 2MB.',
         'notify.storage_error': 'No se pudo guardar. El almacenamiento puede estar lleno.',
         'notify.offline': 'Sin conexión. Algunas funciones podrían no funcionar.',
-        'notify.update_available': 'Nueva versión disponible. Recarga para actualizar.'
+        'notify.update_available': 'Nueva versión disponible. Recarga para actualizar.',
+
+        // Apps & System
+        'app.taskmanager': 'Administrador de tareas',
+        'app.terminal': 'Símbolo del sistema',
+        'app.pluginmanager': 'Administrador de extensiones',
+        'taskmanager.processes': 'Procesos',
+        'taskmanager.performance': 'Rendimiento',
+        'taskmanager.system': 'Sistema',
+        'taskmanager.endtask': 'Finalizar tarea',
+        'pluginmanager.install': 'Instalar',
+        'pluginmanager.uninstall': 'Desinstalar',
+        'pluginmanager.coreapp': 'app del sistema'
     }
 };
 

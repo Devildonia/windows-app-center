@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-07-07
+
+### Added
+- **MS-DOS Prompt (Terminal)**: Command-line application backed by the VFS. Supports `help`, `ver`, `cls`/`clear`, `cd`, `dir`/`ls`, `type`/`cat`, `mkdir`, `del`/`rm`, and `ren`, with command history navigation. Auto-registered with the Kernel and launchable from its desktop icon and Start Menu entry.
+- **Task Manager**: Live process viewer listing active Kernel processes with end-task support. Refreshes on `kernel:process-started` / `kernel:process-stopped` events plus a 1s poll, organized into Processes / Performance / System tabs.
+- **Plugin System**: Runtime app-plugin architecture. `PluginManager.validatePlugin` validates third-party `IAppPlugin` definitions (ID pattern `^[a-z0-9-]+$`, required metadata, component constructor, duplicate-ID guard); the **Plugin Manager** app installs and uninstalls plugins via `Kernel.installPlugin` / `Kernel.uninstallPlugin`.
+- **ResourceManager**: Centralized, owner-scoped resource registry (`webgl`, `audio`, `listener`, `timer`) with LIFO disposal, `disposeOwner` / `disposeAll`, and usage `stats()` to standardize leak-free lifecycle cleanup.
+- **Themed application icons**: Added `ms-dos.webp` (MS-DOS Prompt) and `task_manager.webp` (Task Manager) for both the Classic Win95 and Modern themes, wired into desktop icons and Start Menu entries via `ThemeManager`.
+
+### Fixed
+- **Stability & Security Hardening Sprint (R-01 → R-15)**: Service Worker precaching, memory-leak fixes, sandbox hardening, XSS mitigation, CSP tightening, TouchManager lifecycle cleanup, WebGL context handling, VFS storage quotas, stricter `tsconfig` rules, code hygiene, and a re-entry guard.
+
 ## [1.6.2] - 2026-07-03
 
 ### Added

@@ -1,4 +1,4 @@
-# 🖥️ Windows App Center v1.6.2 (Prototyping Lab)
+# 🖥️ Windows App Center v1.6.3 (Prototyping Lab)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=flat&logo=vite&logoColor=white)](https://vitejs.dev/)
@@ -22,6 +22,8 @@ A high-fidelity **Windows 95/98 Simulator & Prototyping Environment** built with
 - **Native Window Manager**: Drag, resize, minimize, and maximize functionality with proper z-index and lifecycle management.
 - **Theme Engine**: Switch between "Classic Win95" and "Modern High Contrast" themes on the fly.
 - **Event Delegation**: Performance-optimized UI interaction using a data-attribute based event bus.
+- **Plugin System**: Validate and register third-party apps at runtime through the Kernel plugin API (`installPlugin` / `uninstallPlugin`).
+- **Resource Manager**: Owner-scoped registry (WebGL, audio, listeners, timers) with LIFO disposal for leak-free lifecycle cleanup.
 
 ### 🎮 Ragdoll Pets (2D & 3D)
 - **3D Physics Ragdoll**: Powered by **Rapier3D** and **Three.js**. Features elastic grab, procedural animations, and AI state management (Wander, Idle, Perform).
@@ -35,6 +37,20 @@ A high-fidelity **Windows 95/98 Simulator & Prototyping Environment** built with
 - 🌐 **Internet Explorer**: Simulated web browsing with history and safety filters.
 - 📻 **Webamp**: Authentic Winamp experience for your audio files.
 - ⚙️ **Control Panel**: Manage HDR, wallpapers, and system themes.
+- 🖥️ **MS-DOS Prompt**: Command-line terminal with VFS-backed commands (`dir`, `cd`, `type`, `mkdir`, `del`, `ren`, ...) and history navigation.
+- 📊 **Task Manager**: Live Kernel process monitor with end-task support and Processes/Performance/System tabs.
+- 🧩 **Plugin Manager**: Install, validate, and uninstall runtime app plugins.
+
+### 🕹️ Games Arcade
+Sandboxed games launched in isolated iframes and registered with the Kernel:
+- 🎮 **Virtual Life Restart Simulator** — narrative life-sim.
+- 🐦 **Flappy Neon** — neon-styled endless flapper.
+- ⚽ **Football Rush** — arcade football runner.
+- 🔫 **Ultimate DOOM** — the classic FPS.
+- 🧱 **Tetris Tryhard** — competitive block stacker.
+- 🔴 **Chapas Prime** — Three.js button-football (chapas) game.
+- 🌙 **Nocturna** — procedural Web Audio rhythm game.
+- 👾 **H.I.P. Game Boy** — 3D WebGL Game Boy emulator.
 
 ### 🌈 Advanced Visuals
 - **GLSL Wallpaper Engine**: High-performance multi-pass shaders for dynamic desktop backgrounds.
@@ -86,12 +102,18 @@ graph TD
         WM[Window Manager]
         DM[Desktop Manager]
         AM[Audio Manager]
+        RM[Resource Manager]
+        PM[Plugin Manager]
     end
     
     Services --> Apps[Applications]
     Apps --> Notepad
     Apps --> Paint
     Apps --> Explorer
+    Apps --> Terminal[MS-DOS Prompt]
+    Apps --> TaskManager[Task Manager]
+    K --> PM
+    PM -.installs.-> Apps
     
     OS --> Physics[Physics Engines]
     Physics --> Rapier3D

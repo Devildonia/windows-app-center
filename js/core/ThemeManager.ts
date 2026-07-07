@@ -73,7 +73,7 @@ export class ThemeManager {
         // Update Sticky Note Text
         const welcomeText = document.getElementById('welcome-text');
         if (welcomeText) {
-            welcomeText.textContent = themeName === 'modern' ? 'Welcome to Windows UI App Center v1.6.2!' : 'Welcome to Windows App Center v1.6.2!';
+            welcomeText.textContent = themeName === 'modern' ? 'Welcome to Windows UI App Center v1.6.3!' : 'Welcome to Windows App Center v1.6.3!';
         }
 
         // Swap Icons
@@ -100,12 +100,18 @@ export class ThemeManager {
                 'icon-internet': '<img src="assets/icons/iexplorer.webp" alt="IE" style="width: 48px; height: 48px; object-fit: contain;">',
                 'icon-display': '<img src="assets/icons/Display.webp" alt="Display" style="width: 48px; height: 48px; object-fit: contain;">',
                 'icon-winamp': '<img src="assets/icons/winamp_icon.webp" draggable="false" style="width: 48px; height: 48px; object-fit: contain;">',
+                'icon-terminal': '<img src="assets/icons/ms-dos.webp" alt="MS-DOS" style="width: 48px; height: 48px; object-fit: contain;">',
+                'icon-taskmanager': '<img src="assets/icons/task_manager.webp" alt="Task Manager" style="width: 48px; height: 48px; object-fit: contain;">',
+                'icon-pluginmanager': '🧩',
                 // Start Menu Items
                 'start-menu-btn-icon': win95StartSvg,
                 'menu-icon-notepad': '📝 Notepad',
                 'menu-icon-paint': '🎨 Paint',
                 'menu-icon-explorer': '📂 Windows Explorer',
                 'menu-icon-games-folder': '📂 Games',
+                'menu-icon-terminal': '<img src="assets/icons/ms-dos.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> MS-DOS',
+                'menu-icon-taskmanager': '<img src="assets/icons/task_manager.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Task Manager',
+                'menu-icon-pluginmanager': '🧩 Plugin Manager',
                 'menu-img-internet': 'assets/icons/iexplorer.webp',
                 'menu-img-display': 'assets/icons/Display.webp'
             },
@@ -120,12 +126,18 @@ export class ThemeManager {
                 'icon-internet': '<img src="assets/themes/winui/brave.webp" alt="Internet" style="width: 48px; height: 48px; object-fit: contain;">',
                 'icon-display': '<img src="assets/themes/winui/display.webp" alt="Display" style="width: 48px; height: 48px; object-fit: contain;">',
                 'icon-winamp': '<img src="assets/themes/winui/Winamp.webp" draggable="false" style="width: 48px; height: 48px; object-fit: contain;">',
+                'icon-terminal': '<img src="assets/themes/winui/ms-dos.webp" alt="MS-DOS" style="width: 48px; height: 48px; object-fit: contain;">',
+                'icon-taskmanager': '<img src="assets/themes/winui/task_manager.webp" alt="Task Manager" style="width: 48px; height: 48px; object-fit: contain;">',
+                'icon-pluginmanager': '<span style="font-size: 38px; display: block; text-align: center;">🧩</span>',
                 // Start Menu Items
                 'start-menu-btn-icon': '<img src="assets/themes/winui/start.webp" style="width:28px; height:28px; object-fit:contain;">',
                 'menu-icon-notepad': '<img src="assets/themes/winui/notepad.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Notepad',
                 'menu-icon-paint': '<img src="assets/themes/winui/paint.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Paint',
                 'menu-icon-explorer': '<img src="assets/themes/winui/file_explorer.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Windows Explorer',
                 'menu-icon-games-folder': '<img src="assets/themes/winui/games.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Games',
+                'menu-icon-terminal': '<img src="assets/themes/winui/ms-dos.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> MS-DOS',
+                'menu-icon-taskmanager': '<img src="assets/themes/winui/task_manager.webp" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;"> Task Manager',
+                'menu-icon-pluginmanager': '🧩 Plugin Manager',
                 'menu-img-internet': 'assets/themes/winui/brave.webp',
                 'menu-img-display': 'assets/themes/winui/display.webp'
             }

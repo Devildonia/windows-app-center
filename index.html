@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: *; media-src 'self' blob: data: *; connect-src 'self' *; frame-src 'self' * data: about:blank; worker-src 'self' blob:;">
-    <title>Windows App Center v1.6.2</title>
+    <title>Windows App Center v1.6.3</title>
     <meta name="description"
         content="Retro Windows 95 desktop simulator with games, apps, and a ragdoll pet. Built with Vite and Vanilla JS.">
     <meta name="theme-color" content="#008080">
@@ -123,7 +123,18 @@
                 </div>
                 <span>Winamp</span>
             </div>
-
+            <div class="icon" id="icon-terminal" role="button" tabindex="0" aria-label="MS-DOS" data-launch="terminal">
+                <div class="icon-box">🖥️</div>
+                <span>MS-DOS</span>
+            </div>
+            <div class="icon" id="icon-taskmanager" role="button" tabindex="0" aria-label="Task Manager" data-launch="taskmanager">
+                <div class="icon-box">📊</div>
+                <span>Task Manager</span>
+            </div>
+            <div class="icon" id="icon-pluginmanager" role="button" tabindex="0" aria-label="Plugin Manager" data-launch="pluginmanager">
+                <div class="icon-box">🧩</div>
+                <span>Plugin Manager</span>
+            </div>
         </div>
     </div>
 
@@ -134,7 +145,7 @@
 
     <!-- Sticky Notes (Post-its) -->
     <div id="sticky-note" class="sticky-note draggable-sticky">
-        <p id="welcome-text">Welcome to Windows App Center v1.6.2!</p>
+        <p id="welcome-text">Welcome to Windows App Center v1.6.3!</p>
         <p>Check out the Games folder to get started.</p>
         <p style="text-align: right; margin-top: 10px; font-size: 13px;">- Admin</p>
     </div>
@@ -889,6 +900,15 @@
                         </div>
                         <div class="menu-item" data-launch="explorer" id="menu-icon-explorer">
                             📂 Windows Explorer
+                        </div>
+                        <div class="menu-item" data-launch="terminal" id="menu-icon-terminal">
+                            🖥️ MS-DOS
+                        </div>
+                        <div class="menu-item" data-launch="taskmanager" id="menu-icon-taskmanager">
+                            📊 Task Manager
+                        </div>
+                        <div class="menu-item" data-launch="pluginmanager" id="menu-icon-pluginmanager">
+                            🧩 Plugin Manager
                         </div>
                     </div>
                 </div>

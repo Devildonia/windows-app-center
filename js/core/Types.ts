@@ -5,6 +5,7 @@ export interface IAppMetadata {
     icon: string;
     description?: string;
     singleton?: boolean;
+    isPlugin?: boolean;
 }
 
 export interface IAppPlugin {
