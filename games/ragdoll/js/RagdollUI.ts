@@ -3,8 +3,17 @@
  * Merges legacy skins and advanced workshop features into a single tabbed Win95 interface.
  */
 
+import type { RagdollPet } from './RagdollPet.js';
+import type { Stickman } from './Stickman.js';
+import type { SkinManager, Proportions, SkinConfig } from './SkinManager.js';
+
 export class RagdollUI {
-    static init(ragdollPet) {
+    static ragdollPet: RagdollPet | null = null;
+    static stickman: Stickman | null = null;
+    static manager: SkinManager | null = null;
+    static selectedPart: string | null = null;
+
+    static init(ragdollPet: RagdollPet): void {
         this.ragdollPet = ragdollPet;
         // stickman/manager are null until the 2D pet is actually spawned. Keep them
         // nullable so the Workshop UI can wire its tabs and sliders on open — every
@@ -29,8 +38,8 @@ export class RagdollUI {
         this.showTab('skins');
     }
 
-    static syncUIState() {
-        if (!this.manager) return;
+    static syncUIState(): void {
+        if (!this.manager || !this.stickman) return;
 
         // Sync Physics
         const props = this.manager.proportions;
@@ -41,10 +50,10 @@ export class RagdollUI {
 
         // Sync VFX
         const config = this.manager.config;
-        const softCheck = document.getElementById('check-soft');
+        const softCheck = document.getElementById('check-soft') as HTMLInputElement | null;
         if (softCheck) softCheck.checked = config.softJoints;
 
-        const shadowCheck = document.getElementById('check-shadow');
+        const shadowCheck = document.getElementById('check-shadow') as HTMLInputElement | null;
         if (shadowCheck) shadowCheck.checked = config.showShadow;
 
         // Sync Sliders
@@ -52,165 +61,174 @@ export class RagdollUI {
         this.updateLabelSlider('vfx-size', config.vfxSize || 1.0);
 
         // Sync Global
-        const gsSlider = document.getElementById('global-scale-slider');
-        if (gsSlider) gsSlider.value = this.stickman.globalScale;
+        const gsSlider = document.getElementById('global-scale-slider') as HTMLInputElement | null;
+        if (gsSlider) gsSlider.value = String(this.stickman.globalScale);
         const gsVal = document.getElementById('global-scale-val');
         if (gsVal) gsVal.textContent = this.stickman.globalScale.toFixed(1);
 
-        const gwSlider = document.getElementById('global-width-slider');
-        if (gwSlider) gwSlider.value = this.stickman.globalWidthScale || 1.0;
+        const gwSlider = document.getElementById('global-width-slider') as HTMLInputElement | null;
+        if (gwSlider) gwSlider.value = String(this.stickman.globalWidthScale || 1.0);
         const gwVal = document.getElementById('global-width-val');
         if (gwVal) gwVal.textContent = (this.stickman.globalWidthScale || 1.0).toFixed(1);
 
         this.updateVFXButtonStates();
     }
 
-
-
-    static updateLabelSlider(id, val) {
-        const slider = document.getElementById(`slider-${id}`);
+    static updateLabelSlider(id: string, val: number): void {
+        const slider = document.getElementById(`slider-${id}`) as HTMLInputElement | null;
         const valSpan = document.getElementById(`val-${id}`);
-        if (slider) slider.value = val;
+        if (slider) slider.value = String(val);
         if (valSpan) valSpan.textContent = val.toFixed(1);
     }
 
-    static updateSlider(id, val) {
-        const slider = document.getElementById(`slider-${id}`);
+    static updateSlider(id: string, val: number): void {
+        const slider = document.getElementById(`slider-${id}`) as HTMLInputElement | null;
         const valSpan = document.getElementById(`val-${id}`);
-        if (slider) slider.value = val;
+        if (slider) slider.value = String(val);
         if (valSpan) valSpan.textContent = val.toFixed(1);
     }
 
-    static setupTabs() {
+    static setupTabs(): void {
         const tabs = document.querySelectorAll('.tab-btn');
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                this.showTab(tab.getAttribute('data-tab'));
-                if (window.playBlip) window.playBlip(1100);
+                const targetTab = tab.getAttribute('data-tab');
+                if (targetTab) {
+                    this.showTab(targetTab);
+                }
+                if ((window as any).playBlip) (window as any).playBlip(1100);
             });
         });
     }
 
-    static showTab(target) {
+    static showTab(target: string): void {
         const tabs = document.querySelectorAll('.tab-btn');
         tabs.forEach(t => {
             const isActive = t.getAttribute('data-tab') === target;
             t.classList.toggle('active', isActive);
-            t.style.background = isActive ? '#d0d0d0' : '#c0c0c0';
+            (t as HTMLElement).style.background = isActive ? '#d0d0d0' : '#c0c0c0';
         });
 
         document.querySelectorAll('.tab-content').forEach(pane => {
-            pane.style.display = pane.id === `tab-${target}` ? 'block' : 'none';
+            (pane as HTMLElement).style.display = pane.id === `tab-${target}` ? 'block' : 'none';
         });
     }
 
-    static setupGlobalSliders() {
-        const globalScaleSlider = document.getElementById('global-scale-slider');
+    static setupGlobalSliders(): void {
+        const globalScaleSlider = document.getElementById('global-scale-slider') as HTMLInputElement | null;
         const globalScaleVal = document.getElementById('global-scale-val');
-        const globalWidthSlider = document.getElementById('global-width-slider');
+        const globalWidthSlider = document.getElementById('global-width-slider') as HTMLInputElement | null;
         const globalWidthVal = document.getElementById('global-width-val');
 
         if (globalScaleSlider) {
             globalScaleSlider.addEventListener('input', (e) => {
-                const val = e.target.value;
-                if (globalScaleVal) globalScaleVal.textContent = val;
+                const target = e.target as HTMLInputElement;
+                const val = parseFloat(target.value);
+                if (globalScaleVal) globalScaleVal.textContent = String(val);
                 if (RagdollUI.stickman) RagdollUI.stickman.setGlobalScale(val);
-                if (window.playBlip) window.playBlip(1000);
+                if ((window as any).playBlip) (window as any).playBlip(1000);
             });
         }
 
         if (globalWidthSlider) {
             globalWidthSlider.addEventListener('input', (e) => {
-                const val = e.target.value;
-                if (globalWidthVal) globalWidthVal.textContent = val;
+                const target = e.target as HTMLInputElement;
+                const val = parseFloat(target.value);
+                if (globalWidthVal) globalWidthVal.textContent = String(val);
                 if (RagdollUI.stickman) RagdollUI.stickman.setGlobalWidthScale(val);
-                if (window.playBlip) window.playBlip(1000);
+                if ((window as any).playBlip) (window as any).playBlip(1000);
             });
         }
     }
 
-    static setupPartAdjustments() {
-        const scaleSlider = document.getElementById('skin-scale-slider');
-        const heightSlider = document.getElementById('skin-height-slider');
+    static setupPartAdjustments(): void {
+        const scaleSlider = document.getElementById('skin-scale-slider') as HTMLInputElement | null;
+        const heightSlider = document.getElementById('skin-height-slider') as HTMLInputElement | null;
         const scaleVal = document.getElementById('skin-scale-val');
         const heightVal = document.getElementById('skin-height-val');
 
         if (scaleSlider) {
             scaleSlider.addEventListener('input', (e) => {
                 if (!RagdollUI.selectedPart) return;
-                const val = e.target.value;
-                if (scaleVal) scaleVal.textContent = val;
+                const target = e.target as HTMLInputElement;
+                const val = parseFloat(target.value);
+                if (scaleVal) scaleVal.textContent = String(val);
                 if (RagdollUI.stickman) RagdollUI.stickman.updateSkinConfig(RagdollUI.selectedPart, 'scale', val);
-                if (window.playBlip) window.playBlip(1100);
+                if ((window as any).playBlip) (window as any).playBlip(1100);
             });
         }
 
         if (heightSlider) {
             heightSlider.addEventListener('input', (e) => {
                 if (!RagdollUI.selectedPart) return;
-                const val = e.target.value;
-                if (heightVal) heightVal.textContent = val;
+                const target = e.target as HTMLInputElement;
+                const val = parseFloat(target.value);
+                if (heightVal) heightVal.textContent = String(val);
                 if (RagdollUI.stickman) RagdollUI.stickman.updateSkinConfig(RagdollUI.selectedPart, 'y', val);
-                if (window.playBlip) window.playBlip(1100);
+                if ((window as any).playBlip) (window as any).playBlip(1100);
             });
         }
     }
 
-    static setupDropZones() {
+    static setupDropZones(): void {
         const zones = document.querySelectorAll('.drop-zone');
         const label = document.getElementById('selected-part-label');
-        const scaleSlider = document.getElementById('skin-scale-slider');
-        const heightSlider = document.getElementById('skin-height-slider');
+        const scaleSlider = document.getElementById('skin-scale-slider') as HTMLInputElement | null;
+        const heightSlider = document.getElementById('skin-height-slider') as HTMLInputElement | null;
 
         zones.forEach(zone => {
             const part = zone.getAttribute('data-part');
+            if (!part) return;
 
             zone.addEventListener('click', () => {
                 RagdollUI.selectedPart = part;
                 if (label) label.textContent = part.charAt(0).toUpperCase() + part.slice(1);
 
                 // Highlight selected
-                zones.forEach(z => z.style.outline = 'none');
-                zone.style.outline = '2px solid #000080';
+                zones.forEach(z => (z as HTMLElement).style.outline = 'none');
+                (zone as HTMLElement).style.outline = '2px solid #000080';
 
                 // Enable and update sliders
                 if (RagdollUI.stickman) {
-                    const config = RagdollUI.stickman.skinConfig[part] || { scale: 1.0, y: 0 };
+                    const config = (RagdollUI.stickman.skinConfig as any)[part] || { scale: 1.0, y: 0 };
                     if (scaleSlider) {
                         scaleSlider.disabled = false;
-                        scaleSlider.value = config.scale;
-                        if (document.getElementById('skin-scale-val')) {
-                            document.getElementById('skin-scale-val').textContent = scaleSlider.value;
+                        scaleSlider.value = String(config.scale);
+                        const scaleValEl = document.getElementById('skin-scale-val');
+                        if (scaleValEl) {
+                            scaleValEl.textContent = scaleSlider.value;
                         }
                     }
                     if (heightSlider) {
                         heightSlider.disabled = false;
-                        heightSlider.value = config.y;
-                        if (document.getElementById('skin-height-val')) {
-                            document.getElementById('skin-height-val').textContent = heightSlider.value;
+                        heightSlider.value = String(config.y);
+                        const heightValEl = document.getElementById('skin-height-val');
+                        if (heightValEl) {
+                            heightValEl.textContent = heightSlider.value;
                         }
                     }
                 }
-                if (window.playBlip) window.playBlip(1300);
+                if ((window as any).playBlip) (window as any).playBlip(1300);
             });
 
             zone.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                zone.style.background = '#e0e0ff';
+                (zone as HTMLElement).style.background = '#e0e0ff';
             });
 
             zone.addEventListener('dragleave', () => {
-                zone.style.background = '#fff';
+                (zone as HTMLElement).style.background = '#fff';
             });
 
-            zone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                zone.style.background = '#fff';
-                const file = e.dataTransfer.files[0];
+            zone.addEventListener('drop', (e: Event) => {
+                const dragEvent = e as DragEvent;
+                dragEvent.preventDefault();
+                (zone as HTMLElement).style.background = '#fff';
+                const file = dragEvent.dataTransfer?.files[0];
                 if (file && file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                        const src = event.target.result;
+                        const src = event.target?.result as string;
                         if (RagdollUI.stickman) {
                             RagdollUI.stickman.updatePartImage(part, src);
                         }
@@ -229,7 +247,7 @@ export class RagdollUI {
                         cap.style.fontSize = '8px';
                         zone.appendChild(cap);
 
-                        if (window.playBlip) window.playBlip(900);
+                        if ((window as any).playBlip) (window as any).playBlip(900);
                     };
                     reader.readAsDataURL(file);
                 }
@@ -237,7 +255,7 @@ export class RagdollUI {
         });
     }
 
-    static setupResetButtons() {
+    static setupResetButtons(): void {
         const resetBtn = document.getElementById('reset-global-scale');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
@@ -248,28 +266,31 @@ export class RagdollUI {
 
                 document.querySelectorAll('.drop-zone').forEach(zone => {
                     const part = zone.getAttribute('data-part');
-                    zone.innerHTML = `<span style="font-size: 16px;">${RagdollUI.getPartEmoji(part)}</span><span style="font-size: 9px;">${part}</span>`;
-                    zone.style.background = '#fff';
-                    zone.style.outline = 'none';
+                    if (part) {
+                        zone.innerHTML = `<span style="font-size: 16px;">${RagdollUI.getPartEmoji(part)}</span><span style="font-size: 9px;">${part}</span>`;
+                    }
+                    (zone as HTMLElement).style.background = '#fff';
+                    (zone as HTMLElement).style.outline = 'none';
                 });
 
-                if (window.playBlip) window.playBlip(600);
+                if ((window as any).playBlip) (window as any).playBlip(600);
             });
         }
     }
 
-    static setupPhysicsControls() {
-        const handle = (id, prop) => {
-            const slider = document.getElementById(`slider-${id}`);
+    static setupPhysicsControls(): void {
+        const handle = (id: string, prop: keyof Proportions) => {
+            const slider = document.getElementById(`slider-${id}`) as HTMLInputElement | null;
             const valSpan = document.getElementById(`val-${id}`);
             if (slider) {
                 slider.addEventListener('input', (e) => {
-                    const val = parseFloat(e.target.value);
+                    const target = e.target as HTMLInputElement;
+                    const val = parseFloat(target.value);
                     if (valSpan) valSpan.textContent = val.toFixed(1);
                     if (RagdollUI.manager) {
                         RagdollUI.manager.setProportion(prop, val);
                     }
-                    if (window.playBlip) window.playBlip(1050);
+                    if ((window as any).playBlip) (window as any).playBlip(1050);
                 });
             }
         };
@@ -280,37 +301,40 @@ export class RagdollUI {
         handle('torso', 'torsoScale');
     }
 
-    static setupVFXControls() {
-        const softCheck = document.getElementById('check-soft');
+    static setupVFXControls(): void {
+        const softCheck = document.getElementById('check-soft') as HTMLInputElement | null;
         if (softCheck) {
             softCheck.addEventListener('change', (e) => {
+                const target = e.target as HTMLInputElement;
                 if (RagdollUI.manager) {
-                    RagdollUI.manager.config.softJoints = e.target.checked;
+                    RagdollUI.manager.config.softJoints = target.checked;
                 }
-                if (window.playBlip) window.playBlip(800);
+                if ((window as any).playBlip) (window as any).playBlip(800);
             });
         }
 
-        const shadowCheck = document.getElementById('check-shadow');
+        const shadowCheck = document.getElementById('check-shadow') as HTMLInputElement | null;
         if (shadowCheck) {
             shadowCheck.addEventListener('change', (e) => {
+                const target = e.target as HTMLInputElement;
                 if (RagdollUI.manager) {
-                    RagdollUI.manager.config.showShadow = e.target.checked;
+                    RagdollUI.manager.config.showShadow = target.checked;
                 }
-                if (window.playBlip) window.playBlip(800);
+                if ((window as any).playBlip) (window as any).playBlip(800);
             });
         }
 
         // VFX Sliders
-        const handleSlider = (id, prop) => {
-            const slider = document.getElementById(`slider-${id}`);
+        const handleSlider = (id: string, prop: keyof SkinConfig) => {
+            const slider = document.getElementById(`slider-${id}`) as HTMLInputElement | null;
             const valSpan = document.getElementById(`val-${id}`);
             if (slider) {
                 slider.addEventListener('input', (e) => {
-                    const val = parseFloat(e.target.value);
+                    const target = e.target as HTMLInputElement;
+                    const val = parseFloat(target.value);
                     if (valSpan) valSpan.textContent = val.toFixed(1);
                     if (RagdollUI.manager) {
-                        RagdollUI.manager.config[prop] = val;
+                        (RagdollUI.manager.config as any)[prop] = val;
                     }
                 });
             }
@@ -323,27 +347,30 @@ export class RagdollUI {
             btn.addEventListener('click', () => {
                 if (RagdollUI.manager) {
                     const type = btn.getAttribute('data-type');
-                    const active = RagdollUI.manager.toggleEmanator(type, 'waist');
-
-                    RagdollUI.updateVFXButtonStates();
-                    if (window.playBlip) window.playBlip(active ? 1500 : 700);
+                    if (type) {
+                        const active = RagdollUI.manager.toggleEmanator(type, 'waist');
+                        RagdollUI.updateVFXButtonStates();
+                        if ((window as any).playBlip) (window as any).playBlip(active ? 1500 : 700);
+                    }
                 }
             });
         });
     }
 
-    static updateVFXButtonStates() {
+    static updateVFXButtonStates(): void {
         if (!RagdollUI.manager) return;
         const activeTypes = RagdollUI.manager.config.emanators.map(e => e.type);
         document.querySelectorAll('.vfx-btn').forEach(btn => {
             const type = btn.getAttribute('data-type');
-            const isActive = activeTypes.includes(type);
-            btn.style.background = isActive ? '#a0a0ff' : '#c0c0c0';
-            btn.style.border = isActive ? '2px inset #fff' : '2px outset #fff';
+            if (type) {
+                const isActive = activeTypes.includes(type);
+                (btn as HTMLElement).style.background = isActive ? '#a0a0ff' : '#c0c0c0';
+                (btn as HTMLElement).style.border = isActive ? '2px inset #fff' : '2px outset #fff';
+            }
         });
     }
 
-    static generateColorGrid() {
+    static generateColorGrid(): void {
         const grid = document.getElementById('color-grid-skins');
         if (!grid) return;
 
@@ -357,16 +384,16 @@ export class RagdollUI {
         grid.querySelectorAll('.color-cell').forEach(cell => {
             cell.addEventListener('click', () => {
                 const color = cell.getAttribute('data-color');
-                if (RagdollUI.manager) {
+                if (RagdollUI.manager && color) {
                     RagdollUI.manager.layers.base.tint = color;
-                    if (window.playBlip) window.playBlip(1200);
+                    if ((window as any).playBlip) (window as any).playBlip(1200);
                 }
             });
         });
     }
 
-    static getPartEmoji(part) {
-        const map = {
+    static getPartEmoji(part: string): string {
+        const map: Record<string, string> = {
             head: '🙂',
             shirt: '👕',
             neck: '🧣',
@@ -378,12 +405,12 @@ export class RagdollUI {
         return map[part] || '📦';
     }
 
-    static setupKeyboardControls() {
+    static setupKeyboardControls(): void {
         window.addEventListener('keydown', (e) => {
-            if (!this.stickman || !this.ragdollPet.isActive) return;
+            if (!this.stickman || !this.ragdollPet || !this.ragdollPet.isActive) return;
 
             // Ignore if typing in an input/textarea
-            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+            if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
             const key = e.key.toLowerCase();
 

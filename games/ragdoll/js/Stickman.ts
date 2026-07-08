@@ -3,15 +3,103 @@
  * Extracted from ragdoll.js
  */
 
-import { BloodParticle } from './Particles.js';
+import { BloodParticle, ZzzParticle, TearParticle } from './Particles.js';
 import { PhysicsLogic } from './PhysicsLogic.js';
 import { Animations } from './Animations.js';
 import { Renderer } from './Renderer.js';
 import { SkinManager } from './SkinManager.js';
-
+import type { RagdollPet } from './RagdollPet.js';
 
 export class Stickman {
-    constructor(x, y, ragdollPet) {
+    public ragdollPet: RagdollPet;
+    public x: number;
+    public y: number;
+    public parts: Record<string, any>;
+    public constraints: any[];
+    public composite: any;
+    public skinManager: SkinManager;
+    public skinEnabled: boolean;
+    public globalScale: number;
+    public globalWidthScale: number;
+    public lastPhysicsScale: number;
+    public skinConfig: Record<string, { scale: number; y: number }>;
+
+    // State Machine
+    public physicsMode: boolean;
+    public state: string; // idle, walking, scared, physics, waving, sitting, jumping, dancing, getting-up, etc.
+    public emotion: string; // happy, panic, surprised, neutral, angry, etc.
+    public direction: number;
+    public walkCycle: number;
+    public walkSpeed: number;
+    public nextActionTime: number;
+    public nextWaveCheck: number;
+    public grabbed: boolean;
+    public mouseX: number;
+    public mouseY: number;
+
+    // Radii
+    public fearRadius: number;
+    public angerRadius: number;
+
+    // Particles & VFX
+    public bloodParticles: BloodParticle[];
+    public sleepingZzzParticles: ZzzParticle[];
+    public cryingTearParticles: TearParticle[];
+    public idleTimer: number;
+    public justDropped: boolean;
+    public currentFloorY: number;
+    public lastVelocity: { x: number; y: number };
+    public isFalling: boolean;
+
+    // Speech Bubble
+    public showBubble: boolean;
+    public bubbleText: string;
+    public bubbleScale: number;
+    public bubbleAlpha: number;
+    public bubbleOffsetX: number;
+    public bubbleOffsetY: number;
+
+    // External Helpers
+    public messageLibrary: any;
+    public bubbleAnimator: any;
+    public memory: any;
+    public brain: any;
+
+    public lastMoodDecayTime: number;
+    public activeTimeouts: any[];
+
+    // Loaded images
+    public headImage: HTMLImageElement | null = null;
+    public leftHandImage: HTMLImageElement | null = null;
+    public rightHandImage: HTMLImageElement | null = null;
+    public pantsImage: HTMLImageElement | null = null;
+    public leftLegImage: HTMLImageElement | null = null;
+    public rightLegImage: HTMLImageElement | null = null;
+    public shirtImage: HTMLImageElement | null = null;
+    public lHandOverlay: HTMLImageElement | null = null;
+    public rHandOverlay: HTMLImageElement | null = null;
+    public neckImage: HTMLImageElement | null = null;
+    public leftArmImage: HTMLImageElement | null = null;
+    public rightArmImage: HTMLImageElement | null = null;
+
+    // Timing and Animation metrics
+    public animationStartTime: number = 0;
+    public lastZzzTime: number = 0;
+    public laughingShakeOffset: { x: number; y: number } = { x: 0, y: 0 };
+    public lastBiteTime: number = 0;
+    public biteCount: number = 0;
+    public lastTearTime: number = 0;
+    public moonwalkStartX: number = 0;
+    public lastActiveTime: number = 0;
+    public lastPetSoundTime: number = 0;
+    public grabCount: number = 0;
+    public gettingUpStartTime: number = 0;
+    public deltaTime: number = 0;
+    public lastFrameTime: number = 0;
+    public emotionTimeout: any = null;
+    private _bubbleTimeout: any = null;
+
+    constructor(x: number, y: number, ragdollPet: RagdollPet) {
         this.ragdollPet = ragdollPet;
         this.x = x;
         this.y = y;
@@ -42,8 +130,8 @@ export class Stickman {
 
         // State Machine
         this.physicsMode = false;
-        this.state = 'idle'; // idle, walking, scared, physics, waving, sitting, jumping, dancing, getting-up
-        this.emotion = 'happy'; // happy, panic, surprised, neutral, angry
+        this.state = 'idle';
+        this.emotion = 'happy';
         this.direction = 1;
         this.walkCycle = 0;
         this.walkSpeed = 0;
@@ -54,16 +142,14 @@ export class Stickman {
         this.mouseY = 0;
 
         // Radii from CONFIG
-        this.fearRadius = window.CONFIG?.RAGDOLL?.FEAR_RADIUS || 150;
-        this.angerRadius = window.CONFIG?.RAGDOLL?.ANGER_RADIUS || 50;
+        this.fearRadius = (window as any).CONFIG?.RAGDOLL?.FEAR_RADIUS || 150;
+        this.angerRadius = (window as any).CONFIG?.RAGDOLL?.ANGER_RADIUS || 50;
 
         // Particles & VFX
         this.bloodParticles = [];
         this.sleepingZzzParticles = [];
         this.cryingTearParticles = [];
         this.idleTimer = 0;
-        this.physicsMode = false;
-        this.grabbed = false;
         this.justDropped = false;
         this.currentFloorY = y; // Track current standing level
         this.lastVelocity = { x: 0, y: 0 };
@@ -78,9 +164,9 @@ export class Stickman {
         this.bubbleOffsetY = 0;
 
         // External Helpers (Globals for now)
-        this.messageLibrary = window.MessageLibrary ? new window.MessageLibrary() : null;
-        this.bubbleAnimator = window.BubbleAnimator ? new window.BubbleAnimator() : null;
-        this.memory = window.RagdollMemory ? (typeof window.RagdollMemory === 'function' ? new window.RagdollMemory() : window.RagdollMemory) : null;
+        this.messageLibrary = (window as any).MessageLibrary ? new (window as any).MessageLibrary() : null;
+        this.bubbleAnimator = (window as any).BubbleAnimator ? new (window as any).BubbleAnimator() : null;
+        this.memory = (window as any).RagdollMemory ? (typeof (window as any).RagdollMemory === 'function' ? new (window as any).RagdollMemory() : (window as any).RagdollMemory) : null;
         this.brain = null; // AI Brain disabled
 
         this.lastMoodDecayTime = Date.now();
@@ -91,8 +177,8 @@ export class Stickman {
         ragdollPet.World.add(ragdollPet.world, this.composite);
     }
 
-    loadAssets() {
-        const load = (src) => { const img = new Image(); img.src = src; return img; };
+    loadAssets(): void {
+        const load = (src: string) => { const img = new Image(); img.src = src; return img; };
         this.headImage = load('games/ragdoll/assets/ragdoll.webp');
         this.leftHandImage = load('games/ragdoll/assets/left hand.png');
         this.rightHandImage = load('games/ragdoll/assets/Right hand.png');
@@ -107,12 +193,12 @@ export class Stickman {
         this.rightArmImage = null;
     }
 
-    setSkin(enabled) {
+    setSkin(enabled: boolean): void {
         this.skinEnabled = !!enabled;
 
         // Sync UI button states if they exist
-        const stdBtn = document.querySelector('button[onclick*="setSkin(false)"]');
-        const cstBtn = document.querySelector('button[onclick*="setSkin(true)"]');
+        const stdBtn = document.querySelector('button[onclick*="setSkin(false)"]') as HTMLElement | null;
+        const cstBtn = document.querySelector('button[onclick*="setSkin(true)"]') as HTMLElement | null;
         if (stdBtn) {
             stdBtn.style.border = !enabled ? '2px inset #fff' : '2px outset #fff';
             stdBtn.style.background = !enabled ? '#d0d0d0' : '#c0c0c0';
@@ -122,12 +208,12 @@ export class Stickman {
             cstBtn.style.background = enabled ? '#d0d0d0' : '#c0c0c0';
         }
 
-        if (window.Utils?.Logger) {
-            window.Utils.Logger.log('RAGDOLL', `Skins ${this.skinEnabled ? 'Enabled' : 'Disabled'}`);
+        if ((window as any).Utils?.Logger) {
+            (window as any).Utils.Logger.log('RAGDOLL', `Skins ${this.skinEnabled ? 'Enabled' : 'Disabled'}`);
         }
     }
 
-    resetToProcedural() {
+    resetToProcedural(): void {
         this.headImage = null;
         this.leftHandImage = null;
         this.rightHandImage = null;
@@ -137,7 +223,7 @@ export class Stickman {
         this.rightLegImage = null;
     }
 
-    resetCustomSkin() {
+    resetCustomSkin(): void {
         this.loadAssets();
         this.skinManager = new SkinManager(this);
         this.skinConfig = {
@@ -157,8 +243,8 @@ export class Stickman {
         this.rebuildSkeleton();
         this.standUp();
 
-        if (window.Utils?.Logger) {
-            window.Utils.Logger.log('RAGDOLL', 'Skins reset to default');
+        if ((window as any).Utils?.Logger) {
+            (window as any).Utils.Logger.log('RAGDOLL', 'Skins reset to default');
         }
     }
 
@@ -166,10 +252,10 @@ export class Stickman {
      * Rebuilds the physical skeleton to match new proportions
      * (Critical for the Workshop's Limb Scaling feature)
      */
-    rebuildSkeleton() {
-        if (window.Utils?.Logger) window.Utils.Logger.log('RAGDOLL', 'Rebuilding skeleton with new proportions...');
+    rebuildSkeleton(): void {
+        if ((window as any).Utils?.Logger) (window as any).Utils.Logger.log('RAGDOLL', 'Rebuilding skeleton with new proportions...');
 
-        const scale = this.globalScale * (window.CONFIG?.RAGDOLL?.SCALE || 1.0);
+        const scale = this.globalScale * ((window as any).CONFIG?.RAGDOLL?.SCALE || 1.0);
         const props = this.skinManager.proportions;
         const waist = this.parts.waist;
 
@@ -177,7 +263,7 @@ export class Stickman {
         // (Simple downward expansion for legs, upward for torso/head)
         if (waist) {
             const wPos = waist.position;
-            const set = (p, xO, yO) => {
+            const set = (p: string, xO: number, yO: number) => {
                 if (this.parts[p]) this.ragdollPet.Body.setPosition(this.parts[p], { x: wPos.x + xO * scale, y: wPos.y + yO * scale });
             };
 
@@ -216,10 +302,10 @@ export class Stickman {
         this.ragdollPet.World.add(this.ragdollPet.world, this.constraints);
     }
 
-    updatePartImage(partName, src) {
+    updatePartImage(partName: string, src: string): void {
         const img = new Image();
         img.src = src;
-        img.isCustomSkin = true; // Mark for Renderer logic (e.g. hand rotation)
+        (img as any).isCustomSkin = true; // Mark for Renderer logic (e.g. hand rotation)
         img.onload = () => {
             if (partName === 'head') this.headImage = img;
             else if (partName === 'shirt') this.shirtImage = img;
@@ -234,16 +320,18 @@ export class Stickman {
         };
     }
 
-    updateSkinConfig(partName, type, value) {
+    updateSkinConfig(partName: string, type: string, value: number | string): void {
         if (!this.skinConfig[partName]) return;
-        if (type === 'scale') this.skinConfig[partName].scale = parseFloat(value);
-        else if (type === 'y') this.skinConfig[partName].y = parseFloat(value);
+        const parsedVal = typeof value === 'number' ? value : parseFloat(value);
+        const config = this.skinConfig[partName]!;
+        if (type === 'scale') config.scale = parsedVal;
+        else if (type === 'y') config.y = parsedVal;
     }
 
-    setGlobalScale(val) {
-        const newScale = parseFloat(val);
+    setGlobalScale(val: number | string): void {
+        const newScale = typeof val === 'number' ? val : parseFloat(val);
         const ratio = newScale / this.lastPhysicsScale;
-        for (let part in this.parts) {
+        for (const part in this.parts) {
             this.ragdollPet.Body.scale(this.parts[part], ratio, ratio);
         }
         this.constraints.forEach(c => { c.length *= ratio; });
@@ -254,17 +342,17 @@ export class Stickman {
         }
     }
 
-    setGlobalWidthScale(val) {
-        this.globalWidthScale = parseFloat(val);
+    setGlobalWidthScale(val: number | string): void {
+        this.globalWidthScale = typeof val === 'number' ? val : parseFloat(val);
         if (!this.physicsMode) this.standUp();
     }
 
-    initPhysics() {
-        const scale = window.CONFIG?.RAGDOLL?.SCALE || 1.0;
+    initPhysics(): void {
+        const scale = (window as any).CONFIG?.RAGDOLL?.SCALE || 1.0;
         // Pass 'this' so PhysicsLogic can access this.ragdollPet
         this.parts = PhysicsLogic.createSkeletalParts(this, this.x, this.y, scale);
 
-        for (let part in this.parts) {
+        for (const part in this.parts) {
             this.ragdollPet.Composite.add(this.composite, this.parts[part]);
         }
 
@@ -275,7 +363,7 @@ export class Stickman {
         this.deactivatePhysics();
     }
 
-    update() {
+    update(): void {
         const now = Date.now();
         this.deltaTime = (now - (this.lastFrameTime || now)) / 16.67;
         this.lastFrameTime = now;
@@ -299,8 +387,8 @@ export class Stickman {
         }
     }
 
-    updateFallingEmotion() {
-        if (!this.physicsMode || this.grabbed) return;
+    updateFallingEmotion(): void {
+        if (!this.physicsMode || this.grabbed || !this.parts.head) return;
         const v = this.parts.head.velocity;
         const speed = Math.sqrt(v.x ** 2 + v.y ** 2);
 
@@ -311,7 +399,7 @@ export class Stickman {
         }
     }
 
-    setEmotion(emotion, duration = 0) {
+    setEmotion(emotion: string, duration = 0): void {
         this.emotion = emotion;
         if (this.emotionTimeout) clearTimeout(this.emotionTimeout);
 
@@ -325,7 +413,7 @@ export class Stickman {
         }
     }
 
-    updateSpecialParticles() {
+    updateSpecialParticles(): void {
         if (this.state === 'sleeping') {
             this.sleepingZzzParticles = this.sleepingZzzParticles.filter(p => p.update());
         }
@@ -334,13 +422,13 @@ export class Stickman {
         }
     }
 
-    drawSpecialParticles(ctx) {
+    drawSpecialParticles(ctx: CanvasRenderingContext2D): void {
         if (this.state === 'sleeping') this.sleepingZzzParticles.forEach(p => p.draw(ctx));
         if (this.state === 'crying') this.cryingTearParticles.forEach(p => p.draw(ctx));
     }
 
-    updatePhysicsMode() {
-        if (this.grabbed) return;
+    updatePhysicsMode(): void {
+        if (this.grabbed || !this.parts.head) return;
 
         const headPos = this.parts.head.position;
         const headVel = this.parts.head.velocity;
@@ -364,7 +452,7 @@ export class Stickman {
         }
     }
 
-    updateAnimationMode() {
+    updateAnimationMode(): void {
         if (['hurt', 'getting-up', 'falling', 'physics'].includes(this.state)) return;
 
         // Dynamic surface check: if the window under us is gone or moved, fall!
@@ -402,26 +490,26 @@ export class Stickman {
         this.animateStanding();
     }
 
-    animateStanding() { Animations.animateStandingCycle(this); }
-    draw() { Renderer.draw(this); }
+    animateStanding(): void { Animations.animateStandingCycle(this); }
+    draw(): void { Renderer.draw(this); }
 
     // --- State Actions ---
 
-    activatePhysics() {
+    activatePhysics(): void {
         this.physicsMode = true;
         this.state = 'physics';
-        for (let part in this.parts) this.ragdollPet.Body.setStatic(this.parts[part], false);
+        for (const part in this.parts) this.ragdollPet.Body.setStatic(this.parts[part], false);
     }
 
-    deactivatePhysics() {
+    deactivatePhysics(): void {
         this.physicsMode = false;
-        for (let part in this.parts) this.ragdollPet.Body.setStatic(this.parts[part], true);
+        for (const part in this.parts) this.ragdollPet.Body.setStatic(this.parts[part], true);
         this.standUp();
     }
 
-    standUp() { Animations.standUp(this); }
+    standUp(): void { Animations.standUp(this); }
 
-    decideNextAction() {
+    decideNextAction(): void {
         const rand = Math.random();
 
         // Probabilidades de estado
@@ -454,7 +542,7 @@ export class Stickman {
         }
     }
 
-    updateIdleTimer() {
+    updateIdleTimer(): void {
         if (this.grabbed || this.physicsMode || this.state !== 'idle') {
             this.lastActiveTime = Date.now();
             return;
@@ -467,7 +555,7 @@ export class Stickman {
         }
     }
 
-    updateMood() {
+    updateMood(): void {
         const now = Date.now();
         if (now - this.lastMoodDecayTime > 30000) { // Decay every 30s
             if (this.emotion === 'happy') this.setEmotion('neutral');
@@ -481,10 +569,10 @@ export class Stickman {
         }
     }
 
-    checkMouseProximity() {
-        const taskbarTop = window.innerHeight - (window.CONFIG?.TASKBAR?.HEIGHT || 40);
-        const mX = window.mouseX || 0;
-        const mY = window.mouseY || 0;
+    checkMouseProximity(): void {
+        const taskbarTop = window.innerHeight - ((window as any).CONFIG?.TASKBAR?.HEIGHT || 40);
+        const mX = (window as any).mouseX || 0;
+        const mY = (window as any).mouseY || 0;
         const dx = mX - this.x;
         const dy = mY - (taskbarTop - 37);
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -511,13 +599,13 @@ export class Stickman {
         }
     }
 
-    isDoingSpecialAnimation() {
+    isDoingSpecialAnimation(): boolean {
         return ['waving', 'sitting', 'jumping', 'dancing', 'watching', 'looking-up', 'sleeping', 'laughing', 'eating', 'yawning', 'crying', 'stretching'].includes(this.state);
     }
 
     // --- Animation Triggers ---
 
-    startWaving() {
+    startWaving(): void {
         this.state = 'waving';
         this.animationStartTime = Date.now();
         this.ragdollPet.playWaveSound();
@@ -525,21 +613,21 @@ export class Stickman {
         this.safeTimeout(() => { if (this.state === 'waving') this.state = 'idle'; }, 3000);
     }
 
-    startJumping() {
+    startJumping(): void {
         this.state = 'jumping';
         this.animationStartTime = Date.now();
         this.ragdollPet.playJumpSound();
-        this.safeTimeout(() => { if (this.state === 'jumping') this.state = 'idle'; }, window.CONFIG?.RAGDOLL?.JUMP_DURATION || 1000);
+        this.safeTimeout(() => { if (this.state === 'jumping') this.state = 'idle'; }, (window as any).CONFIG?.RAGDOLL?.JUMP_DURATION || 1000);
     }
 
-    startStretching() {
+    startStretching(): void {
         this.state = 'stretching';
         this.animationStartTime = Date.now();
         this.ragdollPet.audioManager?.play('stretch');
         this.safeTimeout(() => { if (this.state === 'stretching') this.state = 'idle'; }, 2000);
     }
 
-    startDancing() {
+    startDancing(): void {
         this.state = 'dancing';
         this.animationStartTime = Date.now();
         this.ragdollPet.audioManager?.play('dance');
@@ -547,14 +635,14 @@ export class Stickman {
         this.safeTimeout(() => { if (this.state === 'dancing') this.state = 'idle'; }, 4000);
     }
 
-    startSitting() {
+    startSitting(): void {
         this.state = 'sitting';
         this.animationStartTime = Date.now();
         this.ragdollPet.audioManager?.play('sit');
         this.safeTimeout(() => { if (this.state === 'sitting') this.state = 'idle'; }, 5000);
     }
 
-    startLaughing() {
+    startLaughing(): void {
         this.state = 'laughing';
         this.animationStartTime = Date.now();
         this.ragdollPet.audioManager?.play('laugh');
@@ -562,7 +650,7 @@ export class Stickman {
         this.safeTimeout(() => { if (this.state === 'laughing') this.state = 'idle'; }, 3000);
     }
 
-    startEating() {
+    startEating(): void {
         this.state = 'eating';
         this.animationStartTime = Date.now();
         this.biteCount = 0;
@@ -571,7 +659,7 @@ export class Stickman {
         this.safeTimeout(() => { if (this.state === 'eating') this.state = 'idle'; }, 4000);
     }
 
-    startSleeping() {
+    startSleeping(): void {
         this.state = 'sleeping';
         this.animationStartTime = Date.now();
         this.lastZzzTime = 0;
@@ -585,7 +673,7 @@ export class Stickman {
         }, 10000);
     }
 
-    startMoonwalk() {
+    startMoonwalk(): void {
         this.state = 'moonwalk';
         this.animationStartTime = Date.now();
         this.moonwalkStartX = this.x;
@@ -594,14 +682,14 @@ export class Stickman {
         this.safeTimeout(() => { if (this.state === 'moonwalk') this.state = 'idle'; }, 2000);
     }
 
-    startBackflip() {
+    startBackflip(): void {
         this.state = 'backflip';
         this.animationStartTime = Date.now();
         this.ragdollPet.audioManager?.play('flip');
         this.safeTimeout(() => { if (this.state === 'backflip') this.state = 'idle'; }, 1500);
     }
 
-    startYawning() {
+    startYawning(): void {
         this.state = 'yawning';
         this.animationStartTime = Date.now();
         this.ragdollPet.audioManager?.play('yawn');
@@ -610,7 +698,7 @@ export class Stickman {
         }, 2000);
     }
 
-    startCrying() {
+    startCrying(): void {
         this.state = 'crying';
         this.animationStartTime = Date.now();
         this.lastTearTime = 0;
@@ -625,7 +713,7 @@ export class Stickman {
      * @param {string} text 
      * @param {number} duration - Optional override (ms)
      */
-    say(text, duration = null) {
+    say(text: string, duration: number | null = null): void {
         if (!text) return;
 
         // Calculate duration: ~100ms per char, min 2000ms, max 8000ms
@@ -639,7 +727,7 @@ export class Stickman {
 
         if (this.bubbleAnimator) {
             this.bubbleAnimator.fullBubble('b_' + Date.now(), calcDuration, { wobble: true },
-                (an) => { this.bubbleScale = an.scale; this.bubbleAlpha = an.alpha; },
+                (an: any) => { this.bubbleScale = an.scale; this.bubbleAlpha = an.alpha; },
                 () => { this.showBubble = false; }
             );
         } else {
@@ -649,14 +737,14 @@ export class Stickman {
         }
     }
 
-    showBubbleWithAnimation(category, duration = null) {
+    showBubbleWithAnimation(category: string, duration: number | null = null): void {
         const message = this.messageLibrary ? this.messageLibrary.get(category) : category;
         this.say(message, duration);
     }
 
     // --- Interaction Hooks ---
 
-    onGrab() {
+    onGrab(): void {
         this.clearAllTimeouts(); // Stop any pending animation logic
         this.grabbed = true;
         this.activatePhysics();
@@ -674,7 +762,7 @@ export class Stickman {
         if (this.memory) this.memory.recordGrab();
     }
 
-    onPet() {
+    onPet(): void {
         if (this.physicsMode && !this.grabbed) return;
 
         this.setEmotion('happy', 2000);
@@ -689,15 +777,19 @@ export class Stickman {
         this.say('❤️', 1500);
     }
 
-    onDrop() {
+    onDrop(): void {
         this.grabbed = false;
         this.justDropped = true;
 
         // Scream if dropped with significant velocity
-        const v = this.parts.head.velocity;
-        const speed = Math.sqrt(v.x ** 2 + v.y ** 2);
-        if (speed > 8) {
-            this.ragdollPet.playScreamSound();
+        if (this.parts.head) {
+            const v = this.parts.head.velocity;
+            const speed = Math.sqrt(v.x ** 2 + v.y ** 2);
+            if (speed > 8) {
+                this.ragdollPet.playScreamSound();
+            } else {
+                this.ragdollPet.playDropSound();
+            }
         } else {
             this.ragdollPet.playDropSound();
         }
@@ -708,8 +800,8 @@ export class Stickman {
 
     // --- Logic Helpers ---
 
-    checkFallDamage() {
-        if (!this.physicsMode) return;
+    checkFallDamage(): void {
+        if (!this.physicsMode || !this.parts.head) return;
         const v = this.parts.head.velocity;
         const speed = Math.sqrt(v.x ** 2 + v.y ** 2);
         if (speed > 15) this.isFalling = true;
@@ -719,7 +811,7 @@ export class Stickman {
         }
     }
 
-    onHardImpact() {
+    onHardImpact(): void {
         this.state = 'hurt';
         this.setEmotion('hurt', 3000);
         this.ragdollPet.playHurtSound();
@@ -734,7 +826,7 @@ export class Stickman {
         }, 2000);
     }
 
-    safeTimeout(callback, delay) {
+    safeTimeout(callback: () => void, delay: number): any {
         const id = setTimeout(() => {
             callback();
             const idx = this.activeTimeouts.indexOf(id);
@@ -744,16 +836,16 @@ export class Stickman {
         return id;
     }
 
-    clearAllTimeouts() {
+    clearAllTimeouts(): void {
         this.activeTimeouts.forEach(clearTimeout);
         this.activeTimeouts = [];
     }
 
-    updateBloodParticles() {
+    updateBloodParticles(): void {
         this.bloodParticles = this.bloodParticles.filter(p => p.update());
     }
 
-    drawBloodParticles(ctx) {
+    drawBloodParticles(ctx: CanvasRenderingContext2D): void {
         this.bloodParticles.forEach(p => p.draw(ctx));
     }
 }

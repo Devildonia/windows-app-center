@@ -3,18 +3,31 @@
  * Extracted from ragdoll.js
  */
 
+// Matter.js is loaded globally (window.Matter) and has no bundled types here.
+type MatterBody = any;
+type MatterConstraint = any;
+
+interface PhysicsProportions {
+    armLength: number;
+    legLength: number;
+    torsoScale: number;
+    headScale: number;
+}
+
+/** Minimal surface of the Stickman instance used by the physics builders. */
+interface PhysicsContext {
+    ragdollPet: { Bodies: any; Constraint: any };
+    parts: Record<string, MatterBody>;
+    skinManager?: { proportions: PhysicsProportions } | null;
+}
+
 export class PhysicsLogic {
     /**
      * Create the skeletal body parts using Matter.js
-     * @param {Object} context - The Stickman instance or similar with access to Matter tools
-     * @param {number} x - Initial X position
-     * @param {number} y - Initial Y position
-     * @param {number} scale - Physics scale factor
-     * @returns {Object} Map of body parts
      */
-    static createSkeletalParts(context, x, y, scale) {
+    static createSkeletalParts(context: PhysicsContext, x: number, y: number, scale: number): Record<string, MatterBody> {
         const { Bodies } = context.ragdollPet;
-        const parts = {};
+        const parts: Record<string, MatterBody> = {};
         const res = window.CONFIG?.RAGDOLL?.RESTITUTION || 0.4;
 
         // Head
@@ -88,16 +101,13 @@ export class PhysicsLogic {
 
     /**
      * Create constraints between parts
-     * @param {Object} context - The Stickman instance
-     * @param {number} scale - Physics scale factor
-     * @returns {Array} List of constraints
      */
-    static createSkeletalConstraints(context, scale) {
+    static createSkeletalConstraints(context: PhysicsContext, scale: number): MatterConstraint[] {
         const stiffness = 0.9;
         const damping = 0.1;
-        const constraints = [];
+        const constraints: MatterConstraint[] = [];
 
-        const add = (pA, pB, len, stiff, damp) => {
+        const add = (pA: string, pB: string, len: number, stiff: number, damp: number): void => {
             constraints.push(context.ragdollPet.Constraint.create({
                 bodyA: context.parts[pA],
                 bodyB: context.parts[pB],
@@ -114,7 +124,7 @@ export class PhysicsLogic {
         };
 
         // Get dynamic proportions from SkinManager
-        const props = context.skinManager?.proportions || {
+        const props: PhysicsProportions = context.skinManager?.proportions || {
             armLength: 1.0,
             legLength: 1.0,
             torsoScale: 1.0,

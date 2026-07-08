@@ -1,20 +1,6 @@
-declare module '*/RagdollPet.js' {
-    export const RagdollPet: any;
-}
-declare module '*/RagdollUI.js' {
-    export const RagdollUI: any;
-}
-declare module '*/Stickman.js' {
-    export const Stickman: any;
-}
-declare module '*/Particles.js' {
-    export const BloodParticle: any;
-    export const ZzzParticle: any;
-    export const TearParticle: any;
-}
-
 interface Window {
     // Project services/singletons
+    CONFIG: any;
     Services: any;
     Utils: any;
     themeManager: any;
@@ -43,4 +29,10 @@ interface Window {
     Webamp: any;
     Matter: any;
     webkitAudioContext: any;
+
+    // Legacy ragdoll globals (registered for standalone/game compatibility)
+    BloodParticle: any;
+    ZzzParticle: any;
+    TearParticle: any;
+    RagdollPet: any;
 }

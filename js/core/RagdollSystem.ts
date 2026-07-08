@@ -4,7 +4,7 @@
  * Encapsulates the ragdoll physics pet inside an OS subsystem pattern
  */
 
-import { RagdollPet } from '../../public/games/ragdoll/js/RagdollPet.js';
+import { RagdollPet } from '../../games/ragdoll/js/RagdollPet.js';
 import { EventBus } from './EventBus';
 import { Utils } from '../utils';
 

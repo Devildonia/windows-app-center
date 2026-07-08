@@ -28,6 +28,7 @@
     },
     "include": [
         "js/**/*.ts",
+        "games/**/*.ts",
         "test/**/*.ts",
         "main.ts",
         "types/**/*.d.ts"

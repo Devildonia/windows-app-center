@@ -3,8 +3,53 @@
  * Orchestrates layers, colors, and visual effects for the Ragdoll Workshop.
  */
 
+interface LayerOffset { x: number; y: number; }
+
+interface ImageLayer { image: string | null; scale: number; offset: LayerOffset; tint?: string | null; }
+
+interface SkinLayers {
+    base: { tint: string; opacity: number };
+    clothing_top: ImageLayer;
+    clothing_bottom: ImageLayer;
+    shoes: ImageLayer;
+    headwear: ImageLayer;
+    accessories: Array<{ part: string; image: string | null; type: string }>;
+}
+
+type ImageLayerKey = 'clothing_top' | 'clothing_bottom' | 'shoes' | 'headwear';
+
+interface Emanator { type: string; part: string; color: string; }
+
+export interface SkinConfig {
+    softJoints: boolean;
+    showShadow: boolean;
+    emanators: Emanator[];
+    vfxIntensity: number;
+    vfxSize: number;
+    glowMaps: Map<string, unknown>;
+    animatedPatterns: Map<string, unknown>;
+}
+
+export interface Proportions {
+    armLength: number;
+    legLength: number;
+    torsoScale: number;
+    headScale: number;
+}
+
+/** Minimal surface of Stickman that the SkinManager mutates. */
+interface SkinnableStickman {
+    skinEnabled?: boolean;
+    rebuildSkeleton?: () => void;
+}
+
 export class SkinManager {
-    constructor(stickman) {
+    public stickman: SkinnableStickman;
+    public layers: SkinLayers;
+    public config: SkinConfig;
+    public proportions: Proportions;
+
+    constructor(stickman: SkinnableStickman) {
         this.stickman = stickman;
 
         // Layers: Base, Clothes, Accessories, VFX
@@ -36,21 +81,22 @@ export class SkinManager {
         };
     }
 
-    setLayerImage(layer, image) {
-        if (this.layers[layer]) {
-            this.layers[layer].image = image;
+    setLayerImage(layer: ImageLayerKey, image: string): void {
+        const target = this.layers[layer];
+        if (target) {
+            target.image = image;
             this.stickman.skinEnabled = true;
         }
     }
 
-    setProportion(prop, val) {
+    setProportion(prop: keyof Proportions, val: number): void {
         if (this.proportions[prop] !== undefined) {
             this.proportions[prop] = val;
             this.stickman.rebuildSkeleton?.();
         }
     }
 
-    toggleEmanator(type, part, color = '#ffffff') {
+    toggleEmanator(type: string, part: string, color: string = '#ffffff'): boolean {
         const index = this.config.emanators.findIndex(e => e.type === type && e.part === part);
         if (index > -1) {
             this.config.emanators.splice(index, 1);
@@ -61,7 +107,7 @@ export class SkinManager {
         }
     }
 
-    serialize() {
+    serialize(): string {
         return JSON.stringify({
             layers: this.layers,
             config: this.config,
@@ -69,8 +115,8 @@ export class SkinManager {
         });
     }
 
-    deserialize(data) {
-        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    deserialize(data: string | Record<string, unknown>): void {
+        const parsed: any = typeof data === 'string' ? JSON.parse(data) : data;
         Object.assign(this.layers, parsed.layers);
         Object.assign(this.config, parsed.config);
         Object.assign(this.proportions, parsed.proportions);

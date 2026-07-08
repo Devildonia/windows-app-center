@@ -8,7 +8,7 @@ export class Renderer {
      * Main draw call for the stickman
      * @param {Object} stickman - The Stickman instance
      */
-    static draw(stickman) {
+    static draw(stickman: any): void {
         const ctx = stickman.ragdollPet.render.context;
         const manager = stickman.skinManager;
 
@@ -46,14 +46,14 @@ export class Renderer {
         stickman.drawBloodParticles(ctx);
     }
 
-    static renderEmanators(ctx, stickman) {
+    static renderEmanators(ctx: CanvasRenderingContext2D, stickman: any) {
         const manager = stickman.skinManager;
         if (!manager || !manager.config.emanators) return;
 
         const intensity = manager.config.vfxIntensity || 1.0;
         const vfxScale = (manager.config.vfxSize || 1.0) * (stickman.globalScale || 1.0);
 
-        manager.config.emanators.forEach(eman => {
+        manager.config.emanators.forEach((eman: any) => {
             // Pick a random part if it's an "aura" type, otherwise use the specified part
             const isAura = eman.type === 'stars' || eman.type === 'fire';
             const bodyParts = ['head', 'chest', 'waist', 'leftHand', 'rightHand', 'leftFoot', 'rightFoot'];
@@ -77,7 +77,7 @@ export class Renderer {
                     x: p.x, y: p.y, vx: p.vx, vy: p.vy,
                     life: 1.0,
                     update: function () { this.x += this.vx; this.y += this.vy; this.life -= 0.03; return this.life > 0; },
-                    draw: function (ctx) {
+                    draw: function (ctx: CanvasRenderingContext2D) {
                         ctx.save();
                         ctx.globalAlpha = this.life;
                         ctx.fillStyle = p.color;
@@ -91,7 +91,7 @@ export class Renderer {
         });
     }
 
-    static drawShadow(ctx, stickman) {
+    static drawShadow(ctx: CanvasRenderingContext2D, stickman: any) {
         const waist = stickman.parts.waist;
         if (!waist) return;
 
@@ -111,7 +111,7 @@ export class Renderer {
         ctx.restore();
     }
 
-    static drawSoftJoints(ctx, stickman) {
+    static drawSoftJoints(ctx: CanvasRenderingContext2D, stickman: any) {
         const parts = stickman.parts;
         const scale = stickman.globalScale;
         // Use the base tint from the skin manager layers
@@ -123,7 +123,7 @@ export class Renderer {
         // ... bridge logic if needed, but we currently use joint circles
 
         // Connect joints with smooth circles instead of crude triangles
-        const drawJoint = (p, partName) => {
+        const drawJoint = (p: any, partName: string) => {
             if (!p) return;
             // Use widthScale AND part-specific scaling for joint volume
             const widthScale = stickman.globalWidthScale || 1.0;
@@ -145,7 +145,7 @@ export class Renderer {
         drawJoint(parts.waist, 'shirt');
     }
 
-    static drawBodyLayers(ctx, stickman) {
+    static drawBodyLayers(ctx: CanvasRenderingContext2D, stickman: any) {
         const manager = stickman.skinManager;
         const parts = stickman.parts;
         const scale = stickman.globalScale;
@@ -205,7 +205,7 @@ export class Renderer {
         }
     }
 
-    static drawHeadAndFace(ctx, stickman) {
+    static drawHeadAndFace(ctx: CanvasRenderingContext2D, stickman: any) {
         const head = stickman.parts.head;
         if (!head) return;
         const scale = stickman.globalScale;
@@ -223,12 +223,12 @@ export class Renderer {
         this.drawFace(ctx, stickman);
         ctx.restore();
     }
-    static drawHands(ctx, stickman) {
+    static drawHands(ctx: CanvasRenderingContext2D, stickman: any) {
         const globalScale = stickman.globalScale;
         const widthScale = stickman.globalWidthScale || 1.0;
 
         // Base segment angles
-        const getBaseAngle = (e, h) => !e || !h ? 0 : Math.atan2(h.position.y - e.position.y, h.position.x - e.position.x);
+        const getBaseAngle = (e: any, h: any) => !e || !h ? 0 : Math.atan2(h.position.y - e.position.y, h.position.x - e.position.x);
         const lBase = getBaseAngle(stickman.parts.leftElbow, stickman.parts.leftHand);
         const rBase = getBaseAngle(stickman.parts.rightElbow, stickman.parts.rightHand);
 
@@ -248,14 +248,14 @@ export class Renderer {
         this.drawHand(ctx, stickman.parts.rightHand, rOverlay, 18 * globalScale * widthScale * rc.scale, false, ra, rc.y * globalScale);
     }
 
-    static drawSkeleton(ctx, stickman) {
+    static drawSkeleton(ctx: CanvasRenderingContext2D, stickman: any) {
         const scale = stickman.globalScale || 1.0;
         const tint = stickman.skinManager?.layers?.base?.tint;
         ctx.strokeStyle = tint || '#000000';
         ctx.lineWidth = 2.2 * scale;
         ctx.lineCap = 'round';
 
-        const drawLine = (p1, p2) => {
+        const drawLine = (p1: any, p2: any) => {
             if (!p1 || !p2) return;
             ctx.beginPath();
             ctx.moveTo(p1.position.x, p1.position.y);
@@ -304,7 +304,7 @@ export class Renderer {
         this.drawJoint(ctx, rightKnee, scale);
     }
 
-    static drawJoint(ctx, part, scale) {
+    static drawJoint(ctx: CanvasRenderingContext2D, part: any, scale: number) {
         if (!part) return;
         ctx.fillStyle = '#000000';
         ctx.beginPath();
@@ -312,7 +312,7 @@ export class Renderer {
         ctx.fill();
     }
 
-    static drawDefaultHead(ctx, stickman) {
+    static drawDefaultHead(ctx: CanvasRenderingContext2D, stickman: any) {
         const scale = stickman?.globalScale || 1.0;
         ctx.beginPath();
         ctx.arc(0, 0, 12 * scale, 0, Math.PI * 2);
@@ -323,7 +323,7 @@ export class Renderer {
         ctx.stroke();
     }
 
-    static drawFace(ctx, stickman) {
+    static drawFace(ctx: CanvasRenderingContext2D, stickman: any) {
         const emotion = stickman.emotion;
         const scale = stickman.globalScale || 1.0;
 
@@ -383,7 +383,7 @@ export class Renderer {
         }
     }
 
-    static drawHand(ctx, handPart, image, size, isLeft = false, overrideAngle = null, yOffset = 0) {
+    static drawHand(ctx: CanvasRenderingContext2D, handPart: any, image: any, size: number, isLeft = false, overrideAngle: number | null = null, yOffset = 0) {
         if (!handPart) return;
         ctx.save();
         ctx.translate(handPart.position.x, handPart.position.y);
@@ -419,7 +419,7 @@ export class Renderer {
         ctx.restore();
     }
 
-    static drawProceduralHand(ctx, size, isLeft) {
+    static drawProceduralHand(ctx: CanvasRenderingContext2D, size: number, isLeft: boolean) {
         const fingerLen = size * 0.5;
         const thumbLen = size * 0.35;
         const fingerWidth = size * 0.2;
@@ -464,7 +464,7 @@ export class Renderer {
         ctx.restore();
     }
 
-    static drawLegSegment(stickman, ctx, knee, foot, image, scale = 1, yOffset = 0, globalScale = 1.0) {
+    static drawLegSegment(stickman: any, ctx: CanvasRenderingContext2D, knee: any, foot: any, image: any, scale = 1, yOffset = 0, globalScale = 1.0) {
         const dx = foot.position.x - knee.position.x;
         const dy = foot.position.y - knee.position.y;
         const angle = Math.atan2(dy, dx);
@@ -507,11 +507,12 @@ export class Renderer {
         ctx.restore();
     }
 
-    static drawSpeechBubble(ctx, stickman) {
+    static drawSpeechBubble(ctx: CanvasRenderingContext2D, stickman: any) {
         const head = stickman.parts.head;
-        let text = stickman.bubbleText;
-        const legacyMap = { 'angry': '😠', 'broken-heart': '💔', 'question': '?', 'tired': 'Zzz...', 'jump': '!', 'watch': '👀' };
-        if (legacyMap[text]) text = legacyMap[text];
+        let text: string = stickman.bubbleText;
+        const legacyMap: Record<string, string> = { 'angry': '😠', 'broken-heart': '💔', 'question': '?', 'tired': 'Zzz...', 'jump': '!', 'watch': '👀' };
+        const mapped = legacyMap[text];
+        if (mapped) text = mapped;
 
         const fontSize = stickman.messageLibrary ? stickman.messageLibrary.getRecommendedFontSize(text) : 12;
 
@@ -541,7 +542,7 @@ export class Renderer {
         ctx.restore();
     }
 
-    static drawRoundedRect(ctx, x, y, width, height, radius) {
+    static drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
         ctx.fillStyle = '#FFFFFF';
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2;
@@ -551,7 +552,7 @@ export class Renderer {
         ctx.stroke();
     }
 
-    static drawBubbleTail(ctx, bx, by, bh, head) {
+    static drawBubbleTail(ctx: CanvasRenderingContext2D, bx: number, by: number, bh: number, head: any) {
         ctx.fillStyle = '#FFFFFF';
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2;

@@ -4,7 +4,7 @@ import { Ragdoll3DCore } from '../core/Ragdoll3DCore';
 import { Kernel } from '../core/Kernel';
 import { Services } from '../core/ServiceContainer';
 import { i18n } from '../services/i18n';
-import { RagdollUI } from '../../public/games/ragdoll/js/RagdollUI.js';
+import { RagdollUI } from '../../games/ragdoll/js/RagdollUI.js';
 
 const RAGDOLL_WORKSHOP_BODY_HTML = `
     <div class="workshop-tabs"

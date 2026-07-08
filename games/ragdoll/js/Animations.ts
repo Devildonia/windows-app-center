@@ -4,14 +4,51 @@
  */
 
 import { ZzzParticle, TearParticle } from './Particles.js';
+import type { Stickman } from './Stickman.js';
+
+export interface BasePositions {
+    floorY: number;
+    baseY: number;
+    scale: number;
+    headY: number;
+    neckY: number;
+    chestY: number;
+    waistY: number;
+}
+
+export interface Pose2D {
+    x: number;
+    y: number;
+}
+
+export interface StickmanPose {
+    head?: Pose2D;
+    neck?: Pose2D;
+    chest?: Pose2D;
+    waist?: Pose2D;
+    leftShoulder?: Pose2D;
+    leftElbow?: Pose2D;
+    leftHand?: Pose2D;
+    rightShoulder?: Pose2D;
+    rightElbow?: Pose2D;
+    rightHand?: Pose2D;
+    leftHip?: Pose2D;
+    leftKnee?: Pose2D;
+    leftFoot?: Pose2D;
+    rightHip?: Pose2D;
+    rightKnee?: Pose2D;
+    rightFoot?: Pose2D;
+    leftToes?: Pose2D;
+    rightToes?: Pose2D;
+}
 
 export class Animations {
     /**
      * Helper to get base positions for animations
      */
-    static getBasePositions(stickman) {
-        const floorY = stickman.currentFloorY || (window.innerHeight - (window.CONFIG?.TASKBAR?.HEIGHT || 40));
-        const scale = (window.CONFIG?.RAGDOLL?.SCALE || 1.0) * (stickman.globalScale || 1.0);
+    static getBasePositions(stickman: Stickman): BasePositions {
+        const floorY = stickman.currentFloorY || (window.innerHeight - ((window.CONFIG?.TASKBAR?.HEIGHT as number) || 40));
+        const scale = ((window.CONFIG?.RAGDOLL?.SCALE as number) || 1.0) * (stickman.globalScale || 1.0);
 
         // Offset baseY so that footY (baseY + 12*scale) matches floorY
         const baseY = floorY - 12 * scale;
@@ -27,7 +64,7 @@ export class Animations {
         };
     }
 
-    static standUp(stickman) {
+    static standUp(stickman: Stickman): void {
         const { baseY, scale, headY, neckY, chestY, waistY } = this.getBasePositions(stickman);
         this.setPose(stickman, {
             head: { x: stickman.x, y: headY },
@@ -49,17 +86,20 @@ export class Animations {
         });
     }
 
-    static setPose(stickman, pose) {
-        for (let part in pose) {
-            if (stickman.parts[part]) {
-                stickman.ragdollPet.Body.setPosition(stickman.parts[part], pose[part]);
-                stickman.ragdollPet.Body.setVelocity(stickman.parts[part], { x: 0, y: 0 });
-                stickman.ragdollPet.Body.setAngle(stickman.parts[part], 0);
+    static setPose(stickman: Stickman, pose: StickmanPose): void {
+        for (const part in pose) {
+            const key = part as keyof StickmanPose;
+            if (stickman.parts[key]) {
+                const bodyPart = stickman.parts[key]!;
+                const posePart = pose[key]!;
+                stickman.ragdollPet.Body.setPosition(bodyPart, posePart);
+                stickman.ragdollPet.Body.setVelocity(bodyPart, { x: 0, y: 0 });
+                stickman.ragdollPet.Body.setAngle(bodyPart, 0);
             }
         }
 
         // Auto-update toes if feet are moved but toes aren't in pose
-        const scale = (window.CONFIG?.RAGDOLL?.SCALE || 1.0) * (stickman.globalScale || 1.0);
+        const scale = ((window.CONFIG?.RAGDOLL?.SCALE as number) || 1.0) * (stickman.globalScale || 1.0);
         if (pose.leftFoot && !pose.leftToes && stickman.parts.leftToes) {
             stickman.ragdollPet.Body.setPosition(stickman.parts.leftToes, {
                 x: pose.leftFoot.x - 8 * scale,
@@ -74,7 +114,7 @@ export class Animations {
         }
     }
 
-    static animateStandingCycle(stickman) {
+    static animateStandingCycle(stickman: Stickman): void {
         const { baseY, scale, headY, neckY, chestY, waistY } = this.getBasePositions(stickman);
 
         if (stickman.state === 'jumping') {
@@ -112,10 +152,10 @@ export class Animations {
 
     // --- Animation Implementation Methods (Internal update) ---
 
-    static animateJumping(stickman, headY, neckY, chestY, waistY, baseY, scale) {
+    static animateJumping(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
         const jumpTime = Date.now() - stickman.animationStartTime;
-        const jumpProgress = jumpTime / (window.CONFIG?.RAGDOLL?.JUMP_DURATION || 1000);
-        const jumpHeight = Math.sin(jumpProgress * Math.PI) * (window.CONFIG?.RAGDOLL?.JUMP_HEIGHT || 60);
+        const jumpProgress = jumpTime / ((window.CONFIG?.RAGDOLL?.JUMP_DURATION as number) || 1000);
+        const jumpHeight = Math.sin(jumpProgress * Math.PI) * ((window.CONFIG?.RAGDOLL?.JUMP_HEIGHT as number) || 60);
         const currentBaseY = baseY - jumpHeight;
 
         this.setPose(stickman, {
@@ -138,7 +178,7 @@ export class Animations {
         });
     }
 
-    static animateSitting(stickman, baseY, scale) {
+    static animateSitting(stickman: Stickman, baseY: number, scale: number): void {
         this.setPose(stickman, {
             head: { x: stickman.x, y: baseY - 35 * scale },
             neck: { x: stickman.x, y: baseY - 24 * scale },
@@ -159,7 +199,7 @@ export class Animations {
         });
     }
 
-    static animateDancing(stickman, headY, neckY, chestY, waistY, baseY, scale) {
+    static animateDancing(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
         const danceTime = (Date.now() - stickman.animationStartTime) / 1000;
         const danceBounce = Math.sin(danceTime * 8) * 10;
         const danceSwing = Math.sin(danceTime * 6) * 15;
@@ -184,7 +224,7 @@ export class Animations {
         });
     }
 
-    static animateSleeping(stickman, baseY, scale) {
+    static animateSleeping(stickman: Stickman, baseY: number, scale: number): void {
         this.setPose(stickman, {
             head: { x: stickman.x - 20 * scale, y: baseY + 5 * scale },
             neck: { x: stickman.x - 12 * scale, y: baseY + 8 * scale },
@@ -204,16 +244,19 @@ export class Animations {
             rightFoot: { x: stickman.x + 22 * scale, y: baseY + 4 * scale }
         });
 
-        if (Date.now() - stickman.lastZzzTime > (window.CONFIG?.RAGDOLL?.SLEEPING_ZZZ_INTERVAL || 2000)) {
-            const zzzX = stickman.parts.head.position.x + 5;
-            const zzzY = stickman.parts.head.position.y - 10;
-            stickman.sleepingZzzParticles.push(new ZzzParticle(zzzX, zzzY));
-            stickman.lastZzzTime = Date.now();
+        if (Date.now() - stickman.lastZzzTime > ((window.CONFIG?.RAGDOLL?.SLEEPING_ZZZ_INTERVAL as number) || 2000)) {
+            const headPart = stickman.parts.head;
+            if (headPart) {
+                const zzzX = headPart.position.x + 5;
+                const zzzY = headPart.position.y - 10;
+                stickman.sleepingZzzParticles.push(new ZzzParticle(zzzX, zzzY));
+                stickman.lastZzzTime = Date.now();
+            }
         }
     }
 
-    static animateLaughing(stickman, baseY, scale) {
-        const shakeIntensity = window.CONFIG?.RAGDOLL?.LAUGHING_INTENSITY || 5;
+    static animateLaughing(stickman: Stickman, baseY: number, scale: number): void {
+        const shakeIntensity = (window.CONFIG?.RAGDOLL?.LAUGHING_INTENSITY as number) || 5;
         const shakeX = (Math.random() - 0.5) * shakeIntensity;
         const shakeY = (Math.random() - 0.5) * shakeIntensity * 0.5;
 
@@ -233,9 +276,9 @@ export class Animations {
         });
     }
 
-    static animateEating(stickman, baseY, scale) {
+    static animateEating(stickman: Stickman, baseY: number, scale: number): void {
         const eatTime = Date.now() - stickman.animationStartTime;
-        const handMovement = Math.sin((eatTime / (window.CONFIG?.RAGDOLL?.EATING_BITE_INTERVAL || 500)) * Math.PI * 2) * 8;
+        const handMovement = Math.sin((eatTime / ((window.CONFIG?.RAGDOLL?.EATING_BITE_INTERVAL as number) || 500)) * Math.PI * 2) * 8;
 
         this.setPose(stickman, {
             head: { x: stickman.x, y: baseY - 35 * scale },
@@ -250,14 +293,14 @@ export class Animations {
             leftHand: { x: stickman.x - 15 * scale, y: baseY }
         });
 
-        if (Date.now() - stickman.lastBiteTime > (window.CONFIG?.RAGDOLL?.EATING_BITE_INTERVAL || 500)) {
-            stickman.ragdollPet.audioManager.play('eat');
+        if (Date.now() - stickman.lastBiteTime > ((window.CONFIG?.RAGDOLL?.EATING_BITE_INTERVAL as number) || 500)) {
+            stickman.ragdollPet.audioManager?.play('eat');
             stickman.lastBiteTime = Date.now();
             stickman.biteCount++;
         }
     }
 
-    static animateCrying(stickman, headY, neckY, chestY, waistY, baseY, scale) {
+    static animateCrying(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
         this.setPose(stickman, {
             head: { x: stickman.x, y: headY },
             neck: { x: stickman.x, y: neckY },
@@ -271,15 +314,18 @@ export class Animations {
             rightHand: { x: stickman.x + 5 * scale, y: baseY - 58 * scale }
         });
 
-        if (Date.now() - stickman.lastTearTime > (window.CONFIG?.RAGDOLL?.CRYING_TEAR_INTERVAL || 1500)) {
-            const tearX = stickman.parts.head.position.x + (Math.random() - 0.5) * 8;
-            const tearY = stickman.parts.head.position.y + 8;
-            stickman.cryingTearParticles.push(new TearParticle(tearX, tearY));
-            stickman.lastTearTime = Date.now();
+        if (Date.now() - stickman.lastTearTime > ((window.CONFIG?.RAGDOLL?.CRYING_TEAR_INTERVAL as number) || 1500)) {
+            const headPart = stickman.parts.head;
+            if (headPart) {
+                const tearX = headPart.position.x + (Math.random() - 0.5) * 8;
+                const tearY = headPart.position.y + 8;
+                stickman.cryingTearParticles.push(new TearParticle(tearX, tearY));
+                stickman.lastTearTime = Date.now();
+            }
         }
     }
 
-    static animateWaving(stickman, headY, neckY, chestY, waistY, baseY, scale) {
+    static animateWaving(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
         const waveTime = (Date.now() % 1000) / 1000;
         const waveAngle = Math.sin(waveTime * Math.PI * 4) * 25;
 
@@ -294,16 +340,16 @@ export class Animations {
         });
     }
 
-    static animateBackflip(stickman, baseY, scale) {
+    static animateBackflip(stickman: Stickman, baseY: number, scale: number): void {
         const flipTime = Date.now() - stickman.animationStartTime;
-        const flipProgress = flipTime / (window.CONFIG?.RAGDOLL?.BACKFLIP_DURATION || 1500);
+        const flipProgress = flipTime / ((window.CONFIG?.RAGDOLL?.BACKFLIP_DURATION as number) || 1500);
         const rotation = flipProgress * Math.PI * 2;
-        const jumpHeight = Math.sin(flipProgress * Math.PI) * (window.CONFIG?.RAGDOLL?.BACKFLIP_HEIGHT || 80);
+        const jumpHeight = Math.sin(flipProgress * Math.PI) * ((window.CONFIG?.RAGDOLL?.BACKFLIP_HEIGHT as number) || 80);
 
         const centerX = stickman.x;
         const centerY = baseY - 30 * scale - jumpHeight;
 
-        const rotatePoint = (offsetX, offsetY) => {
+        const rotatePoint = (offsetX: number, offsetY: number) => {
             const rotatedX = offsetX * Math.cos(rotation) - offsetY * Math.sin(rotation);
             const rotatedY = offsetX * Math.sin(rotation) + offsetY * Math.cos(rotation);
             return { x: centerX + rotatedX, y: centerY + rotatedY };
@@ -319,10 +365,10 @@ export class Animations {
         });
     }
 
-    static animateMoonwalk(stickman, headY, neckY, chestY, waistY, baseY, scale) {
+    static animateMoonwalk(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
         const moonwalkTime = Date.now() - stickman.animationStartTime;
-        const moonwalkProgress = moonwalkTime / (window.CONFIG?.RAGDOLL?.MOONWALK_DURATION || 2000);
-        stickman.x = stickman.moonwalkStartX - ((window.CONFIG?.RAGDOLL?.MOONWALK_SPEED || 100) * moonwalkProgress);
+        const moonwalkProgress = moonwalkTime / ((window.CONFIG?.RAGDOLL?.MOONWALK_DURATION as number) || 2000);
+        stickman.x = stickman.moonwalkStartX - (((window.CONFIG?.RAGDOLL?.MOONWALK_SPEED as number) || 100) * moonwalkProgress);
 
         const legCycle = Math.sin(moonwalkTime / 200 * Math.PI);
         const leftLegSlide = legCycle > 0 ? -12 : 0;
@@ -336,10 +382,9 @@ export class Animations {
         });
     }
 
-    static animateWalking(stickman, headY, neckY, chestY, waistY, baseY, scale) {
+    static animateWalking(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
         const walkTime = Date.now() / 150 * Math.PI;
         const sin = Math.sin(walkTime);
-        const cos = Math.cos(walkTime);
         const armSwing = Math.sin(walkTime) * 15 * scale;
         const legSwing = Math.sin(walkTime) * 12 * scale;
 
@@ -363,7 +408,7 @@ export class Animations {
         });
     }
 
-    static animateIdle(stickman, headY, neckY, chestY, waistY, baseY, scale) {
+    static animateIdle(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
         const widthScale = stickman.globalWidthScale || 1.0;
 
         this.setPose(stickman, {
@@ -386,7 +431,7 @@ export class Animations {
         });
     }
 
-    static animateYawning(stickman, headY, neckY, chestY, waistY, baseY, scale) {
+    static animateYawning(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
         const yawnTime = Date.now() - stickman.animationStartTime;
         const progress = Math.min(1, yawnTime / 2000);
         const mouthOpen = Math.sin(progress * Math.PI) * 10 * scale;
@@ -399,7 +444,7 @@ export class Animations {
         });
     }
 
-    static animateStretching(stickman, headY, neckY, chestY, waistY, baseY, scale) {
+    static animateStretching(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
         const stretchTime = Date.now() - stickman.animationStartTime;
         const stretchProgress = Math.sin((stretchTime / 2000) * Math.PI);
 
@@ -410,9 +455,9 @@ export class Animations {
         });
     }
 
-    static animateWatching(stickman, headY, neckY, chestY, waistY, baseY, scale) {
-        const mX = window.mouseX || 0;
-        const mY = window.mouseY || 0;
+    static animateWatching(stickman: Stickman, headY: number, neckY: number, chestY: number, waistY: number, baseY: number, scale: number): void {
+        const mX = (window as any).mouseX || 0;
+        const mY = (window as any).mouseY || 0;
         const dx = (mX - stickman.x) * 0.1;
         const dy = (mY - headY) * 0.1;
         const limit = 15 * scale;

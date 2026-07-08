@@ -4,27 +4,36 @@
  */
 
 export class BloodParticle {
-    constructor(x, y, vx, vy) {
+    public x: number;
+    public y: number;
+    public vx: number;
+    public vy: number;
+    public life: number;
+    public size: number;
+    public gravity: number;
+    public color: string;
+
+    constructor(x: number, y: number, vx: number, vy: number) {
         this.x = x;
         this.y = y;
         this.vx = vx;
         this.vy = vy;
         this.life = 1.0;
         this.size = Math.random() * 3 + 2;
-        this.gravity = CONFIG.RAGDOLL.BLOOD_GRAVITY;
+        this.gravity = window.CONFIG.RAGDOLL.BLOOD_GRAVITY;
         this.color = `rgb(${Math.floor(Math.random() * 50 + 139)}, 0, 0)`;
     }
 
-    update() {
+    update(): boolean {
         this.x += this.vx;
         this.y += this.vy;
         this.vy += this.gravity;
         this.vx *= 0.98;
-        this.life -= CONFIG.RAGDOLL.BLOOD_FADE_SPEED;
+        this.life -= window.CONFIG.RAGDOLL.BLOOD_FADE_SPEED;
         return this.life > 0;
     }
 
-    draw(ctx) {
+    draw(ctx: CanvasRenderingContext2D): void {
         ctx.save();
         ctx.globalAlpha = this.life;
         ctx.fillStyle = this.color;
@@ -36,7 +45,16 @@ export class BloodParticle {
 }
 
 export class ZzzParticle {
-    constructor(x, y) {
+    public x: number;
+    public y: number;
+    public vx: number;
+    public vy: number;
+    public life: number;
+    public size: number;
+    public fadeSpeed: number;
+    public rotation: number;
+
+    constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
         this.vx = (Math.random() - 0.5) * 0.5;
@@ -47,7 +65,7 @@ export class ZzzParticle {
         this.rotation = Math.random() * Math.PI * 0.2 - Math.PI * 0.1;
     }
 
-    update() {
+    update(): boolean {
         this.x += this.vx;
         this.y += this.vy;
         this.vy -= 0.02;
@@ -56,7 +74,7 @@ export class ZzzParticle {
         return this.life > 0;
     }
 
-    draw(ctx) {
+    draw(ctx: CanvasRenderingContext2D): void {
         ctx.save();
         ctx.globalAlpha = this.life;
         ctx.fillStyle = '#000000';
@@ -73,7 +91,16 @@ export class ZzzParticle {
 }
 
 export class TearParticle {
-    constructor(x, y) {
+    public x: number;
+    public y: number;
+    public vx: number;
+    public vy: number;
+    public life: number;
+    public size: number;
+    public fadeSpeed: number;
+    public gravity: number;
+
+    constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
         this.vx = (Math.random() - 0.5) * 0.3;
@@ -84,7 +111,7 @@ export class TearParticle {
         this.gravity = 0.1;
     }
 
-    update() {
+    update(): boolean {
         this.x += this.vx;
         this.y += this.vy;
         this.vy += this.gravity;
@@ -93,7 +120,7 @@ export class TearParticle {
         return this.life > 0;
     }
 
-    draw(ctx) {
+    draw(ctx: CanvasRenderingContext2D): void {
         ctx.save();
         ctx.globalAlpha = this.life;
         ctx.fillStyle = '#87CEEB';

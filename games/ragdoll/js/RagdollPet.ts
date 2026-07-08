@@ -7,9 +7,53 @@ import { Stickman } from './Stickman.js';
 import { RagdollUI } from './RagdollUI.js';
 
 export class RagdollPet {
-    constructor(canvasId) {
+    public canvasId: string;
+    public canvas: HTMLCanvasElement;
+    public isActive: boolean;
+    public engine: any;
+    public world: any;
+    public render: any;
+    public stickman: Stickman | null;
+    public runner: any;
+    public mouseConstraint: any;
+    public ground: any;
+    public walls: any[];
+    public windowBodies: Map<string, any>;
+    public iconBodies: Map<string, any>;
+    public stickyBodies: Map<string, any>;
+    public overlayBodies: Set<any>;
+    public boundHandlers: {
+        resize: (() => void) | null;
+        mousemove?: (() => void) | null;
+        mousedown?: (() => void) | null;
+        documentMousemove?: (() => void) | null;
+    };
+    public Matter: any;
+    public Engine: any;
+    public Render: any;
+    public World: any;
+    public Bodies: any;
+    public Body: any;
+    public Constraint: any;
+    public Mouse: any;
+    public MouseConstraint: any;
+    public Runner: any;
+    public Events: any;
+    public Composite: any;
+    public audioManager: any;
+
+    private _mouseControlSetup?: boolean;
+    private _pettingVelocity: number = 0;
+    private _lastMouseX: number = 0;
+    private _lastMouseY: number = 0;
+
+    constructor(canvasId: string) {
         this.canvasId = canvasId;
-        this.canvas = document.getElementById(canvasId);
+        const canvasEl = document.getElementById(canvasId);
+        if (!canvasEl) {
+            throw new Error(`Canvas element with id ${canvasId} not found`);
+        }
+        this.canvas = canvasEl as HTMLCanvasElement;
         this.isActive = false;
         this.engine = null;
         this.world = null;
@@ -24,14 +68,11 @@ export class RagdollPet {
         this.overlayBodies = new Set(); // Quick lookup for collisions
 
         this.boundHandlers = {
-            resize: null,
-            mousemove: null,
-            mousedown: null,
-            documentMousemove: null
+            resize: null
         };
 
         // Matter.js modules (from window)
-        this.Matter = window.Matter;
+        this.Matter = (window as any).Matter;
         this.Engine = this.Matter.Engine;
         this.Render = this.Matter.Render;
         this.World = this.Matter.World;
@@ -44,11 +85,11 @@ export class RagdollPet {
         this.Events = this.Matter.Events;
         this.Composite = this.Matter.Composite;
 
-        this.audioManager = window.AudioManager?.getInstance?.() || null;
+        this.audioManager = (window as any).AudioManager?.getInstance?.() || null;
     }
 
-    init() {
-        if (this.isActive || !window.Matter) return;
+    init(): void {
+        if (this.isActive || !(window as any).Matter) return;
 
         this.engine = this.Engine.create();
         this.world = this.engine.world;
@@ -76,8 +117,8 @@ export class RagdollPet {
         this.createWalls();
 
         const startX = window.innerWidth / 2;
-        const taskbarTop = window.innerHeight - (window.CONFIG?.TASKBAR?.HEIGHT || 40);
-        const ragdollY = taskbarTop - (window.CONFIG?.RAGDOLL?.GROUND_OFFSET || 13);
+        const taskbarTop = window.innerHeight - ((window as any).CONFIG?.TASKBAR?.HEIGHT || 40);
+        const ragdollY = taskbarTop - ((window as any).CONFIG?.RAGDOLL?.GROUND_OFFSET || 13);
 
         this.stickman = new Stickman(startX, ragdollY, this);
         this.setupMouseControl();
@@ -100,7 +141,7 @@ export class RagdollPet {
         });
 
         // Collision detection for "boing" sound
-        this.Events.on(this.engine, 'collisionStart', (event) => {
+        this.Events.on(this.engine, 'collisionStart', (event: any) => {
             if (!this.stickman) return;
 
             // Trigger boing if falling/moving in physics mode OR just dropped
@@ -146,9 +187,9 @@ export class RagdollPet {
         }
     }
 
-    createGround() {
-        const taskbarTop = window.innerHeight - (window.CONFIG?.TASKBAR?.HEIGHT || 40);
-        const groundHeight = window.CONFIG?.RAGDOLL?.GROUND_HEIGHT || 20;
+    createGround(): void {
+        const taskbarTop = window.innerHeight - ((window as any).CONFIG?.TASKBAR?.HEIGHT || 40);
+        const groundHeight = (window as any).CONFIG?.RAGDOLL?.GROUND_HEIGHT || 20;
 
         this.ground = this.Bodies.rectangle(
             window.innerWidth / 2,
@@ -158,7 +199,7 @@ export class RagdollPet {
             {
                 isStatic: true,
                 friction: 0,
-                restitution: window.CONFIG?.RAGDOLL?.RESTITUTION || 0.4,
+                restitution: (window as any).CONFIG?.RAGDOLL?.RESTITUTION || 0.4,
                 render: { fillStyle: 'transparent' }
             }
         );
@@ -166,8 +207,8 @@ export class RagdollPet {
         this.World.add(this.world, this.ground);
     }
 
-    createWalls() {
-        const wallRestitution = window.CONFIG?.RAGDOLL?.WALL_RESTITUTION || 1.0;
+    createWalls(): void {
+        const wallRestitution = (window as any).CONFIG?.RAGDOLL?.WALL_RESTITUTION || 1.0;
         const leftWall = this.Bodies.rectangle(-10, window.innerHeight / 2, 20, window.innerHeight, {
             isStatic: true,
             restitution: wallRestitution,
@@ -192,12 +233,12 @@ export class RagdollPet {
      * @param {number} currentAppY - Current Y of the object (to check only surfaces below)
      * @returns {number} Y coordinate of the surface
      */
-    getSurfaceAt(x, currentAppY) {
-        const taskbarHeight = window.CONFIG?.TASKBAR?.HEIGHT || 40;
+    getSurfaceAt(x: number, currentAppY: number): number {
+        const taskbarHeight = (window as any).CONFIG?.TASKBAR?.HEIGHT || 40;
         const taskbarTop = window.innerHeight - taskbarHeight;
         let highestY = taskbarTop;
 
-        const checkBodies = (bodyMap, elementClass) => {
+        const checkBodies = (bodyMap: Map<string, any>, elementClass: string) => {
             for (const [id, body] of bodyMap.entries()) {
                 const el = document.getElementById(id);
                 if (!el || el.style.display === 'none') continue;
@@ -228,10 +269,10 @@ export class RagdollPet {
         return highestY;
     }
 
-    syncWindowPhysics() {
-        if (!window.WindowManager) return;
-        const activeIds = window.WindowManager.getActive();
-        const res = window.CONFIG?.RAGDOLL?.WINDOW_RESTITUTION || 0.7;
+    syncWindowPhysics(): void {
+        if (!(window as any).WindowManager) return;
+        const activeIds = (window as any).WindowManager.getActive();
+        const res = (window as any).CONFIG?.RAGDOLL?.WINDOW_RESTITUTION || 0.7;
 
         // 1. Remove bodies for closed windows
         for (const [winId, body] of this.windowBodies.entries()) {
@@ -244,7 +285,7 @@ export class RagdollPet {
         }
 
         // 2. Update/Create bodies for active windows
-        activeIds.forEach(winId => {
+        activeIds.forEach((winId: string) => {
             const win = document.getElementById(winId);
             if (!win || win.style.display === 'none') return;
             if (!win.classList.contains('win95-window')) return;
@@ -290,13 +331,13 @@ export class RagdollPet {
         });
     }
 
-    handleResize() {
+    handleResize(): void {
         if (!this.render) return;
         this.render.canvas.width = window.innerWidth;
         this.render.canvas.height = window.innerHeight;
 
         if (this.ground) {
-            const taskbarTop = window.innerHeight - (window.CONFIG?.TASKBAR?.HEIGHT || 40);
+            const taskbarTop = window.innerHeight - ((window as any).CONFIG?.TASKBAR?.HEIGHT || 40);
             this.Body.setPosition(this.ground, { x: window.innerWidth / 2, y: taskbarTop });
         }
 
@@ -309,7 +350,7 @@ export class RagdollPet {
         }
     }
 
-    setupMouseControl() {
+    setupMouseControl(): void {
         if (this._mouseControlSetup) return;
         const mouse = this.Mouse.create(this.render.canvas);
         this.mouseConstraint = this.MouseConstraint.create(this.engine, {
@@ -336,7 +377,7 @@ export class RagdollPet {
         this._lastMouseX = 0;
         this._lastMouseY = 0;
 
-        canvas.addEventListener('mousemove', (e) => {
+        canvas.addEventListener('mousemove', (e: MouseEvent) => {
             if (!this.stickman || !this.isActive) return;
 
             const rect = canvas.getBoundingClientRect();
@@ -374,7 +415,7 @@ export class RagdollPet {
         this._mouseControlSetup = true;
     }
 
-    toggle() {
+    toggle(): boolean {
         if (this.isActive) {
             this.destroy();
             localStorage.setItem('ragdollPetActive', 'false');
@@ -386,7 +427,7 @@ export class RagdollPet {
         }
     }
 
-    destroy() {
+    destroy(): void {
         if (!this.isActive) return;
         this.isActive = false;
         if (this.stickman) {
@@ -404,29 +445,29 @@ export class RagdollPet {
         this._mouseControlSetup = false;
     }
 
-    playSpawnSound() { this.audioManager?.play('spawn'); }
-    playWaveSound() { this.audioManager?.play('wave'); }
-    playJumpSound() { this.audioManager?.play('jump'); }
-    playHurtSound() { this.audioManager?.play('bonk'); }
-    playGrabSound() { this.audioManager?.play('wii', { volume: 0.5 }); }
-    playDropSound() { this.audioManager?.play('release'); }
-    playScreamSound() { this.audioManager?.play('scream', { volume: 0.4 }); }
-    playBoingSound() { this.audioManager?.play('boing', { volume: 0.6 }); }
+    playSpawnSound(): void { this.audioManager?.play('spawn'); }
+    playWaveSound(): void { this.audioManager?.play('wave'); }
+    playJumpSound(): void { this.audioManager?.play('jump'); }
+    playHurtSound(): void { this.audioManager?.play('bonk'); }
+    playGrabSound(): void { this.audioManager?.play('wii', { volume: 0.5 }); }
+    playDropSound(): void { this.audioManager?.play('release'); }
+    playScreamSound(): void { this.audioManager?.play('scream', { volume: 0.4 }); }
+    playBoingSound(): void { this.audioManager?.play('boing', { volume: 0.6 }); }
 
-    syncDesktopOverlayPhysics() {
+    syncDesktopOverlayPhysics(): void {
         // Sync Icons
         const icons = document.querySelectorAll('.icon');
-        const iconRes = window.CONFIG?.RAGDOLL?.ICON_RESTITUTION || 0.7;
+        const iconRes = (window as any).CONFIG?.RAGDOLL?.ICON_RESTITUTION || 0.7;
         this.syncElements(icons, this.iconBodies, iconRes, 'icon');
 
         // Sync Sticky Notes
         const stickies = document.querySelectorAll('.sticky-note');
-        const stickyRes = window.CONFIG?.RAGDOLL?.STICKY_NOTE_RESTITUTION || 0.5;
+        const stickyRes = (window as any).CONFIG?.RAGDOLL?.STICKY_NOTE_RESTITUTION || 0.5;
         this.syncElements(stickies, this.stickyBodies, stickyRes, 'sticky');
     }
 
-    syncElements(elements, bodyMap, restitution, type) {
-        const currentIds = new Set();
+    syncElements(elements: NodeListOf<Element>, bodyMap: Map<string, any>, restitution: number, type: string): void {
+        const currentIds = new Set<string>();
         elements.forEach((el, index) => {
             if (!el.id) el.id = `phys-${type}-${index}`;
             currentIds.add(el.id);
