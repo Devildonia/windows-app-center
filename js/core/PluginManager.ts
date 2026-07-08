@@ -29,6 +29,16 @@ export const PluginManager = {
             return { ok: false, error: 'Plugin metadata.icon is required and must be a string' };
         }
 
+        if (typeof plugin.component !== 'function' && plugin.windowDef && typeof plugin.windowDef.src === 'string') {
+            if (!plugin.windowDef.id) {
+                (plugin.windowDef as any).id = `win-plugin-${plugin.id}`;
+            }
+            const winId = plugin.windowDef.id || `win-plugin-${plugin.id}`;
+            (plugin as any).component = class DefaultIframeApp {
+                public windowId: string = winId;
+            };
+        }
+
         if (typeof plugin.component !== 'function') {
             return { ok: false, error: 'Plugin component must be a constructor function' };
         }

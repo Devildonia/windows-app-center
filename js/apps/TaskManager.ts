@@ -13,10 +13,55 @@ export class TaskManager implements IWindowsApp {
     
     private boundProcessStarted: EventListener;
     private boundProcessStopped: EventListener;
+    private boundTabClick: EventListener;
+    private boundProcessListClick: EventListener;
 
     constructor() {
         this.boundProcessStarted = () => this.refreshUI();
         this.boundProcessStopped = () => this.refreshUI();
+        this.boundTabClick = (e: Event) => {
+            const btn = e.currentTarget as HTMLElement;
+            const tabButtons = this.container?.querySelectorAll('.tab-btn');
+            const tabContents = this.container?.querySelectorAll('.tab-content');
+            if (tabButtons && tabContents) {
+                tabButtons.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => {
+                    c.classList.remove('active');
+                    (c as HTMLElement).style.display = 'none';
+                });
+                btn.classList.add('active');
+                const targetTab = btn.getAttribute('data-tab');
+                const targetContent = this.container?.querySelector(`#tab-${targetTab}`) as HTMLElement | null;
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                    targetContent.style.display = targetTab === 'processes' ? 'flex' : 'block';
+                }
+            }
+        };
+        this.boundProcessListClick = (e: Event) => {
+            const target = e.target as HTMLElement;
+            
+            // End task execution
+            if (target.classList.contains('tm-kill-btn') || target.closest('.tm-kill-btn')) {
+                const btn = target.classList.contains('tm-kill-btn') ? target : target.closest('.tm-kill-btn') as HTMLElement;
+                const pidStr = btn.getAttribute('data-pid');
+                if (pidStr) {
+                    Kernel.kill(parseInt(pidStr, 10));
+                }
+                e.stopPropagation();
+                return;
+            }
+
+            // Row selection
+            const tr = target.closest('tr');
+            if (tr) {
+                const pidStr = tr.getAttribute('data-pid');
+                if (pidStr) {
+                    this.activeRowPid = parseInt(pidStr, 10);
+                    this.highlightRow();
+                }
+            }
+        };
         this.init();
     }
 
@@ -38,6 +83,18 @@ export class TaskManager implements IWindowsApp {
         this.refreshUI();
 
         this.intervalId = window.setInterval(() => this.refreshUI(), 1000);
+
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            resManager.register('taskmanager', 'timer', {
+                dispose: () => {
+                    if (this.intervalId !== null) {
+                        window.clearInterval(this.intervalId);
+                        this.intervalId = null;
+                    }
+                }
+            });
+        }
 
         Utils.eventManager.add(window, 'kernel:process-started', this.boundProcessStarted);
         Utils.eventManager.add(window, 'kernel:process-stopped', this.boundProcessStopped);
@@ -151,51 +208,14 @@ export class TaskManager implements IWindowsApp {
 
         // Bind tab switching
         const tabButtons = this.container.querySelectorAll('.tab-btn');
-        const tabContents = this.container.querySelectorAll('.tab-content');
         tabButtons.forEach(btn => {
-            Utils.eventManager.add(btn, 'click', () => {
-                tabButtons.forEach(b => b.classList.remove('active'));
-                tabContents.forEach(c => {
-                    c.classList.remove('active');
-                    (c as HTMLElement).style.display = 'none';
-                });
-                btn.classList.add('active');
-                const targetTab = btn.getAttribute('data-tab');
-                const targetContent = this.container?.querySelector(`#tab-${targetTab}`) as HTMLElement | null;
-                if (targetContent) {
-                    targetContent.classList.add('active');
-                    targetContent.style.display = targetTab === 'processes' ? 'flex' : 'block';
-                }
-            });
+            Utils.eventManager.add(btn, 'click', this.boundTabClick);
         });
 
         // Delegate actions inside process list
         const tbody = this.container.querySelector('#tm-process-list');
         if (tbody) {
-            Utils.eventManager.add(tbody, 'click', (e) => {
-                const target = e.target as HTMLElement;
-                
-                // End task execution
-                if (target.classList.contains('tm-kill-btn') || target.closest('.tm-kill-btn')) {
-                    const btn = target.classList.contains('tm-kill-btn') ? target : target.closest('.tm-kill-btn') as HTMLElement;
-                    const pidStr = btn.getAttribute('data-pid');
-                    if (pidStr) {
-                        Kernel.kill(parseInt(pidStr, 10));
-                    }
-                    e.stopPropagation();
-                    return;
-                }
-
-                // Row selection
-                const tr = target.closest('tr');
-                if (tr) {
-                    const pidStr = tr.getAttribute('data-pid');
-                    if (pidStr) {
-                        this.activeRowPid = parseInt(pidStr, 10);
-                        this.highlightRow();
-                    }
-                }
-            });
+            Utils.eventManager.add(tbody, 'click', this.boundProcessListClick);
         }
     }
 
@@ -334,24 +354,33 @@ export class TaskManager implements IWindowsApp {
             }
         }
 
-        // Real-time calculations:
+        // Real-time calculations (Deterministic based on active processes & resource usage):
         const activeProcesses = processes.length;
-        const baseCpu = 5 + activeProcesses * 4;
-        const randomCpu = Math.floor(Math.random() * 8) - 4;
-        const cpuUsage = Math.max(1, Math.min(99, baseCpu + randomCpu));
+        const webglCount = stats.webgl || 0;
+        const timerCount = stats.timer || 0;
+        const tick = Math.floor(Date.now() / 1000);
+        
+        // Fluctuations generated using a deterministic combination of sine and cosine waves based on current tick:
+        const timeFluctuation1 = Math.sin(tick) * 2 + Math.cos(tick * 0.7) * 1.5;
+        const timeFluctuation2 = Math.cos(tick * 1.2) * 1.8 + Math.sin(tick * 0.5) * 1.2;
 
-        const baseRam = 15 + activeProcesses * 5;
-        const randomRam = Math.floor(Math.random() * 4) - 2;
-        const ramUsage = Math.max(1, Math.min(99, baseRam + randomRam));
+        const baseCpu = 5 + (activeProcesses * 3) + (webglCount * 8) + (timerCount * 0.5);
+        const cpuUsage = Math.max(1, Math.min(99, Math.round(baseCpu + timeFluctuation1)));
 
-        const has3D = processes.some(p => p.appId === 'ragdoll3d' || p.appId === 'webamp');
-        const baseGpu = has3D ? 55 : 8;
-        const randomGpu = Math.floor(Math.random() * 10) - 5;
-        const gpuUsage = Math.max(1, Math.min(99, baseGpu + randomGpu));
+        // If performance.memory is available, use real JS Heap Usage % of limit, otherwise use processes-based estimate
+        let ramUsage: number;
+        if (perf && perf.memory && typeof perf.memory.usedJSHeapSize === 'number') {
+            ramUsage = Math.max(1, Math.min(99, Math.round((perf.memory.usedJSHeapSize / perf.memory.jsHeapSizeLimit) * 100)));
+        } else {
+            const baseRam = 15 + (activeProcesses * 4) + (webglCount * 10);
+            ramUsage = Math.max(1, Math.min(99, Math.round(baseRam + timeFluctuation2)));
+        }
 
-        const baseVram = has3D ? 45 : 12;
-        const randomVram = Math.floor(Math.random() * 6) - 3;
-        const vramUsage = Math.max(1, Math.min(99, baseVram + randomVram));
+        const baseGpu = webglCount > 0 ? (25 + webglCount * 20) : (1 + activeProcesses * 2);
+        const gpuUsage = Math.max(1, Math.min(99, Math.round(baseGpu + timeFluctuation2)));
+
+        const baseVram = webglCount > 0 ? (20 + webglCount * 15) : (1 + activeProcesses * 1.5);
+        const vramUsage = Math.max(1, Math.min(99, Math.round(baseVram + timeFluctuation1)));
 
         // Update DOM elements:
         const cpuVal = this.container.querySelector('#tm-sys-cpu-val');
@@ -376,6 +405,11 @@ export class TaskManager implements IWindowsApp {
     }
 
     public terminate(): void {
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            resManager.disposeOwner('taskmanager');
+        }
+
         if (this.intervalId !== null) {
             window.clearInterval(this.intervalId);
             this.intervalId = null;
@@ -385,7 +419,15 @@ export class TaskManager implements IWindowsApp {
         Utils.eventManager.remove(window, 'kernel:process-stopped', this.boundProcessStopped);
 
         if (this.container) {
-            Utils.eventManager.removeAll();
+            const tabButtons = this.container.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => {
+                Utils.eventManager.remove(btn, 'click', this.boundTabClick);
+            });
+
+            const tbody = this.container.querySelector('#tm-process-list');
+            if (tbody) {
+                Utils.eventManager.remove(tbody, 'click', this.boundProcessListClick);
+            }
         }
 
         WindowFactory.destroy(this.windowId);

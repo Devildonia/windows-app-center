@@ -1,4 +1,5 @@
 import type { IWindowsApp } from './Types';
+import { Services } from './ServiceContainer.js';
 
 export abstract class WindowApp implements IWindowsApp {
     public abstract readonly windowId: string;
@@ -8,7 +9,12 @@ export abstract class WindowApp implements IWindowsApp {
      * Registers a cleanup callback.
      */
     protected addCleanup(fn: () => void): void {
-        this._cleanups.push(fn);
+        const resManager = Services.get('ResourceManager');
+        if (resManager && this.windowId) {
+            resManager.register(this.windowId, 'listener', { dispose: fn });
+        } else {
+            this._cleanups.push(fn);
+        }
     }
 
     /**
@@ -30,7 +36,12 @@ export abstract class WindowApp implements IWindowsApp {
      * Standardizes termination and runs all cleanup callbacks.
      */
     public terminate(): void {
-        // Run cleanups in reverse order
+        const resManager = Services.get('ResourceManager');
+        if (resManager && this.windowId) {
+            resManager.disposeOwner(this.windowId);
+        }
+
+        // Run remaining cleanups in reverse order
         for (let i = this._cleanups.length - 1; i >= 0; i--) {
             try {
                 const cleanup = this._cleanups[i];

@@ -125,6 +125,20 @@ class Paint {
             if (container) this.resizeObserver.observe(container);
         }
 
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            resManager.register(this.windowId, 'listener', {
+                dispose: () => {
+                    if (this.resizeObserver) {
+                        this.resizeObserver.disconnect();
+                    }
+                    window.removeEventListener('resize', this.onResize);
+                    document.removeEventListener('keydown', this.onKeyDown);
+                    Utils.eventManager.remove(document, 'mouseup', this.onMouseUp);
+                }
+            });
+        }
+
         Utils.Logger.log('Paint initialized with Undo/Redo');
     }
 
@@ -416,13 +430,11 @@ class Paint {
         }
     }
 
-    public destroy(): void {
-        if (this.resizeObserver) {
-            this.resizeObserver.disconnect();
+    public terminate(): void {
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            resManager.disposeOwner(this.windowId);
         }
-        window.removeEventListener('resize', this.onResize);
-        document.removeEventListener('keydown', this.onKeyDown);
-        Utils.eventManager.remove(document, 'mouseup', this.onMouseUp);
     }
 }
 

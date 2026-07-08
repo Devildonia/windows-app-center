@@ -13,6 +13,7 @@ import { Services } from './ServiceContainer';
 import type { IWindowsApp, IAppMetadata, IWindowsAppConstructor, IProcess, IAppPlugin } from './Types';
 import { WindowFactory } from '../ui/WindowFactory';
 import { PluginManager } from './PluginManager';
+import { PluginBridge } from './PluginBridge.js';
 
 export interface IAppRegistryEntry {
     appClass: IWindowsAppConstructor;
@@ -176,6 +177,14 @@ export const Kernel: IKernel = (() => {
 
         window.dispatchEvent(new CustomEvent('kernel:process-stopped', { detail: process }));
 
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            if (process.windowId) {
+                resManager.disposeOwner(process.windowId);
+            }
+            resManager.disposeOwner(process.appId);
+        }
+
         // Remove from Map — no lingering references
         registry.processes.delete(pid);
         Utils.Logger.log(`Kernel: PID ${pid} killed (${registry.processes.size} active processes)`);
@@ -185,6 +194,7 @@ export const Kernel: IKernel = (() => {
     function init(): void {
         Utils.Logger.log('Kernel: Booting...');
         VFS.init();
+        PluginBridge.init();
         Utils.Logger.log('Kernel: Ready');
     }
 

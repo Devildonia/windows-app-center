@@ -8,6 +8,13 @@ export interface Disposable {
 export type ResourceKind = 'webgl' | 'audio' | 'listener' | 'timer' | 'other';
 
 export interface IResourceManager {
+    /**
+     * Registers a resource with the manager under a specific owner.
+     * @param owner The identifier of the owner (typically the app/module name)
+     * @param kind The category/kind of resource
+     * @param resource An object implementing Disposable
+     * @returns An unregister function that removes the resource from the tracker without invoking dispose().
+     */
     register(owner: string, kind: ResourceKind, resource: Disposable): () => void;
     disposeOwner(owner: string): void;
     disposeAll(): void;
@@ -17,6 +24,10 @@ export interface IResourceManager {
 class ResourceManager implements IResourceManager {
     private registry: Map<string, Array<{ kind: ResourceKind; resource: Disposable }>> = new Map();
 
+    /**
+     * Registers a resource with the manager under a specific owner.
+     * @returns An unregister function that removes the resource from the tracker without invoking dispose().
+     */
     public register(owner: string, kind: ResourceKind, resource: Disposable): () => void {
         let ownerResources = this.registry.get(owner);
         if (!ownerResources) {

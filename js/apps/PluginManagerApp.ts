@@ -9,9 +9,21 @@ export class PluginManagerApp implements IWindowsApp {
     private container: HTMLElement | null = null;
     
     private boundPluginUninstalled: EventListener;
+    private boundInstallBtnClick: EventListener;
+    private boundListClick: EventListener;
 
     constructor() {
         this.boundPluginUninstalled = () => this.refreshUI();
+        this.boundInstallBtnClick = () => this.handleInstall();
+        this.boundListClick = (e: Event) => {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('pm-uninstall-btn')) {
+                const id = target.getAttribute('data-id');
+                if (id) {
+                    this.handleUninstall(id);
+                }
+            }
+        };
         this.init();
     }
 
@@ -58,20 +70,12 @@ export class PluginManagerApp implements IWindowsApp {
 
         const installBtn = this.container.querySelector('#pm-install-btn');
         if (installBtn) {
-            Utils.eventManager.add(installBtn, 'click', () => this.handleInstall());
+            Utils.eventManager.add(installBtn, 'click', this.boundInstallBtnClick);
         }
 
         const listEl = this.container.querySelector('#pm-installed-list');
         if (listEl) {
-            Utils.eventManager.add(listEl, 'click', (e) => {
-                const target = e.target as HTMLElement;
-                if (target.classList.contains('pm-uninstall-btn')) {
-                    const id = target.getAttribute('data-id');
-                    if (id) {
-                        this.handleUninstall(id);
-                    }
-                }
-            });
+            Utils.eventManager.add(listEl, 'click', this.boundListClick);
         }
     }
 
@@ -98,13 +102,6 @@ export class PluginManagerApp implements IWindowsApp {
             let pluginData: any;
             if (val.startsWith('{')) {
                 pluginData = JSON.parse(val);
-                // Dynamically evaluate constructor for testing if passed as string component code
-                if (typeof pluginData.component === 'string') {
-                    // Plugin components may be supplied as serialized constructor source; the
-                    // dynamic evaluation here is intentional and inherent to the plugin loader.
-                    // eslint-disable-next-line no-new-func
-                    pluginData.component = new Function(`return ${pluginData.component}`)();
-                }
             } else {
                 this.setMessage(`Installing from URL: ${val}`, 'success');
                 // Real URL import can be simulated or handled. For now mock manifest evaluation
@@ -181,7 +178,14 @@ export class PluginManagerApp implements IWindowsApp {
     public terminate(): void {
         window.removeEventListener('kernel:plugin-uninstalled', this.boundPluginUninstalled);
         if (this.container) {
-            Utils.eventManager.removeAll();
+            const installBtn = this.container.querySelector('#pm-install-btn');
+            if (installBtn) {
+                Utils.eventManager.remove(installBtn, 'click', this.boundInstallBtnClick);
+            }
+            const listEl = this.container.querySelector('#pm-installed-list');
+            if (listEl) {
+                Utils.eventManager.remove(listEl, 'click', this.boundListClick);
+            }
         }
         WindowFactory.destroy(this.windowId);
     }

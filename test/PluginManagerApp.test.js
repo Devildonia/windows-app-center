@@ -30,15 +30,15 @@ describe('PluginManagerApp UI', () => {
         app.terminate();
     });
 
-    it('should validate and install a new plugin string structure', () => {
+    it('should validate and install a new iframe plugin structure', () => {
         const app = new PluginManagerApp();
         const input = mockBody.querySelector('#pm-manifest-url');
         const installBtn = mockBody.querySelector('#pm-install-btn');
 
         input.value = JSON.stringify({
             id: 'my-ui-plugin',
-            component: 'class { constructor() { this.windowId = "win-plug"; } }',
-            metadata: { name: 'My UI Plugin', icon: '🔌' }
+            metadata: { name: 'My UI Plugin', icon: '🔌' },
+            windowDef: { id: 'win-plug', src: '/plugins/my-ui-plugin/index.html' }
         });
 
         installBtn.click();

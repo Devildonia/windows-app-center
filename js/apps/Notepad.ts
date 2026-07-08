@@ -124,8 +124,12 @@ class Notepad {
     private _lastFindIndex: number = -1;
     private _lastFindTerm: string = '';
 
-    // Cleanup registry
-    private _cleanups: Array<() => void> = [];
+    private registerResource(kind: 'webgl' | 'audio' | 'listener' | 'timer' | 'other', resource: { dispose(): void }): void {
+        const resManager = Services.get('ResourceManager');
+        if (resManager && this.windowId) {
+            resManager.register(this.windowId, kind, resource);
+        }
+    }
 
     constructor(params: INotepadParams = {}) {
         if (params.windowId) this.windowId = params.windowId;
@@ -134,7 +138,7 @@ class Notepad {
         this.currentPath = params.path || VFS_SAVE_DIR;
         this.init(params.content || '');
         if (params.onClose) {
-            this._cleanups.push(params.onClose);
+            this.registerResource('other', { dispose: params.onClose });
         }
     }
 
@@ -239,7 +243,7 @@ class Notepad {
             this._updateStatus();
         };
         this.textarea!.addEventListener('input', inputHandler);
-        this._cleanups.push(() => this.textarea?.removeEventListener('input', inputHandler));
+        this.registerResource('listener', { dispose: () => this.textarea?.removeEventListener('input', inputHandler) });
     }
 
     private _updateStatus(): void {
@@ -273,7 +277,7 @@ class Notepad {
             e.stopPropagation();
         };
         menuBar.addEventListener('click', labelClickHandler);
-        this._cleanups.push(() => menuBar.removeEventListener('click', labelClickHandler));
+        this.registerResource('listener', { dispose: () => menuBar.removeEventListener('click', labelClickHandler) });
 
         // Handle dropdown item actions
         const itemClickHandler = (e: Event) => {
@@ -303,7 +307,7 @@ class Notepad {
             }
         };
         document.addEventListener('click', outsideHandler);
-        this._cleanups.push(() => document.removeEventListener('click', outsideHandler));
+        this.registerResource('listener', { dispose: () => document.removeEventListener('click', outsideHandler) });
     }
 
     // ─── Dialog Listeners ─────────────────────────────────────────────────────
@@ -317,7 +321,7 @@ class Notepad {
         if (openInput) {
             const enterHandler = (e: KeyboardEvent) => { if (e.key === 'Enter') this._confirmOpen(); };
             openInput.addEventListener('keydown', enterHandler);
-            this._cleanups.push(() => openInput.removeEventListener('keydown', enterHandler));
+            this.registerResource('listener', { dispose: () => openInput.removeEventListener('keydown', enterHandler) });
         }
 
         // Save As dialog
@@ -328,7 +332,7 @@ class Notepad {
         if (saveInput) {
             const enterHandler = (e: KeyboardEvent) => { if (e.key === 'Enter') this._confirmSaveAs(); };
             saveInput.addEventListener('keydown', enterHandler);
-            this._cleanups.push(() => saveInput.removeEventListener('keydown', enterHandler));
+            this.registerResource('listener', { dispose: () => saveInput.removeEventListener('keydown', enterHandler) });
         }
 
         // Find dialog
@@ -339,7 +343,7 @@ class Notepad {
         if (findInput) {
             const enterHandler = (e: KeyboardEvent) => { if (e.key === 'Enter') this._findNext(); };
             findInput.addEventListener('keydown', enterHandler);
-            this._cleanups.push(() => findInput.removeEventListener('keydown', enterHandler));
+            this.registerResource('listener', { dispose: () => findInput.removeEventListener('keydown', enterHandler) });
         }
     }
 
@@ -347,7 +351,7 @@ class Notepad {
         const btn = document.getElementById(id);
         if (!btn) return;
         btn.addEventListener('click', fn);
-        this._cleanups.push(() => btn.removeEventListener('click', fn));
+        this.registerResource('listener', { dispose: () => btn.removeEventListener('click', fn) });
     }
 
     // ─── Keyboard Shortcuts ───────────────────────────────────────────────────
@@ -367,7 +371,7 @@ class Notepad {
             }
         };
         win.addEventListener('keydown', kbHandler);
-        this._cleanups.push(() => win.removeEventListener('keydown', kbHandler));
+        this.registerResource('listener', { dispose: () => win.removeEventListener('keydown', kbHandler) });
     }
 
     // ─── Action Dispatcher ────────────────────────────────────────────────────
@@ -693,13 +697,10 @@ class Notepad {
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     public terminate(): void {
-        this._closeAllDropdowns();
-        // Hide all dialogs
-        ['notepad-open-dialog', 'notepad-saveas-dialog', 'notepad-find-dialog']
-            .forEach(id => this._hideDialog(id));
-
-        this._cleanups.forEach(fn => fn());
-        this._cleanups = [];
+        const resManager = Services.get('ResourceManager');
+        if (resManager && this.windowId) {
+            resManager.disposeOwner(this.windowId);
+        }
         this.textarea = null;
         Utils.Logger.log('[Notepad] Terminated — all listeners removed');
     }
