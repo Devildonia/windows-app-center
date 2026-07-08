@@ -1,10 +1,45 @@
 import { vi } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ============================================
+// Mock global fetch for local files (locales)
+// ============================================
+global.fetch = vi.fn((url) => {
+    const urlStr = typeof url === 'object' && url !== null && 'url' in url ? String(url.url) : String(url);
+    if (urlStr.includes('/locales/')) {
+        const lang = urlStr.split('/').pop().replace('.json', '');
+        const filePath = path.resolve(__dirname, `../public/locales/${lang}.json`);
+        try {
+            const content = fs.readFileSync(filePath, 'utf8');
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(JSON.parse(content))
+            });
+        } catch (e) {
+            return Promise.resolve({
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+                json: () => Promise.reject(new Error(`File not found: ${filePath}`))
+            });
+        }
+    }
+    return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([])
+    });
+});
 
 // ============================================
 // Mock CONFIG
 // ============================================
 global.CONFIG = {
-    APP: { VERSION: '1.6.3', NAME: 'Windows App Center', LANGUAGE: 'en' },
+    APP: { VERSION: '1.6.4', NAME: 'Windows App Center', LANGUAGE: 'en' },
     DEBUG: {
         ENABLED: true,
         LOG_EVENTS: true,
@@ -104,11 +139,17 @@ global.CustomEvent = class CustomEvent extends Event {
 };
 
 // ============================================
-// MSW Server Integration
-// ============================================
 import { server } from './mocks/server.js';
 import { beforeAll, afterAll, afterEach } from 'vitest';
+import { i18n } from '../js/services/i18n.js';
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
+beforeAll(async () => {
+    server.listen({ onUnhandledRequest: 'warn' });
+    try {
+        await i18n.init();
+    } catch (e) {
+        console.error('Failed to initialize i18n in test setup:', e);
+    }
+});
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());

@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **3D Ragdoll drop behaviour**: Releasing the desktop 3D ragdoll had two long-standing issues. (1) It slammed to the floor because world gravity was Earth-real `-9.81`, far too strong for the bone scale — lowered to `-5.0` for a natural, weighted fall. (2) It always snapped back to the same spot regardless of where it was dropped: the AI recovery path called `setRagdollMode(false)` without moving the root model, so the mixer re-placed the bones relative to the model origin. Centralized the "reposition root model to the hips' resting X/Z" logic inside `Ragdoll3DCore.setRagdollMode(false)` so every recovery path (AI and fall-reactions) keeps the character where it landed.
 - **3D Ragdoll blocked by CSP**: The hardened `script-src 'self'` blocked Rapier3D's WebAssembly instantiation, so the 3D ragdoll failed to start. Added `'wasm-unsafe-eval'` to `script-src` (allows WASM compilation while still blocking `eval()`), and `blob:`/`data:` to `connect-src` so the Three.js `GLTFLoader` can fetch embedded model textures (the model loaded untextured before). Verified: WASM instantiates, blob fetch succeeds, and the ragdoll renders fully textured.
 
-## [1.6.3] - 2026-07-07
+## [1.6.4] - 2026-07-07
 
 ### Added
 - **MS-DOS Prompt (Terminal)**: Command-line application backed by the VFS. Supports `help`, `ver`, `cls`/`clear`, `cd`, `dir`/`ls`, `type`/`cat`, `mkdir`, `del`/`rm`, and `ren`, with command history navigation. Auto-registered with the Kernel and launchable from its desktop icon and Start Menu entry.

@@ -1,11 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { i18n, translations } from '../js/services/i18n.js';
+import { i18n } from '../js/services/i18n.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 describe('i18n', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         localStorage.clear();
         // Reset to English
-        i18n.setLang('en');
+        await i18n.setLang('en');
     });
 
     describe('t() — translation', () => {
@@ -15,8 +21,8 @@ describe('i18n', () => {
             expect(i18n.t('menu.shutdown')).toBe('Shut Down...');
         });
 
-        it('should translate known keys in Spanish', () => {
-            i18n.setLang('es');
+        it('should translate known keys in Spanish', async () => {
+            await i18n.setLang('es');
             expect(i18n.t('app.notepad')).toBe('Bloc de Notas');
             expect(i18n.t('app.recyclebin')).toBe('Papelera de Reciclaje');
             expect(i18n.t('menu.shutdown')).toBe('Apagar...');
@@ -28,8 +34,8 @@ describe('i18n', () => {
             expect(result).toContain('KB OK');
         });
 
-        it('should interpolate parameters in Spanish', () => {
-            i18n.setLang('es');
+        it('should interpolate parameters in Spanish', async () => {
+            await i18n.setLang('es');
             const result = i18n.t('boot.memory', { kb: 65536 });
             expect(result).toContain('65536');
         });
@@ -38,8 +44,8 @@ describe('i18n', () => {
             expect(i18n.t('nonexistent.key')).toBe('nonexistent.key');
         });
 
-        it('should fall back to English when key missing in current lang', () => {
-            i18n.setLang('es');
+        it('should fall back to English when key missing in current lang', async () => {
+            await i18n.setLang('es');
             // If a key exists in EN but not ES, should fallback to EN
             const enDict = i18n.t('app.notepad'); // exists in both
             expect(enDict).toBe('Bloc de Notas');
@@ -47,20 +53,20 @@ describe('i18n', () => {
     });
 
     describe('setLang / getLang', () => {
-        it('should switch language and report current', () => {
-            i18n.setLang('es');
+        it('should switch language and report current', async () => {
+            await i18n.setLang('es');
             expect(i18n.getLang()).toBe('es');
-            i18n.setLang('en');
+            await i18n.setLang('en');
             expect(i18n.getLang()).toBe('en');
         });
 
-        it('should fall back to English for unknown language', () => {
-            i18n.setLang('xx');
+        it('should fall back to English for unknown language', async () => {
+            await i18n.setLang('xx');
             expect(i18n.getLang()).toBe('en');
         });
 
-        it('should persist language to localStorage', () => {
-            i18n.setLang('es');
+        it('should persist language to localStorage', async () => {
+            await i18n.setLang('es');
             expect(localStorage.getItem('win95-lang')).not.toBeNull();
         });
     });
@@ -76,7 +82,6 @@ describe('i18n', () => {
     describe('updateDOM', () => {
         it('should update data-i18n elements with translated text', () => {
             document.body.innerHTML = '<span data-i18n="app.notepad">old</span>';
-            i18n.setLang('en');
             i18n.updateDOM();
             expect(document.querySelector('[data-i18n]').textContent).toBe('Notepad');
         });
@@ -87,46 +92,56 @@ describe('i18n', () => {
             expect(document.querySelector('input').placeholder).toBe('Notepad');
         });
 
-        it('should switch all elements when language changes', () => {
+        it('should switch all elements when language changes', async () => {
             document.body.innerHTML = `
                 <span data-i18n="app.notepad"></span>
                 <span data-i18n="app.paint"></span>
             `;
-            i18n.setLang('es');
+            await i18n.setLang('es');
             const spans = document.querySelectorAll('[data-i18n]');
             expect(spans[0].textContent).toBe('Bloc de Notas');
-            expect(spans[1].textContent).toBe('Paint'); // Paint is same in both
+            expect(spans[1].textContent).toBe('Paint');
         });
     });
 
     describe('init', () => {
-        it('should restore saved language from storage', () => {
+        it('should restore saved language from storage', async () => {
             localStorage.setItem('win95-lang', JSON.stringify('es'));
-            i18n.init();
+            await i18n.init();
             expect(i18n.getLang()).toBe('es');
         });
 
-        it('should default to English when no saved language', () => {
+        it('should default to English when no saved language', async () => {
             localStorage.clear();
-            i18n.init();
+            await i18n.init();
             expect(i18n.getLang()).toBe('en');
         });
     });
 
     // Guards against locales drifting out of sync as new keys are added.
     describe('key parity across locales', () => {
-        const enKeys = Object.keys(translations.en).sort();
+        const localesDir = path.resolve(__dirname, '../public/locales');
+        const langFiles = fs.readdirSync(localesDir).filter(f => f.endsWith('.json'));
+        const locales = {};
 
-        for (const lang of Object.keys(translations)) {
+        for (const file of langFiles) {
+            const lang = file.replace('.json', '');
+            const content = fs.readFileSync(path.join(localesDir, file), 'utf8');
+            locales[lang] = JSON.parse(content);
+        }
+
+        const enKeys = Object.keys(locales.en).sort();
+
+        for (const lang of Object.keys(locales)) {
             it(`"${lang}" defines exactly the same keys as "en"`, () => {
-                const keys = Object.keys(translations[lang]).sort();
+                const keys = Object.keys(locales[lang]).sort();
                 const missing = enKeys.filter(k => !keys.includes(k));
                 const extra = keys.filter(k => !enKeys.includes(k));
                 expect({ missing, extra }).toEqual({ missing: [], extra: [] });
             });
 
             it(`"${lang}" has no empty values`, () => {
-                const empty = Object.entries(translations[lang])
+                const empty = Object.entries(locales[lang])
                     .filter(([, v]) => typeof v !== 'string' || v.trim() === '')
                     .map(([k]) => k);
                 expect(empty).toEqual([]);
@@ -135,9 +150,9 @@ describe('i18n', () => {
     });
 
     describe('setLang side effects', () => {
-        it('should dispatch a languagechanged event carrying the new lang', () => {
+        it('should dispatch a languagechanged event carrying the new lang', async () => {
             const spy = vi.spyOn(window, 'dispatchEvent');
-            i18n.setLang('es');
+            await i18n.setLang('es');
             const langEvents = spy.mock.calls.map(c => c[0]).filter(e => e && e.type === 'languagechanged');
             const evt = langEvents[langEvents.length - 1];
             expect(evt).toBeTruthy();
