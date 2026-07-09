@@ -9,6 +9,7 @@ import { Animations } from './Animations.js';
 import { Renderer } from './Renderer.js';
 import { SkinManager } from './SkinManager.js';
 import type { RagdollPet } from './RagdollPet.js';
+import { Services } from '../../../js/core/ServiceContainer.js';
 
 export class Stickman {
     public ragdollPet: RagdollPet;
@@ -817,7 +818,8 @@ export class Stickman {
         this.ragdollPet.playHurtSound();
         if (this.memory) this.memory.recordHurt();
 
-        this.say('Ouch!', 1500);
+        const i18nService = Services.get('i18n') as any;
+        this.say(i18nService ? i18nService.t('ragdoll.hurt.ouch') : 'Ouch!', 1500);
 
         this.safeTimeout(() => {
             this.state = 'getting-up';

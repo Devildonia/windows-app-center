@@ -203,7 +203,9 @@ describe('Ragdoll3DCore (caracterización) — checkFallDamage', () => {
 
         expect(r.audioManager.play).toHaveBeenCalledWith('boing'); // sin atenuar
         expect(haptics.heavy).toHaveBeenCalled();
-        expect(saySpy).toHaveBeenCalledWith('¡Ouch!', 2000);
+        const i18nService = Services.get('i18n') as any;
+        const expectedOuch = i18nService ? i18nService.t('ragdoll.hurt.ouch') : '¡Ouch!';
+        expect(saySpy).toHaveBeenCalledWith(expectedOuch, 2000);
 
         Services.register('HapticService', undefined as any);
     });

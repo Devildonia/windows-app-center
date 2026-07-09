@@ -68,7 +68,8 @@ export class RagdollFallReactions {
                 if (hardLanding) {
                     haptics?.heavy();
                     if (audio) audio.play('boing');
-                    this.deps.say('¡Ouch!', 2000);
+                    const i18nService = Services.get('i18n') as any;
+                    this.deps.say(i18nService ? i18nService.t('ragdoll.hurt.ouch') : '¡Ouch!', 2000);
                 } else {
                     haptics?.medium();
                     if (audio) audio.play('boing', { volume: 0.6 });

@@ -160,4 +160,25 @@ describe('i18n', () => {
             spy.mockRestore();
         });
     });
+    describe('Ragdoll Pet Phrases Localization', () => {
+        it('should resolve ragdoll phrases in English', () => {
+            expect(i18n.t('ragdoll.greetings.hi')).toBe('Hi!');
+            expect(i18n.t('ragdoll.hurt.ouch')).toBe('Ouch!');
+            expect(i18n.t('ragdoll.eating.nomnom')).toBe('Nom nom');
+        });
+
+        it('should resolve ragdoll phrases in Spanish', async () => {
+            await i18n.setLang('es');
+            expect(i18n.t('ragdoll.greetings.hi')).toBe('¡Hola!');
+            expect(i18n.t('ragdoll.hurt.ouch')).toBe('¡Ay!');
+            expect(i18n.t('ragdoll.eating.nomnom')).toBe('Ñam ñam');
+        });
+
+        it('should resolve ragdoll phrases in French', async () => {
+            await i18n.setLang('fr');
+            expect(i18n.t('ragdoll.greetings.hi')).toBe('Salut !');
+            expect(i18n.t('ragdoll.hurt.ouch')).toBe('Aïe !');
+            expect(i18n.t('ragdoll.eating.nomnom')).toBe('Miam miam');
+        });
+    });
 });

@@ -23,148 +23,148 @@ class MessageLibrary implements IMessageLibrary {
         this.messages = {
             // ===== GREETINGS (5) =====
             GREETINGS: [
-                'Hi!',
-                'Hello!',
-                'Hey!',
+                'ragdoll.greetings.hi',
+                'ragdoll.greetings.hello',
+                'ragdoll.greetings.hey',
                 '👋',
-                'Yo!'
+                'ragdoll.greetings.yo'
             ],
 
             // ===== HAPPINESS (6) =====
             HAPPY: [
-                'Yay!',
-                'Woohoo!',
+                'ragdoll.happy.yay',
+                'ragdoll.happy.woohoo',
                 '😊',
-                'Nice!',
-                'Cool!',
+                'ragdoll.happy.nice',
+                'ragdoll.happy.cool',
                 '⭐'
             ],
 
             // ===== SADNESS (5) =====
             SAD: [
-                'Oww...',
-                'Ouch!',
+                'ragdoll.sad.oww',
+                'ragdoll.sad.ouch',
                 '😢',
-                'Noo...',
+                'ragdoll.sad.noo',
                 '💔'
             ],
 
             // ===== ANGER (5) =====
             ANGRY: [
-                'Grr!',
+                'ragdoll.angry.grr',
                 '😠',
-                'Hmph!',
-                'Stop!',
+                'ragdoll.angry.hmph',
+                'ragdoll.angry.stop',
                 '💢'
             ],
 
             // ===== FEAR (5) =====
             SCARED: [
-                'Eek!',
+                'ragdoll.scared.eek',
                 '😱',
-                'Help!',
-                'Ahh!',
+                'ragdoll.scared.help',
+                'ragdoll.scared.ahh',
                 '!!!'
             ],
 
             // ===== SURPRISE (5) =====
             SURPRISED: [
-                'Oh!',
-                'Wow!',
+                'ragdoll.surprised.oh',
+                'ragdoll.surprised.wow',
                 '😮',
-                'What?!',
+                'ragdoll.surprised.what',
                 '⁉️'
             ],
 
             // ===== TIREDNESS (5) =====
             TIRED: [
-                'Zzz...',
+                'ragdoll.tired.zzz',
                 '😴',
-                '*yawn*',
-                'Sleepy...',
+                'ragdoll.tired.yawn',
+                'ragdoll.tired.sleepy',
                 '💤'
             ],
 
             // ===== THINKING (5) =====
             THINKING: [
-                'Hmm...',
+                'ragdoll.thinking.hmm',
                 '🤔',
                 '...',
                 '💭',
-                'What if...'
+                'ragdoll.thinking.whatif'
             ],
 
             // ===== CONFUSION (4) =====
             CONFUSED: [
-                'Huh?',
+                'ragdoll.confused.huh',
                 '❓',
                 '???',
-                'What?'
+                'ragdoll.confused.what'
             ],
 
             // ===== EATING (5) =====
             EATING: [
-                'Yum!',
+                'ragdoll.eating.yum',
                 '😋',
-                'Nom nom',
+                'ragdoll.eating.nomnom',
                 '🍕',
-                'Tasty!'
+                'ragdoll.eating.tasty'
             ],
 
             // ===== DRINKING (4) =====
             DRINKING: [
-                'Gulp!',
+                'ragdoll.drinking.gulp',
                 '🥤',
-                '*sip*',
-                'Ahhh!'
+                'ragdoll.drinking.sip',
+                'ragdoll.drinking.ahhh'
             ],
 
             // ===== EXERCISE (4) =====
             EXERCISING: [
-                'Hup!',
+                'ragdoll.exercising.hup',
                 '💪',
-                'One!',
-                'Two!'
+                'ragdoll.exercising.one',
+                'ragdoll.exercising.two'
             ],
 
             // ===== CELEBRATION (5) =====
             CELEBRATING: [
-                'Yeah!',
+                'ragdoll.celebrating.yeah',
                 '🎉',
-                'Wooo!',
-                'Yess!',
+                'ragdoll.celebrating.wooo',
+                'ragdoll.celebrating.yess',
                 '✨'
             ],
 
             // ===== BOREDOM (4) =====
             BORED: [
-                'Sigh...',
+                'ragdoll.bored.sigh',
                 '😑',
-                'Meh...',
-                'So bored'
+                'ragdoll.bored.meh',
+                'ragdoll.bored.sobored'
             ],
 
             // ===== LOVE (5) =====
             LOVE: [
                 '❤️',
                 '😍',
-                'Aww!',
+                'ragdoll.love.aww',
                 '💕',
-                'Love it!'
+                'ragdoll.love.loveit'
             ],
 
             // ===== PAIN (5) =====
             HURT: [
-                'Ow!',
+                'ragdoll.hurt.ow',
                 '💥',
-                'That hurt!',
-                'Ouch!',
+                'ragdoll.hurt.thathurt',
+                'ragdoll.hurt.ouch',
                 '😣'
             ],
 
             // ===== JUMPING (3) =====
             JUMPING: [
-                'Whee!',
+                'ragdoll.jumping.whee',
                 '!',
                 'Boing!'
             ],
@@ -178,28 +178,28 @@ class MessageLibrary implements IMessageLibrary {
 
             // ===== STYLE/COOL (5) =====
             COOL: [
-                'Cool!',
+                'ragdoll.cool.cool',
                 '😎',
-                'So cool!',
-                'Stylin\'',
+                'ragdoll.cool.socool',
+                'ragdoll.cool.stylin',
                 '✨'
             ],
 
             // ===== HUNGRY (5) =====
             HUNGRY: [
-                'Hungry...',
+                'ragdoll.hungry.hungry',
                 '😋',
-                'Need food',
-                'Pizza?',
+                'ragdoll.hungry.needfood',
+                'ragdoll.hungry.pizza',
                 '🍔'
             ],
 
             // ===== FUNNY (5) =====
             FUNNY: [
-                'Haha!',
+                'ragdoll.funny.haha',
                 '😂',
-                'LOL',
-                'Funny!',
+                'ragdoll.funny.lol',
+                'ragdoll.funny.funny',
                 '🤣'
             ]
         };
@@ -225,23 +225,34 @@ class MessageLibrary implements IMessageLibrary {
             return '...';
         }
 
+        let messageKey = '';
         if (avoidRepeat && messages.length > 1) {
             // Filter recent messages
             const available = messages.filter(msg => !this.recentMessages.includes(msg));
 
             if (available.length > 0) {
-                const message = available[Math.floor(Math.random() * available.length)];
-                if (message) {
-                    this.addToHistory(message);
-                    return message;
-                }
+                messageKey = available[Math.floor(Math.random() * available.length)] || '';
             }
         }
 
-        // If none available or not avoiding repetition, pick random
-        const message = messages[Math.floor(Math.random() * messages.length)] || '';
-        this.addToHistory(message);
-        return message;
+        if (!messageKey) {
+            // If none available or not avoiding repetition, pick random
+            messageKey = messages[Math.floor(Math.random() * messages.length)] || '';
+        }
+
+        if (messageKey) {
+            this.addToHistory(messageKey);
+        }
+
+        // Translate the key if it belongs to the ragdoll set and i18n is available
+        if (messageKey && messageKey.startsWith('ragdoll.')) {
+            const i18nService = Services.get('i18n') as any;
+            if (i18nService) {
+                return i18nService.t(messageKey);
+            }
+        }
+
+        return messageKey;
     }
 
     /**
