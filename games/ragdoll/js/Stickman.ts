@@ -165,7 +165,11 @@ export class Stickman {
         this.bubbleOffsetY = 0;
 
         // External Helpers (Globals for now)
-        this.messageLibrary = (window as any).MessageLibrary ? new (window as any).MessageLibrary() : null;
+        // MessageLibrary is registered in the Service Container (not on window), so
+        // resolve it the same way the 3D ragdoll does — otherwise i18n phrases never
+        // load and the 2D pet falls back to raw English category names.
+        const MessageLibraryCtor = Services.get('MessageLibrary');
+        this.messageLibrary = MessageLibraryCtor ? new MessageLibraryCtor() : null;
         this.bubbleAnimator = (window as any).BubbleAnimator ? new (window as any).BubbleAnimator() : null;
         this.memory = (window as any).RagdollMemory ? (typeof (window as any).RagdollMemory === 'function' ? new (window as any).RagdollMemory() : (window as any).RagdollMemory) : null;
         this.brain = null; // AI Brain disabled
