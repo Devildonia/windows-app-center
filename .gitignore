@@ -150,3 +150,6 @@ ts_errors.txt
 # check_glb.cjs
 # debug_click.cjs
 node_modules
+
+# Claude Code local (machine-specific) settings
+.claude/settings.local.json
