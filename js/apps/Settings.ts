@@ -67,10 +67,28 @@ export class Settings implements IWindowsApp {
     private activeCategory: string = 'language';
 
     private boundLanguageChanged: EventListener;
+    /** Panel listeners (nav items + select) added on each renderInto(); tracked
+     *  so they are removed before every re-bind and on terminate(), otherwise the
+     *  EventManager Map accumulates entries for detached DOM on each re-render. */
+    private panelListeners: Array<{ el: Element; event: string; handler: EventListener }> = [];
 
     constructor() {
         this.boundLanguageChanged = () => this.onLanguageChanged();
         this.init();
+    }
+
+    /** Adds a panel listener and tracks it for later cleanup. */
+    private addPanelListener(el: Element, event: string, handler: EventListener): void {
+        Utils.eventManager.add(el, event, handler);
+        this.panelListeners.push({ el, event, handler });
+    }
+
+    /** Removes every tracked panel listener (called before re-bind and on terminate). */
+    private clearPanelListeners(): void {
+        for (const { el, event, handler } of this.panelListeners) {
+            Utils.eventManager.remove(el, event, handler);
+        }
+        this.panelListeners = [];
     }
 
     private get categories(): ISettingsCategory[] {
@@ -151,9 +169,12 @@ export class Settings implements IWindowsApp {
     private bindEvents(): void {
         if (!this.container) return;
 
+        // Drop listeners from a previous render (their elements are now detached).
+        this.clearPanelListeners();
+
         // Category navigation
         this.container.querySelectorAll('.settings-nav-item').forEach(item => {
-            Utils.eventManager.add(item, 'click', () => {
+            this.addPanelListener(item, 'click', () => {
                 const cat = (item as HTMLElement).dataset.category;
                 if (cat && cat !== this.activeCategory) {
                     this.activeCategory = cat;
@@ -165,7 +186,7 @@ export class Settings implements IWindowsApp {
         // Language selector
         const select = this.container.querySelector('#settings-lang-select') as HTMLSelectElement | null;
         if (select) {
-            Utils.eventManager.add(select, 'change', () => {
+            this.addPanelListener(select, 'change', () => {
                 i18n.setLang(select.value);
                 // setLang dispatches 'languagechanged' -> onLanguageChanged() re-renders.
                 const feedback = this.container?.querySelector('#settings-lang-feedback');
@@ -183,6 +204,7 @@ export class Settings implements IWindowsApp {
     }
 
     public terminate(): void {
+        this.clearPanelListeners();
         Utils.eventManager.remove(window, 'languagechanged', this.boundLanguageChanged);
         WindowFactory.destroy(this.windowId);
     }

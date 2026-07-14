@@ -49,6 +49,11 @@ export const Kernel: IKernel = (() => {
 
     let _nextPid = 0;          // Monotonically increasing PID counter
 
+    // Records the actual iframe id trusted by the PluginBridge for each plugin,
+    // so uninstall revokes the exact frame even when a plugin supplied its own
+    // iframeId (install and uninstall must resolve the id the same way).
+    const pluginFrameIds = new Map<string, string>();
+
     /**
      * Registers a new application class to the system
      */
@@ -84,6 +89,7 @@ export const Kernel: IKernel = (() => {
                 // Allow-list this plugin's iframe so its messages are trusted by
                 // the PluginBridge (untrusted frames like the IE browser are not).
                 const iframeId = sandboxedDef.iframeId || `${sandboxedDef.id}-frame`;
+                pluginFrameIds.set(plugin.id, iframeId);
                 const frame = document.getElementById(iframeId) as HTMLIFrameElement | null;
                 PluginBridge.registerPluginFrame(frame);
             } else {
@@ -98,9 +104,12 @@ export const Kernel: IKernel = (() => {
         const procs = getRegistry().processes.filter(p => p.appId === id);
         procs.forEach(p => kill(p.pid));
 
-        // Revoke bridge trust for this plugin's iframe, if any.
-        const frame = document.getElementById(`${id}-frame`) as HTMLIFrameElement | null;
+        // Revoke bridge trust for this plugin's iframe, resolving the id the same
+        // way install did (a plugin may have supplied its own iframeId).
+        const iframeId = pluginFrameIds.get(id) || `${id}-frame`;
+        const frame = document.getElementById(iframeId) as HTMLIFrameElement | null;
         PluginBridge.unregisterPluginFrame(frame);
+        pluginFrameIds.delete(id);
 
         const success = unregisterApp(id);
         if (success) {
@@ -232,6 +241,7 @@ export const Kernel: IKernel = (() => {
         __reset: () => {
             registry.apps = {};
             registry.processes.clear();
+            pluginFrameIds.clear();
             _nextPid = 0;
         }
     };
