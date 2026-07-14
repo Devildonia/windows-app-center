@@ -13,19 +13,30 @@
 import { Utils } from '../utils';
 import { Services } from './ServiceContainer';
 import { VFS } from './VFS';
+import { PermissionBroker } from './PermissionBroker';
 import type { WorkerProcess } from './WorkerProcess';
 
 export interface SyscallContext {
     appId: string;
     pid: number;
-    /** Syscalls this process may invoke. */
-    allowed: Set<string>;
-    /** fs.* paths must stay under this root (default C:\DOCUMENTS). */
+    /** fs.* paths must stay under this root (the app's home dir). */
     fsRoot: string;
 }
 
-/** The syscalls a process may be granted (Fase 2 baseline). */
+/** The syscalls the broker can serve. */
 export const DEFAULT_SYSCALLS = ['sys.log', 'notify', 'fs.read', 'fs.list', 'fs.write'] as const;
+
+/**
+ * Capability required by each syscall. `null` = always allowed (no consent).
+ * fs.read/fs.list share `fs:read`; fs.write is `fs:write`. Consent is per capability.
+ */
+const SYSCALL_CAPABILITY: Record<string, string | null> = {
+    'sys.log': null,
+    'notify': 'notify',
+    'fs.read': 'fs:read',
+    'fs.list': 'fs:read',
+    'fs.write': 'fs:write',
+};
 
 type Args = Record<string, unknown>;
 
@@ -80,8 +91,11 @@ const HANDLERS: Record<string, (args: Args, ctx: SyscallContext) => unknown | Pr
 export function attachSyscalls(proc: WorkerProcess, ctx: SyscallContext): void {
     for (const name of Object.keys(HANDLERS)) {
         proc.onRequest(name, async (payload) => {
-            if (!ctx.allowed.has(name)) {
-                throw new Error(`permission denied: ${name}`);
+            // Consent gate: capability-bearing syscalls require a user grant
+            // (prompted on first use, then remembered) via the PermissionBroker.
+            const cap = SYSCALL_CAPABILITY[name];
+            if (cap && !(await PermissionBroker.check(ctx.appId, cap))) {
+                throw new Error(`permission denied: ${cap}`);
             }
             return HANDLERS[name]!((payload ?? {}) as Args, ctx);
         });

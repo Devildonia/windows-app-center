@@ -17,7 +17,8 @@ import { PluginBridge } from './PluginBridge.js';
 import { WorkerProcess, type IProcessTransport } from './WorkerProcess';
 import { ProcessWatchdog } from './ProcessWatchdog';
 import { createIframeTransport, type IframeSpawnOptions } from './IframeProcess';
-import { attachSyscalls, DEFAULT_SYSCALLS } from './SyscallBroker';
+import { attachSyscalls } from './SyscallBroker';
+import { PermissionBroker } from './PermissionBroker';
 
 export interface IAppRegistryEntry {
     appClass: IWindowsAppConstructor;
@@ -36,8 +37,8 @@ export interface IKernel {
     installPlugin(plugin: IAppPlugin): void;
     uninstallPlugin(id: string): boolean;
     launch(appId: string, params?: Record<string, unknown>): IProcess | null;
-    spawnWorker(appId: string, transport: IProcessTransport, opts?: { windowId?: string | null; syscalls?: string[]; fsRoot?: string }): { pid: number; worker: WorkerProcess; process: IProcess };
-    spawnIframe(appId: string, opts?: IframeSpawnOptions & { windowId?: string | null; syscalls?: string[]; fsRoot?: string }): Promise<{ pid: number; worker: WorkerProcess; process: IProcess; iframe: HTMLIFrameElement }>;
+    spawnWorker(appId: string, transport: IProcessTransport, opts?: { windowId?: string | null; fsRoot?: string }): { pid: number; worker: WorkerProcess; process: IProcess };
+    spawnIframe(appId: string, opts?: IframeSpawnOptions & { windowId?: string | null; fsRoot?: string }): Promise<{ pid: number; worker: WorkerProcess; process: IProcess; iframe: HTMLIFrameElement }>;
     getWorker(pid: number): WorkerProcess | undefined;
     kill(pid: number): boolean;
     getRegistry(): { apps: Record<string, IAppRegistryEntry>, processes: IProcess[] };
@@ -233,18 +234,26 @@ export const Kernel: IKernel = (() => {
      * Shared by spawnWorker/spawnIframe. `onTerminate` runs extra teardown (e.g.
      * removing an iframe element) when the process is killed.
      */
-    function spawnProcess(appId: string, transport: IProcessTransport, opts: { windowId?: string | null; kind: 'worker' | 'iframe'; onTerminate?: () => void; syscalls?: string[] | undefined; fsRoot?: string | undefined }): { pid: number; worker: WorkerProcess; process: IProcess } {
+    /** Per-app home directory under C:\APPS, created on demand (Fase 3 namespacing). */
+    function ensureAppHome(appId: string): string {
+        const safe = appId.replace(/[^a-z0-9._-]/gi, '_');
+        VFS.mkdir('C:\\', 'APPS');            // idempotent
+        VFS.mkdir('C:\\APPS', safe);          // idempotent
+        return `C:\\APPS\\${safe}`;
+    }
+
+    function spawnProcess(appId: string, transport: IProcessTransport, opts: { windowId?: string | null; kind: 'worker' | 'iframe'; onTerminate?: () => void; fsRoot?: string | undefined }): { pid: number; worker: WorkerProcess; process: IProcess } {
         const worker = new WorkerProcess(transport);
         const pid = _nextPid++;
         const windowId = opts.windowId ?? null;
 
         // Mediated system access: the process reaches the VFS/Notify only through
-        // guarded syscalls over its channel (Fase 2). Fase 3 adds capability consent.
+        // guarded syscalls over its channel (Fase 2), gated by user-consented
+        // capabilities (Fase 3) and confined to the app's home dir by default.
         attachSyscalls(worker, {
             appId,
             pid,
-            allowed: new Set(opts.syscalls ?? DEFAULT_SYSCALLS),
-            fsRoot: opts.fsRoot ?? 'C:\\DOCUMENTS',
+            fsRoot: opts.fsRoot ?? ensureAppHome(appId),
         });
 
         // Adapter so a process fits IProcess.instance (windowId + terminate).
@@ -268,8 +277,8 @@ export const Kernel: IKernel = (() => {
      * (workerTransport(url) in the app, a loopback in tests). Returns the pid and
      * the WorkerProcess handle for request()/ready. The watchdog auto-starts.
      */
-    function spawnWorker(appId: string, transport: IProcessTransport, opts: { windowId?: string | null; syscalls?: string[]; fsRoot?: string } = {}): { pid: number; worker: WorkerProcess; process: IProcess } {
-        return spawnProcess(appId, transport, { windowId: opts.windowId ?? null, kind: 'worker', syscalls: opts.syscalls, fsRoot: opts.fsRoot });
+    function spawnWorker(appId: string, transport: IProcessTransport, opts: { windowId?: string | null; fsRoot?: string } = {}): { pid: number; worker: WorkerProcess; process: IProcess } {
+        return spawnProcess(appId, transport, { windowId: opts.windowId ?? null, kind: 'worker', fsRoot: opts.fsRoot });
     }
 
     /**
@@ -277,13 +286,12 @@ export const Kernel: IKernel = (() => {
      * MessagePort handshake (see IframeProcess), then registers it as a process
      * whose kill() also removes the iframe.
      */
-    async function spawnIframe(appId: string, opts: IframeSpawnOptions & { windowId?: string | null; syscalls?: string[]; fsRoot?: string } = {}): Promise<{ pid: number; worker: WorkerProcess; process: IProcess; iframe: HTMLIFrameElement }> {
+    async function spawnIframe(appId: string, opts: IframeSpawnOptions & { windowId?: string | null; fsRoot?: string } = {}): Promise<{ pid: number; worker: WorkerProcess; process: IProcess; iframe: HTMLIFrameElement }> {
         const { transport, iframe } = await createIframeTransport(opts);
         const r = spawnProcess(appId, transport, {
             windowId: opts.windowId ?? null,
             kind: 'iframe',
             onTerminate: () => iframe.remove(),
-            syscalls: opts.syscalls,
             fsRoot: opts.fsRoot,
         });
         return { ...r, iframe };
@@ -300,6 +308,7 @@ export const Kernel: IKernel = (() => {
         // that also keeps the Kernel self-sufficient if invoked standalone.
         void VFS.init();
         PluginBridge.init();
+        PermissionBroker.init(); // load persisted capability grants
         Utils.Logger.log('Kernel: Ready');
     }
 

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Permission consent + per-app home directories (Web OS roadmap, Fase 3)**: The static
+  capability set from Fase 2 is replaced by a `PermissionBroker` that asks the user to allow or
+  deny a capability (`fs:read`, `fs:write`, `notify`, …) the first time a process uses it, then
+  remembers the decision (persisted in the VFS at `C:\WINDOWS\SYSTEM\permissions.json`). Each
+  process now gets its own home directory (`C:\APPS\<appId>`), and its `fs.*` syscalls are
+  confined there by default instead of a shared folder. So an isolated process is gated by both
+  consent (which capabilities) and confinement (where). See `docs/webos-roadmap/phase-3-permissions.md`.
 - **Syscalls over the process channel (Web OS roadmap, Fase 2)**: Isolated processes
   (Worker/iframe) can now reach system services only through mediated *syscalls* on their
   dedicated channel, never directly. IPC is now full-duplex — the guest App SDK gains
