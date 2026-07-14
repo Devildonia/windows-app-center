@@ -7,12 +7,18 @@
 import { Utils } from '../utils';
 import { Services } from './ServiceContainer';
 import { VFSStore } from './VFSStore';
+import { VFSBlobStore } from './VFSBlobStore';
 
 export interface IVFSNode {
     name: string;
     type: 'dir' | 'file' | 'shortcut';
     children?: Record<string, IVFSNode>;
     content?: string;
+    /** Binary/large files store their bytes in the VFSBlobStore (OPFS/IDB); the
+     *  tree keeps only this reference plus size/mime. Mutually exclusive with `content`. */
+    blobRef?: string;
+    size?: number;
+    mime?: string;
     icon?: string;
     actionType?: string;
     actionTarget?: string;
@@ -25,6 +31,10 @@ export interface IVFS {
     mkdir(path: string, name: string): boolean;
     writeFile(path: string, name: string, content: string): boolean;
     readFile(path: string): string | null;
+    /** Reads a file's content: a Blob when it is blob-backed, else its inline text. */
+    readFileAsync(path: string): Promise<string | Blob | null>;
+    /** Writes a file. String content is stored inline; a Blob goes to the blob store. */
+    writeFileAsync(path: string, name: string, data: string | Blob): Promise<boolean>;
     deleteNode(parentPath: string, name: string): boolean;
     rename(parentPath: string, oldName: string, newName: string): boolean;
     listDir(path: string): string[] | null;
@@ -41,9 +51,24 @@ export const VFS: IVFS = (() => {
 
     /** Reject any single file whose content exceeds this (protects the shared
      *  localStorage quota from a runaway plugin or oversized paste). */
-    const MAX_FILE_BYTES = 1_000_000; // ~1 MB
+    const MAX_FILE_BYTES = 1_000_000; // ~1 MB (inline text)
+    /** Cap for blob-backed (binary) files stored out-of-tree. */
+    const MAX_BLOB_BYTES = 50 * 1024 * 1024; // 50 MB
     /** Guard against pathological / malicious deep nesting. */
     const MAX_DEPTH = 32;
+
+    /** Fire-and-forget removal of a blob backing a file node, if any. */
+    function releaseBlob(node: IVFSNode | undefined): void {
+        if (node && node.blobRef) void VFSBlobStore.delete(node.blobRef);
+    }
+
+    /** Collects and releases every blob under a subtree (for recursive delete). */
+    function releaseSubtreeBlobs(node: IVFSNode): void {
+        releaseBlob(node);
+        if (node.children) {
+            for (const child of Object.values(node.children)) releaseSubtreeBlobs(child);
+        }
+    }
 
     // Default initial FS
     const DEFAULT_FS: IVFSNode = {
@@ -396,11 +421,65 @@ export const VFS: IVFS = (() => {
                 Utils.Logger.warn(`VFS: cannot write "${safeName}" — a ${existing.type} with that name exists`);
                 return false;
             }
+            // Overwriting a blob-backed file with inline text: free the old blob.
+            releaseBlob(existing);
             parent.children[safeName] = { name: safeName, type: 'file', content };
             save();
             return true;
         }
         return false;
+    }
+
+    /** Reads a file's content: a Blob when blob-backed, else its inline text. */
+    async function readFileAsync(path: string): Promise<string | Blob | null> {
+        const node = resolve(path);
+        if (!node || node.type !== 'file') return null;
+        if (node.blobRef) {
+            const blob = await VFSBlobStore.get(node.blobRef);
+            // OPFS Files carry no MIME; restore it from the node metadata so
+            // callers see the type they wrote (the IDB backend already preserves it).
+            if (blob && !blob.type && node.mime) {
+                return new Blob([blob], { type: node.mime });
+            }
+            return blob;
+        }
+        return node.content ?? '';
+    }
+
+    /**
+     * Writes a file. A string is stored inline (delegates to writeFile); a Blob is
+     * written to the out-of-tree blob store (OPFS/IndexedDB) with only metadata kept
+     * in the tree, so large binaries don't bloat the serialized JSON.
+     */
+    async function writeFileAsync(path: string, name: string, data: string | Blob): Promise<boolean> {
+        if (typeof data === 'string') {
+            return writeFile(path, name, data);
+        }
+        const safeName = sanitize(name);
+        if (!safeName) return false;
+        if (data.size > MAX_BLOB_BYTES) {
+            Utils.Logger.warn(`VFS: refusing to write "${safeName}" — blob exceeds ${MAX_BLOB_BYTES} bytes`);
+            return false;
+        }
+        const parent = resolve(path);
+        if (!parent || parent.type !== 'dir' || !parent.children) return false;
+        const existing = parent.children[safeName];
+        if (existing && existing.type !== 'file') {
+            Utils.Logger.warn(`VFS: cannot write "${safeName}" — a ${existing.type} with that name exists`);
+            return false;
+        }
+        const blobRef = `blob-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        try {
+            await VFSBlobStore.put(blobRef, data);
+        } catch (err) {
+            Utils.Logger.error(`VFS: failed to store blob for "${safeName}"`, err);
+            return false;
+        }
+        // Success: free any blob the previous node held, then swap in metadata.
+        releaseBlob(existing);
+        parent.children[safeName] = { name: safeName, type: 'file', blobRef, size: data.size, mime: data.type || '' };
+        save();
+        return true;
     }
 
     function readFile(path: string): string | null {
@@ -411,6 +490,8 @@ export const VFS: IVFS = (() => {
     function deleteNode(parentPath: string, name: string): boolean {
         const parent = resolve(parentPath);
         if (parent && parent.type === 'dir' && parent.children && parent.children[name]) {
+            // Free any blob content held by the node (or its subtree) to avoid orphans.
+            releaseSubtreeBlobs(parent.children[name]);
             delete parent.children[name];
             save();
             return true;
@@ -451,6 +532,8 @@ export const VFS: IVFS = (() => {
         mkdir,
         writeFile,
         readFile,
+        readFileAsync,
+        writeFileAsync,
         deleteNode,
         rename,
         listDir,

@@ -36,7 +36,7 @@ export interface IPaintParams {
     [key: string]: any;
 }
 
-export type PaintTool = 'pencil' | 'brush' | 'eraser' | 'rect' | 'line' | 'clear' | 'undo' | 'redo' | 'separator';
+export type PaintTool = 'pencil' | 'brush' | 'eraser' | 'rect' | 'line' | 'clear' | 'undo' | 'redo' | 'save' | 'separator';
 
 class Paint {
     public windowId: string = 'win-paint';
@@ -258,7 +258,8 @@ class Paint {
             { id: 'clear', icon: '🗑️' },
             { id: 'separator', icon: '' },
             { id: 'undo', icon: '↩️' },
-            { id: 'redo', icon: '↪️' }
+            { id: 'redo', icon: '↪️' },
+            { id: 'save', icon: '💾' }
         ];
 
         tools.forEach(tool => {
@@ -286,12 +287,47 @@ class Paint {
                 btn.id = 'paint-redo-btn';
                 btn.disabled = true;
                 btn.onclick = () => this.redo();
+            } else if (tool.id === 'save') {
+                btn.id = 'paint-save-btn';
+                btn.title = 'Save as PNG to My Documents';
+                btn.onclick = () => { void this.saveAsPng(); };
             } else {
                 btn.onclick = () => this.selectTool(tool.id);
             }
 
             toolbar.appendChild(btn);
         });
+    }
+
+    /**
+     * Exports the canvas as a PNG blob and saves it to C:\DOCUMENTS via the VFS
+     * binary API (blob-backed, stored in OPFS/IndexedDB out of the JSON tree).
+     * First real consumer of Phase 0.2's blob storage.
+     */
+    private async saveAsPng(): Promise<void> {
+        if (!this.canvas) return;
+        const vfs = Services.get('VFS');
+        const notify = Services.get('Notify');
+        try {
+            const blob = await new Promise<Blob | null>(resolve =>
+                this.canvas!.toBlob(b => resolve(b), 'image/png')
+            );
+            if (!blob) {
+                notify?.error('Paint: could not render the image');
+                return;
+            }
+            const name = `painting-${Date.now()}.png`;
+            const ok = vfs ? await vfs.writeFileAsync('C:\\DOCUMENTS', name, blob) : false;
+            if (ok) {
+                notify?.success(`Saved ${name} to My Documents`);
+                Utils.Logger.log(`[Paint] Saved ${name} (${blob.size} bytes) to C:\\DOCUMENTS`);
+            } else {
+                notify?.error('Paint: save failed');
+            }
+        } catch (err) {
+            Utils.Logger.error('[Paint] saveAsPng failed', err);
+            notify?.error('Paint: save failed');
+        }
     }
 
     private setupColors(): void {

@@ -1,6 +1,6 @@
 # Fase 0 — VFS async (IndexedDB + OPFS)
 
-**Estado:** Etapa 0.1 implementada · Etapa 0.2 (OPFS) pendiente · **Objetivo:**
+**Estado:** Fase 0 completa (Etapas 0.1 y 0.2 implementadas) · **Objetivo:**
 sustituir el backend `localStorage` de la VFS por almacenamiento async (IndexedDB para
 el árbol/metadatos, OPFS para blobs binarios) sin reescribir el sistema, manteniendo la
 interfaz `IVFS` como fachada estable.
@@ -10,7 +10,16 @@ interfaz `IVFS` como fachada estable.
 > persistencia async debounced; `flush()`/`flushSync()`; flush en
 > `visibilitychange → hidden`; boot en `main.ts` awaita `VFS.init()` antes de `initOS`.
 > Lecturas (`resolve/readFile/listDir/getRoot`) siguen síncronas. Tests:
-> `VFSStore.test.js` (fake-indexeddb) + round-trip en `VFS.test.js`.
+> `VFSStore.test.js` (fake-indexeddb) + round-trip en `VFS.test.js`. Verificado en
+> navegador: la VFS persiste en IndexedDB (`win95-vfs`).
+>
+> **Etapa 0.2 (hecha):** backend `js/core/VFSBlobStore.ts` (OPFS → IndexedDB →
+> memoria, IDB guarda `{buffer,type}` para round-trip fiable); nodos binarios guardan
+> solo `blobRef`/`size`/`mime` en el árbol; `VFS.writeFileAsync()` (string inline o Blob
+> out-of-tree) y `VFS.readFileAsync()` (re-envuelve el MIME al leer de OPFS); limpieza
+> de blobs huérfanos en delete/overwrite. Consumidor real: **Paint → "Guardar como PNG"**
+> a `C:\DOCUMENTS`. Tests: `VFSBlob.test.js`. Verificado en navegador: Paint guarda un PNG
+> válido con backend **OPFS**.
 
 Es el cimiento del roadmap Web OS: todo lo demás (procesos, permisos, paquetes)
 asume un almacén de datos real y asíncrono.

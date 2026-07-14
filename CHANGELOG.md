@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Binary file storage in the VFS + Paint "Save as PNG" (Web OS roadmap, Fase 0.2)**:
+  The VFS can now store binary/large files out of the JSON tree via a new `VFSBlobStore`
+  backend (**OPFS** when available, IndexedDB otherwise, in-memory last resort). Nodes
+  keep only a `blobRef`/`size`/`mime`; new `VFS.writeFileAsync()` / `VFS.readFileAsync()`
+  handle Blobs (strings still go inline), and orphaned blobs are freed on delete/overwrite.
+  First consumer: **Paint** gains a 💾 toolbar button that exports the canvas as a PNG to
+  `C:\DOCUMENTS`.
+
 ### Changed
 - **VFS storage backend → IndexedDB (Web OS roadmap, Fase 0.1)**: The virtual file
   system now persists to **IndexedDB** (new `VFSStore` backend) instead of
