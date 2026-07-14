@@ -144,7 +144,10 @@ const WindowManager: IWindowManager = (function () {
             win.classList.remove('window-opening');
             win.classList.add('window-closing');
 
-            const finalizeClose = () => {
+            const finalizeClose = (e?: AnimationEvent) => {
+                // `animationend` bubbles: ignore events from child elements finishing
+                // their own animations, otherwise the window closes prematurely.
+                if (e && e.target !== win) return;
                 win.classList.remove('window-closing');
 
                 const wf: any = Services.get('WindowFactory');
@@ -157,14 +160,14 @@ const WindowManager: IWindowManager = (function () {
                 activeWindows.delete(windowId);
                 zstack.remove(windowId);
                 legacyBridge.notifyKernelProcessKilled(windowId);
-                win.removeEventListener('animationend', finalizeClose);
+                win.removeEventListener('animationend', finalizeClose as EventListener);
             };
 
             // Bypass in testing environment (jsdom does not fire CSS animations automatically)
             if (process.env.NODE_ENV === 'test' || typeof window.navigator === 'undefined' || window.navigator.userAgent.includes('jsdom')) {
                 finalizeClose();
             } else {
-                win.addEventListener('animationend', finalizeClose);
+                win.addEventListener('animationend', finalizeClose as EventListener);
             }
         } else {
             const wf: any = Services.get('WindowFactory');

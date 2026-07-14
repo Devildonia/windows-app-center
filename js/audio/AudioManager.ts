@@ -33,6 +33,9 @@ class AudioManager implements IAudioManager {
     private isMuted: boolean = false;
     private sounds: Map<string, ISoundConfig> = new Map();
     private initialized: boolean = false;
+    /** Guards against re-registering the ResourceManager disposer if a first
+     *  init() throws after registration and init() is later retried. */
+    private disposerRegistered: boolean = false;
 
     // definite assignment (`!`): en el camino de early-return del singleton el
     // constructor no llega a asignarlos, pero en ese caso devolvemos la instancia
@@ -84,7 +87,8 @@ class AudioManager implements IAudioManager {
                 this.masterGain.gain.value = CONFIG.AUDIO?.MASTER_VOLUME || 0.3;
 
                 const resManager = Services.get('ResourceManager');
-                if (resManager) {
+                if (resManager && !this.disposerRegistered) {
+                    this.disposerRegistered = true;
                     resManager.register('audio-manager', 'audio', {
                         dispose: () => {
                             if (this.masterGain) {
@@ -200,6 +204,7 @@ class AudioManager implements IAudioManager {
             }
         }
         this.initialized = false;
+        this.disposerRegistered = false;
         Utils.Logger.audio('AudioManager cleaned up');
     }
 

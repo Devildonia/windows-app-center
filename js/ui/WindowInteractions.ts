@@ -12,15 +12,43 @@ import { Services } from '../core/ServiceContainer';
 interface IInteractionEntry {
     triggerElement: HTMLElement;
     mousedown: EventListener;
-    mousemove: EventListener;
-    mouseup: EventListener;
+}
+
+interface IActiveInteraction {
+    onMove: (e: MouseEvent) => void;
+    onUp: () => void;
 }
 
 export class WindowInteractions {
     private readonly _dragRegistry = new Map<string, IInteractionEntry>();
     private readonly _resizeRegistry = new Map<string, IInteractionEntry>();
 
+    // Global drag/resize delegation: exactly ONE mousemove + ONE mouseup on
+    // document for the whole app, regardless of how many windows exist. The
+    // currently-dragging (or -resizing) window registers itself as `_active`
+    // on mousedown; the globals dispatch to it. Previously every window added
+    // its own document-level move/up pair, so N windows meant 2N handlers all
+    // firing on every mouse move.
+    private _active: IActiveInteraction | null = null;
+    private _globalInstalled = false;
+
     constructor(private readonly bringToFront: (win: HTMLElement) => void) {}
+
+    private ensureGlobalListeners(): void {
+        if (this._globalInstalled) return;
+        this._globalInstalled = true;
+
+        Utils.eventManager.add(document, 'mousemove', ((e: Event) => {
+            this._active?.onMove(e as MouseEvent);
+        }) as EventListener);
+
+        Utils.eventManager.add(document, 'mouseup', (() => {
+            if (!this._active) return;
+            const up = this._active.onUp;
+            this._active = null;
+            up();
+        }) as EventListener);
+    }
 
     private bind(
         windowId: string,
@@ -30,39 +58,23 @@ export class WindowInteractions {
         onMouseMove: (e: MouseEvent) => void,
         onMouseUp: () => void
     ): void {
-        let active = false;
+        this.ensureGlobalListeners();
 
         const mousedown = (e: Event): void => {
             const mouseEvt = e as MouseEvent;
             const proceed = onMouseDown(mouseEvt);
             if (proceed === false) return;
-            active = true;
-        };
-
-        const mousemove = (e: Event): void => {
-            if (!active) return;
-            onMouseMove(e as MouseEvent);
-        };
-
-        const mouseup = (): void => {
-            if (!active) return;
-            active = false;
-            onMouseUp();
+            this._active = { onMove: onMouseMove, onUp: onMouseUp };
         };
 
         Utils.eventManager.add(triggerElement, 'mousedown', mousedown);
-        Utils.eventManager.add(document, 'mousemove', mousemove);
-        Utils.eventManager.add(document, 'mouseup', mouseup);
-
-        registry.set(windowId, { triggerElement, mousedown, mousemove, mouseup });
+        registry.set(windowId, { triggerElement, mousedown });
     }
 
     private unbind(windowId: string, registry: Map<string, IInteractionEntry>): void {
         const entry = registry.get(windowId);
         if (entry) {
             Utils.eventManager.remove(entry.triggerElement, 'mousedown', entry.mousedown);
-            Utils.eventManager.remove(document, 'mousemove', entry.mousemove);
-            Utils.eventManager.remove(document, 'mouseup', entry.mouseup);
             registry.delete(windowId);
         }
     }

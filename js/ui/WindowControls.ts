@@ -20,6 +20,8 @@ export interface IWindowControlsDeps {
 export class WindowControls {
     private _initialized = false;
     private onDocumentClick: ((e: Event) => void) | null = null;
+    /** Per-window bring-to-front listeners, tracked so destroy() can remove them. */
+    private windowListeners: Array<{ win: HTMLElement; handler: EventListener }> = [];
 
     constructor(private readonly deps: IWindowControlsDeps) {}
 
@@ -70,7 +72,9 @@ export class WindowControls {
             this.deps.makeResizable(windowId);
 
             // Bring to front on click
-            Utils.eventManager.add(win, 'mousedown', ((_e: Event) => this.deps.bringToFront(win)) as EventListener);
+            const bringToFront = ((_e: Event) => this.deps.bringToFront(win)) as EventListener;
+            Utils.eventManager.add(win, 'mousedown', bringToFront);
+            this.windowListeners.push({ win, handler: bringToFront });
         });
 
         this.onDocumentClick = (e: Event): void => {
@@ -117,6 +121,11 @@ export class WindowControls {
             document.removeEventListener('click', this.onDocumentClick);
             this.onDocumentClick = null;
         }
+        // Remove the per-window mousedown listeners added in initialize().
+        for (const { win, handler } of this.windowListeners) {
+            Utils.eventManager.remove(win, 'mousedown', handler);
+        }
+        this.windowListeners = [];
         this._initialized = false;
     }
 }

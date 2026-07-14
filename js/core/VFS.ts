@@ -36,6 +36,12 @@ export const VFS: IVFS = (() => {
 
     const STORAGE_KEY = 'win95_vfs_root';
 
+    /** Reject any single file whose content exceeds this (protects the shared
+     *  localStorage quota from a runaway plugin or oversized paste). */
+    const MAX_FILE_BYTES = 1_000_000; // ~1 MB
+    /** Guard against pathological / malicious deep nesting. */
+    const MAX_DEPTH = 32;
+
     // Default initial FS
     const DEFAULT_FS: IVFSNode = {
         name: 'C:',
@@ -117,7 +123,34 @@ export const VFS: IVFS = (() => {
     let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
     function cloneDefaultFS(): IVFSNode {
-        return structuredClone(DEFAULT_FS);
+        // structuredClone is unavailable on older engines; a JSON round-trip is a
+        // safe fallback here because the FS tree is plain, cycle-free JSON data.
+        if (typeof structuredClone === 'function') {
+            return structuredClone(DEFAULT_FS);
+        }
+        return JSON.parse(JSON.stringify(DEFAULT_FS));
+    }
+
+    /**
+     * Validates a parsed tree loaded from storage: root must be a dir, and every
+     * node must have a valid `type` and a `children` map when it is a dir. Rejects
+     * structurally broken/oversized trees so we fall back to a clean default
+     * instead of operating on garbage. Also enforces MAX_DEPTH.
+     */
+    function isValidTree(node: unknown, depth = 0): node is IVFSNode {
+        if (depth > MAX_DEPTH) return false;
+        if (!node || typeof node !== 'object') return false;
+        const n = node as Record<string, unknown>;
+        if (typeof n.name !== 'string') return false;
+        if (n.type !== 'dir' && n.type !== 'file' && n.type !== 'shortcut') return false;
+        if (n.type === 'dir') {
+            if (n.children === undefined) return false;
+            if (typeof n.children !== 'object' || n.children === null) return false;
+            for (const child of Object.values(n.children as Record<string, unknown>)) {
+                if (!isValidTree(child, depth + 1)) return false;
+            }
+        }
+        return true;
     }
 
     function init(): void {
@@ -126,7 +159,14 @@ export const VFS: IVFS = (() => {
 
         if (saved) {
             try {
-                root = JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+
+                // Reject structurally invalid trees instead of operating on garbage.
+                if (!isValidTree(parsed)) {
+                    Utils.Logger.error('VFS: Stored tree failed schema validation, resetting...');
+                    throw new Error('invalid VFS schema');
+                }
+                root = parsed;
 
                 // v1.0.7.5: Check if GAMES and DESKTOP are properly populated
                 const gamesFolder = root?.children ? root.children['GAMES'] : null;
@@ -297,12 +337,24 @@ export const VFS: IVFS = (() => {
         return current;
     }
 
-    function mkdir(path: string, name: string): boolean {
-        const safeName = (typeof Utils !== 'undefined' && Utils.sanitizePath)
+    function sanitize(name: string): string {
+        return (typeof Utils !== 'undefined' && Utils.sanitizePath)
             ? Utils.sanitizePath(name) : name;
+    }
+
+    function mkdir(path: string, name: string): boolean {
+        const safeName = sanitize(name);
         if (!safeName) return false;
         const parent = resolve(path);
         if (parent && parent.type === 'dir' && parent.children) {
+            const existing = parent.children[safeName];
+            if (existing) {
+                // Directory already present → keep its subtree (idempotent).
+                if (existing.type === 'dir') return true;
+                // Refuse to clobber a file of the same name with a directory.
+                Utils.Logger.warn(`VFS: cannot mkdir "${safeName}" — a file with that name exists`);
+                return false;
+            }
             parent.children[safeName] = { name: safeName, type: 'dir', children: {} };
             save();
             return true;
@@ -311,11 +363,21 @@ export const VFS: IVFS = (() => {
     }
 
     function writeFile(path: string, name: string, content: string): boolean {
-        const safeName = (typeof Utils !== 'undefined' && Utils.sanitizePath)
-            ? Utils.sanitizePath(name) : name;
+        const safeName = sanitize(name);
         if (!safeName) return false;
+        if (typeof content === 'string' && content.length > MAX_FILE_BYTES) {
+            Utils.Logger.warn(`VFS: refusing to write "${safeName}" — exceeds ${MAX_FILE_BYTES} bytes`);
+            return false;
+        }
         const parent = resolve(path);
         if (parent && parent.type === 'dir' && parent.children) {
+            const existing = parent.children[safeName];
+            // Never let a file silently replace a directory (which destroys its
+            // whole subtree). Overwriting an existing file is fine.
+            if (existing && existing.type !== 'file') {
+                Utils.Logger.warn(`VFS: cannot write "${safeName}" — a ${existing.type} with that name exists`);
+                return false;
+            }
             parent.children[safeName] = { name: safeName, type: 'file', content };
             save();
             return true;
@@ -339,13 +401,19 @@ export const VFS: IVFS = (() => {
     }
 
     function rename(parentPath: string, oldName: string, newName: string): boolean {
+        // Sanitize the new name for parity with mkdir/writeFile — otherwise
+        // rename is a back door for the dangerous chars (`<>:"/\|?*`, `..`) the
+        // rest of the API forbids.
+        const safeName = sanitize(newName);
+        if (!safeName) return false;
         const parent = resolve(parentPath);
         if (!parent || parent.type !== 'dir' || !parent.children || !parent.children[oldName]) return false;
-        if (parent.children[newName]) return false; // Name already taken
+        if (safeName === oldName) return true; // no-op
+        if (parent.children[safeName]) return false; // Name already taken
 
         const node = parent.children[oldName];
-        node.name = newName;
-        parent.children[newName] = node;
+        node.name = safeName;
+        parent.children[safeName] = node;
         delete parent.children[oldName];
         save();
         return true;

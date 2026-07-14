@@ -41,36 +41,28 @@ export class IframeProcessManager {
         try {
             const iframeWindow = iframe.contentWindow as any;
             if (iframeWindow) {
-                // Stop all network requests and parsing
+                // Stop all network requests and parsing.
                 iframeWindow.stop();
 
-                // Cancel any pending animation frames (brute-force up to 100k IDs)
-                const highestId = iframeWindow.requestAnimationFrame?.(() => { });
-                if (highestId) {
-                    for (let i = 0; i <= highestId; i++) {
-                        iframeWindow.cancelAnimationFrame(i);
-                    }
+                // Give the game a chance to tear itself down cleanly if it opts in.
+                if (typeof iframeWindow.__teardown === 'function') {
+                    try { iframeWindow.__teardown(); } catch { /* ignore */ }
                 }
 
-                // Clear all intervals and timeouts (brute-force)
-                const highestTimeout = iframeWindow.setTimeout?.(() => { }, 0);
-                if (highestTimeout) {
-                    for (let i = 0; i <= highestTimeout; i++) {
-                        iframeWindow.clearTimeout(i);
-                        iframeWindow.clearInterval(i);
+                // Close any AudioContext (games may store it under a couple of names).
+                try {
+                    const audioCtx = iframeWindow._audioContext || iframeWindow.audioContext;
+                    if (audioCtx && audioCtx.state !== 'closed') {
+                        audioCtx.close();
                     }
-                }
+                } catch { /* ignore */ }
 
-                // Close any AudioContext
-                if (iframeWindow.AudioContext || iframeWindow.webkitAudioContext) {
-                    try {
-                        // Games may store their context differently
-                        const audioCtx = iframeWindow._audioContext || iframeWindow.audioContext;
-                        if (audioCtx && audioCtx.state !== 'closed') {
-                            audioCtx.close();
-                        }
-                    } catch { /* ignore */ }
-                }
+                // NOTE: pending rAFs, timeouts and intervals are NOT swept by ID here.
+                // Setting `iframe.src = 'about:blank'` below discards the entire
+                // browsing context, which cancels all of them automatically. The old
+                // brute-force `for (i=0; i<=highestId; i++)` loops ran up to hundreds
+                // of thousands of synchronous calls on the main thread — visible jank
+                // on close — for zero benefit over the src reset.
             }
         } catch {
             // Cross-origin iframe — cannot access contentWindow, just unload

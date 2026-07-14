@@ -52,6 +52,15 @@ export abstract class Ragdoll3DCore {
     protected standUpTimeout: ReturnType<typeof setTimeout> | null = null;
     protected bubbleId: string = 'ragdoll-3d-bubble';
 
+    /**
+     * Owner key for every ResourceManager registration this instance makes
+     * (WebGL renderer, listeners…). It MUST be unique per instance: the desktop
+     * pet and the "Ragdoll Workshop" viewer both derive from this class, and a
+     * shared key would make closing one dispose the other's WebGL context.
+     * Subclasses override it in their constructor.
+     */
+    protected resourceOwner: string = 'ragdoll3d';
+
     protected readonly ANIM_MAP: Record<string, string> = {
         'Confident_Strut': 'Baile_1',
         'Fall_Dead_from_Abdom': 'Stand_Pose',
@@ -167,10 +176,11 @@ export abstract class Ragdoll3DCore {
 
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = 0;
         }
         const resManager = Services.get('ResourceManager');
         if (resManager) {
-            resManager.disposeOwner('ragdoll3d');
+            resManager.disposeOwner(this.resourceOwner);
         } else if (this.renderer) {
             this.renderer.dispose();
             this.renderer.forceContextLoss();

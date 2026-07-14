@@ -21,7 +21,14 @@ describe('UI Modules', () => {
 
         it('should return a random message from a specific category', () => {
             const msg = msgLib.get('GREETINGS');
-            expect(msgLib.messages['GREETINGS']).toContain(msg);
+            // get() translates `ragdoll.*` keys when the i18n service is present
+            // and its locale has loaded, so compare against the resolved values
+            // (translated when i18n is active, raw keys otherwise). This keeps the
+            // assertion independent of i18n's async load timing.
+            const rawKeys = msgLib.messages['GREETINGS'];
+            const i18nService = Services.get('i18n');
+            const expected = i18nService ? rawKeys.map(k => i18nService.t(k)) : rawKeys;
+            expect(expected).toContain(msg);
         });
 
         it('should avoid repeating recent messages', () => {

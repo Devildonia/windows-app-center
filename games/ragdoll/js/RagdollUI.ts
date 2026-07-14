@@ -13,6 +13,13 @@ export class RagdollUI {
     static manager: SkinManager | null = null;
     static selectedPart: string | null = null;
 
+    // Window-level keyboard handlers are the only listeners that outlive the
+    // Workshop window's DOM (they sit on `window`, not on the window body). We
+    // keep references so re-opening the Workshop doesn't stack duplicates and
+    // destroy() can remove them. In-window listeners die with the window body.
+    private static _onKeyDown: ((e: KeyboardEvent) => void) | null = null;
+    private static _onKeyUp: ((e: KeyboardEvent) => void) | null = null;
+
     static init(ragdollPet: RagdollPet): void {
         this.ragdollPet = ragdollPet;
         // stickman/manager are null until the 2D pet is actually spawned. Keep them
@@ -406,7 +413,12 @@ export class RagdollUI {
     }
 
     static setupKeyboardControls(): void {
-        window.addEventListener('keydown', (e) => {
+        // Idempotent: drop any handlers from a previous init() before re-adding,
+        // so re-opening the Workshop never accumulates window-level listeners.
+        if (this._onKeyDown) window.removeEventListener('keydown', this._onKeyDown);
+        if (this._onKeyUp) window.removeEventListener('keyup', this._onKeyUp);
+
+        this._onKeyDown = (e: KeyboardEvent) => {
             if (!this.stickman || !this.ragdollPet || !this.ragdollPet.isActive) return;
 
             // Ignore if typing in an input/textarea
@@ -449,9 +461,9 @@ export class RagdollUI {
                 this.stickman.state = 'idle';
                 this.stickman.emotion = 'happy';
             }
-        });
+        };
 
-        window.addEventListener('keyup', (e) => {
+        this._onKeyUp = (e: KeyboardEvent) => {
             if (!this.stickman) return;
             const key = e.key.toLowerCase();
             if (['a', 'd', 'arrowleft', 'arrowright'].includes(key)) {
@@ -460,6 +472,21 @@ export class RagdollUI {
                     this.stickman.walkSpeed = 0;
                 }
             }
-        });
+        };
+
+        window.addEventListener('keydown', this._onKeyDown);
+        window.addEventListener('keyup', this._onKeyUp);
+    }
+
+    /** Removes the window-level keyboard listeners (call on Workshop teardown). */
+    static destroy(): void {
+        if (this._onKeyDown) {
+            window.removeEventListener('keydown', this._onKeyDown);
+            this._onKeyDown = null;
+        }
+        if (this._onKeyUp) {
+            window.removeEventListener('keyup', this._onKeyUp);
+            this._onKeyUp = null;
+        }
     }
 }

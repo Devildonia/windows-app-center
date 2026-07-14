@@ -81,6 +81,11 @@ export const Kernel: IKernel = (() => {
                     sandbox: 'allow-scripts allow-forms'
                 };
                 WindowFactory.createGameWindow(sandboxedDef);
+                // Allow-list this plugin's iframe so its messages are trusted by
+                // the PluginBridge (untrusted frames like the IE browser are not).
+                const iframeId = sandboxedDef.iframeId || `${sandboxedDef.id}-frame`;
+                const frame = document.getElementById(iframeId) as HTMLIFrameElement | null;
+                PluginBridge.registerPluginFrame(frame);
             } else {
                 WindowFactory.create(plugin.windowDef);
             }
@@ -92,6 +97,10 @@ export const Kernel: IKernel = (() => {
         // Kill active processes of that appId
         const procs = getRegistry().processes.filter(p => p.appId === id);
         procs.forEach(p => kill(p.pid));
+
+        // Revoke bridge trust for this plugin's iframe, if any.
+        const frame = document.getElementById(`${id}-frame`) as HTMLIFrameElement | null;
+        PluginBridge.unregisterPluginFrame(frame);
 
         const success = unregisterApp(id);
         if (success) {

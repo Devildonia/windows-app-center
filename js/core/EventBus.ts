@@ -96,7 +96,10 @@ const EventBus: IEventBus = (() => {
         const eventName = String(event);
         const set = listeners.get(eventName);
         if (set) {
-            set.forEach(handler => {
+            // Snapshot before iterating: a handler that on()/once()/off()s the
+            // same event during dispatch would otherwise mutate the live Set
+            // (re-entrant handlers firing in the same cycle, or a skipped one).
+            [...set].forEach(handler => {
                 try {
                     handler(...(args as unknown[]));
                 } catch (e) {

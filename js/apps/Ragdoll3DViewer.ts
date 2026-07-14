@@ -294,6 +294,8 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
 
     constructor() {
         super();
+        // Isolate this instance's WebGL/listener resources from the desktop pet.
+        this.resourceOwner = this.windowId;
         this._ensureWindow();
         
         // (Re)wire the legacy Workshop UI (tabs + sliders) against the freshly built
@@ -379,6 +381,21 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         this.renderer.shadowMap.enabled = true;
         this.container.appendChild(this.renderer.domElement);
 
+        // Register the WebGL context so it is disposed when the window closes.
+        // Without this the renderer leaked a context on every open/close, and the
+        // browser's ~16-context cap would eventually kill 3D across the whole app.
+        const resManager = Services.get('ResourceManager');
+        if (resManager) {
+            resManager.register(this.resourceOwner, 'webgl', {
+                dispose: () => {
+                    if (this.renderer) {
+                        this.renderer.dispose();
+                        this.renderer.forceContextLoss();
+                    }
+                }
+            });
+        }
+
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
         hemiLight.position.set(0, 20, 0);
         this.scene.add(hemiLight);
@@ -397,7 +414,14 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
         this.scene.add(mesh);
         
         window.addEventListener('resize', this.onResizeHandler);
-        
+        if (resManager) {
+            resManager.register(this.resourceOwner, 'listener', {
+                dispose: () => {
+                    window.removeEventListener('resize', this.onResizeHandler);
+                }
+            });
+        }
+
         const groundColliderDesc = RAPIER.ColliderDesc.cuboid(50.0, 0.1, 50.0);
         this.world.createCollider(groundColliderDesc);
 
@@ -524,6 +548,9 @@ export class Ragdoll3DViewer extends Ragdoll3DCore {
 
     public override terminate(): void {
         window.removeEventListener('resize', this.onResizeHandler);
+        // Drop the Workshop's window-level keyboard listeners so they don't
+        // accumulate across open/close cycles.
+        RagdollUI.destroy();
         this.initStarted = false;
         super.terminate();
     }

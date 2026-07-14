@@ -11,6 +11,7 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
     
     constructor() {
         super();
+        this.resourceOwner = 'ragdoll3d-desktop';
         this._boundResize = this.onWindowResize.bind(this);
         this.container = document.getElementById('ragdoll3d-desktop-canvas-container');
         this.bubbleId = 'ragdoll3d-desktop-bubble';
@@ -58,11 +59,11 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
     }
 
     public override terminate(): void {
+        // Base terminate() disposes `this.resourceOwner` ('ragdoll3d-desktop'),
+        // which covers both the WebGL renderer and the resize listener registered
+        // below. Only the no-ResourceManager fallback needs handling here.
         super.terminate();
-        const resManager = Services.get('ResourceManager');
-        if (resManager) {
-            resManager.disposeOwner('ragdoll3d-desktop');
-        } else {
+        if (!Services.get('ResourceManager')) {
             window.removeEventListener('resize', this._boundResize);
         }
     }
@@ -87,7 +88,7 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
 
         const resManager = Services.get('ResourceManager');
         if (resManager) {
-            resManager.register('ragdoll3d', 'webgl', {
+            resManager.register(this.resourceOwner, 'webgl', {
                 dispose: () => {
                     if (this.renderer) {
                         this.renderer.dispose();
@@ -120,7 +121,7 @@ export class Ragdoll3DDesktop extends Ragdoll3DCore implements IRagdoll3DControl
 
         window.addEventListener('resize', this._boundResize);
         if (resManager) {
-            resManager.register('ragdoll3d-desktop', 'listener', {
+            resManager.register(this.resourceOwner, 'listener', {
                 dispose: () => {
                     window.removeEventListener('resize', this._boundResize);
                 }
