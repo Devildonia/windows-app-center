@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **VFS storage backend → IndexedDB (Web OS roadmap, Fase 0.1)**: The virtual file
+  system now persists to **IndexedDB** (new `VFSStore` backend) instead of
+  `localStorage`, escaping the ~5–10 MB cap. `VFS.init()` is now async and idempotent;
+  writes persist asynchronously (debounced) with an awaitable `flush()`. An in-memory
+  tree remains the working copy, so reads (`resolve`/`readFile`/`listDir`/`getRoot`)
+  stay synchronous and consumers are unchanged. Legacy `localStorage` trees migrate into
+  IndexedDB automatically on first load; a `localStorage` fallback covers environments
+  without IndexedDB. Durability flush now also triggers on `visibilitychange → hidden`.
+  See `docs/webos-roadmap/phase-0-vfs-async.md`.
+
+### Fixed
+- **Architecture audit remediation**: Closed all 10 findings from the v1.6.5 audit —
+  PluginBridge message-origin trust (allow-listed plugin frames), per-instance WebGL
+  resource ownership for the ragdoll pet vs. Workshop viewer, removal of the O(100k)
+  iframe timer sweep, VFS type-collision/rename-sanitize/size-limit/schema hardening,
+  and a batch of listener-lifecycle cleanups (window close, controls, drag/resize
+  delegation, RagdollUI, EventBus re-entrancy, AudioManager disposer). Each has a
+  regression test.
+- **Re-audit low-severity regressions**: Settings panel listeners are now tracked and
+  removed on re-render/terminate; the Kernel resolves a plugin's trusted iframe id the
+  same way on install and uninstall.
+
 ## [1.6.5] - 2026-07-14
 
 ### Added

@@ -6,6 +6,7 @@
 
 import { Utils } from '../utils';
 import { Services } from './ServiceContainer';
+import { VFSStore } from './VFSStore';
 
 export interface IVFSNode {
     name: string;
@@ -18,7 +19,8 @@ export interface IVFSNode {
 }
 
 export interface IVFS {
-    init(): void;
+    /** Hydrates the in-memory tree from the durable backend (IndexedDB / fallback). */
+    init(): Promise<void>;
     resolve(path: string): IVFSNode | null;
     mkdir(path: string, name: string): boolean;
     writeFile(path: string, name: string, content: string): boolean;
@@ -26,6 +28,9 @@ export interface IVFS {
     deleteNode(parentPath: string, name: string): boolean;
     rename(parentPath: string, oldName: string, newName: string): boolean;
     listDir(path: string): string[] | null;
+    /** Persists pending changes immediately (awaitable). */
+    flush(): Promise<void>;
+    /** Best-effort synchronous-style flush for unload paths (fire-and-forget). */
     flushSync(): void;
     getRoot(): IVFSNode | null;
     __reset(): void;
@@ -33,8 +38,6 @@ export interface IVFS {
 
 export const VFS: IVFS = (() => {
     'use strict';
-
-    const STORAGE_KEY = 'win95_vfs_root';
 
     /** Reject any single file whose content exceeds this (protects the shared
      *  localStorage quota from a runaway plugin or oversized paste). */
@@ -121,6 +124,8 @@ export const VFS: IVFS = (() => {
 
     let root: IVFSNode | null = null;
     let saveTimer: ReturnType<typeof setTimeout> | null = null;
+    // Shared hydration promise so concurrent/repeated init() calls await one load.
+    let initPromise: Promise<void> | null = null;
 
     function cloneDefaultFS(): IVFSNode {
         // structuredClone is unavailable on older engines; a JSON round-trip is a
@@ -153,8 +158,14 @@ export const VFS: IVFS = (() => {
         return true;
     }
 
-    function init(): void {
-        const saved = localStorage.getItem(STORAGE_KEY);
+    function init(): Promise<void> {
+        // Idempotent: repeated calls share one hydration (boot + Kernel both call it).
+        if (!initPromise) initPromise = hydrate();
+        return initPromise;
+    }
+
+    async function hydrate(): Promise<void> {
+        const saved = await VFSStore.load();
         let needsReset = false;
 
         if (saved) {
@@ -283,38 +294,45 @@ export const VFS: IVFS = (() => {
         Utils.Logger.log('VFS: Initialized');
     }
 
-    function save(): void {
-        if (saveTimer) {
-            clearTimeout(saveTimer);
-        }
-        saveTimer = setTimeout(() => {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
-            } catch (err) {
-                Utils.Logger.error('VFS: Failed to save to localStorage', err);
-                const notify: any = Services.get('Notify');
-                if (notify) {
-                    notify.error('VFS write failed: storage quota exceeded!');
-                }
-            }
-            saveTimer = null;
-        }, 100);
-    }
-
-    function flushSync(): void {
-        if (saveTimer) {
-            clearTimeout(saveTimer);
-            saveTimer = null;
-        }
+    async function persist(): Promise<void> {
+        if (!root) return;
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(root));
+            await VFSStore.save(JSON.stringify(root));
         } catch (err) {
-            Utils.Logger.error('VFS: Failed to save to localStorage (flushSync)', err);
+            Utils.Logger.error('VFS: Failed to persist tree', err);
             const notify: any = Services.get('Notify');
             if (notify) {
                 notify.error('VFS write failed: storage quota exceeded!');
             }
         }
+    }
+
+    function save(): void {
+        if (saveTimer) {
+            clearTimeout(saveTimer);
+        }
+        saveTimer = setTimeout(() => {
+            saveTimer = null;
+            void persist();
+        }, 100);
+    }
+
+    /** Persists pending changes immediately; awaitable. */
+    function flush(): Promise<void> {
+        if (saveTimer) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+        }
+        return persist();
+    }
+
+    /**
+     * Best-effort immediate persist for unload paths. IndexedDB cannot flush
+     * synchronously, so durability on abrupt close is best-effort — the
+     * `visibilitychange → hidden` handler below is the more reliable trigger.
+     */
+    function flushSync(): void {
+        void flush();
     }
 
     /**
@@ -436,6 +454,7 @@ export const VFS: IVFS = (() => {
         deleteNode,
         rename,
         listDir,
+        flush,
         flushSync,
         getRoot: () => root,
         __reset: () => {
@@ -444,13 +463,17 @@ export const VFS: IVFS = (() => {
                 saveTimer = null;
             }
             root = null;
+            initPromise = null;
         }
     };
 })();
 
 if (typeof window !== 'undefined') {
     Services.register('VFS', VFS);
-    window.addEventListener('beforeunload', () => {
-        VFS.flushSync();
+    // beforeunload is unreliable for async writes; visibilitychange → hidden is the
+    // more dependable durability trigger. Both fire a best-effort flush.
+    window.addEventListener('beforeunload', () => { VFS.flushSync(); });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') VFS.flushSync();
     });
 }

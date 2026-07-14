@@ -211,7 +211,10 @@ export const Kernel: IKernel = (() => {
 
     function init(): void {
         Utils.Logger.log('Kernel: Booting...');
-        VFS.init();
+        // VFS.init() is async and idempotent. The boot sequence (main.ts) awaits it
+        // before initOS, so by here it is already hydrated; this is a cheap no-op
+        // that also keeps the Kernel self-sufficient if invoked standalone.
+        void VFS.init();
         PluginBridge.init();
         Utils.Logger.log('Kernel: Ready');
     }

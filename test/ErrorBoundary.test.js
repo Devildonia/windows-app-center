@@ -20,11 +20,11 @@ function setupBSODDom() {
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('ErrorBoundary — showBSOD()', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         setupBSODDom();
         localStorage.clear();
         VFS.__reset();
-        VFS.init();
+        await VFS.init();
         __resetErrorBoundaryState();
     });
 

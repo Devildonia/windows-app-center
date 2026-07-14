@@ -11,10 +11,10 @@ import { VFS } from '../js/core/VFS.js';
 // path is asserted directly against the trust predicate `_isTrustedSource`,
 // and the end-to-end handler is exercised for the rejection paths.
 describe('PluginBridge trust boundary (finding #1)', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         localStorage.clear();
         VFS.__reset();
-        VFS.init();
+        await VFS.init();
         PluginBridge._trustedFrames.clear();
         PluginBridge._initialized = false;
         PluginBridge.init();

@@ -2,14 +2,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { VFS } from '../js/core/VFS.js';
 
 describe('VFS (Virtual File System)', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         // Clear localStorage and reset VFS before each test
         localStorage.clear();
         vi.resetAllMocks();
         VFS.__reset();
 
-        // VFS state is internal to the module, but init() resets it based on localStorage
-        VFS.init();
+        // init() is async (IndexedDB-backed, localStorage fallback under jsdom)
+        await VFS.init();
     });
 
     it('should initialize with default structure if storage is empty', () => {
@@ -51,11 +51,14 @@ describe('VFS (Virtual File System)', () => {
         expect(content).toBe('Hello Vitest');
     });
 
-    it('should persist data to localStorage', () => {
+    it('should persist data across flush + reload', async () => {
         VFS.mkdir('C:\\', 'PERSISTENT');
 
-        // Re-initialize VFS
-        VFS.init();
+        // Round-trip: flush to the backend, drop the in-memory tree, reload.
+        await VFS.flush();
+        VFS.__reset();
+        await VFS.init();
+
         const persistentNode = VFS.resolve('C:\\PERSISTENT');
         expect(persistentNode).toBeDefined();
     });
@@ -105,10 +108,10 @@ describe('VFS (Virtual File System)', () => {
         expect(VFS.resolve('C:\\DOCUMENTS\\big.bin')).toBeNull();
     });
 
-    it('should reset to defaults when stored tree fails schema validation (finding #10)', () => {
+    it('should reset to defaults when stored tree fails schema validation (finding #10)', async () => {
         localStorage.setItem('win95_vfs_root', JSON.stringify({ garbage: true }));
         VFS.__reset();
-        VFS.init();
+        await VFS.init();
         const root = VFS.getRoot();
         expect(root.name).toBe('C:');
         expect(root.children.WINDOWS).toBeDefined();

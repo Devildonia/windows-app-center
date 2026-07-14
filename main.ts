@@ -91,12 +91,21 @@ if (localStorage.getItem('ragdoll3DPetActive') === 'true') {
 // Initialization
 console.log(`[VITE] Windows 95 App Center v${CONFIG.APP.VERSION} — ES Modules loaded`);
 
-if (document.readyState === 'loading') {
-    window.addEventListener('load', () => {
-        if (window.initOS) window.initOS();
-    });
-} else {
+// Hydrate the VFS (async, IndexedDB-backed) BEFORE booting the OS so the file
+// system is ready by the time any app can read it. VFS.init() is idempotent.
+async function boot(): Promise<void> {
+    try {
+        await VFS.init();
+    } catch (err) {
+        console.error('[Kernel] VFS init failed, booting with defaults:', err);
+    }
     if (window.initOS) window.initOS();
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('load', () => { void boot(); });
+} else {
+    void boot();
 }
 
 // Service Worker registration
