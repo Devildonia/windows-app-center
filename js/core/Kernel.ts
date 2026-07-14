@@ -14,6 +14,8 @@ import type { IWindowsApp, IAppMetadata, IWindowsAppConstructor, IProcess, IAppP
 import { WindowFactory } from '../ui/WindowFactory';
 import { PluginManager } from './PluginManager';
 import { PluginBridge } from './PluginBridge.js';
+import { WorkerProcess, type IProcessTransport } from './WorkerProcess';
+import { ProcessWatchdog } from './ProcessWatchdog';
 
 export interface IAppRegistryEntry {
     appClass: IWindowsAppConstructor;
@@ -32,6 +34,8 @@ export interface IKernel {
     installPlugin(plugin: IAppPlugin): void;
     uninstallPlugin(id: string): boolean;
     launch(appId: string, params?: Record<string, unknown>): IProcess | null;
+    spawnWorker(appId: string, transport: IProcessTransport, opts?: { windowId?: string | null }): { pid: number; worker: WorkerProcess; process: IProcess };
+    getWorker(pid: number): WorkerProcess | undefined;
     kill(pid: number): boolean;
     getRegistry(): { apps: Record<string, IAppRegistryEntry>, processes: IProcess[] };
     getProcess(pid: number): IProcess | undefined;
@@ -53,6 +57,14 @@ export const Kernel: IKernel = (() => {
     // so uninstall revokes the exact frame even when a plugin supplied its own
     // iframeId (install and uninstall must resolve the id the same way).
     const pluginFrameIds = new Map<string, string>();
+
+    // Isolated (Web Worker) processes: pid -> host-side handle. Kept separate from
+    // the IProcess table so IProcess stays a plain data record.
+    const workers = new Map<number, WorkerProcess>();
+    const watchdog = new ProcessWatchdog({
+        getTargets: () => Array.from(workers.entries()).map(([pid, proc]) => ({ pid, proc })),
+        onKill: (pid) => { Utils.Logger.warn(`Kernel: watchdog killing unresponsive PID ${pid}`); kill(pid); },
+    });
 
     /**
      * Registers a new application class to the system
@@ -203,10 +215,41 @@ export const Kernel: IKernel = (() => {
             resManager.disposeOwner(process.appId);
         }
 
+        // Tear down the isolated worker handle, if this was a worker process.
+        workers.delete(pid);
+        if (workers.size === 0) watchdog.stop();
+
         // Remove from Map — no lingering references
         registry.processes.delete(pid);
         Utils.Logger.log(`Kernel: PID ${pid} killed (${registry.processes.size} active processes)`);
         return true;
+    }
+
+    /**
+     * Spawns an isolated (Web Worker) process. The caller supplies a transport
+     * (workerTransport(url) in the app, a loopback in tests). Returns the pid and
+     * the WorkerProcess handle for request()/ready. The watchdog auto-starts.
+     */
+    function spawnWorker(appId: string, transport: IProcessTransport, opts: { windowId?: string | null } = {}): { pid: number; worker: WorkerProcess; process: IProcess } {
+        const worker = new WorkerProcess(transport);
+        const pid = _nextPid++;
+        const windowId = opts.windowId ?? null;
+
+        // Adapter so a worker process fits IProcess.instance (windowId + terminate).
+        const instance: IWindowsApp = { windowId, terminate: () => worker.terminate() };
+        const process: IProcess = { pid, appId, instance, windowId, status: 'running', kind: 'worker' };
+
+        registry.processes.set(pid, process);
+        workers.set(pid, worker);
+        watchdog.start();
+
+        window.dispatchEvent(new CustomEvent('kernel:process-started', { detail: process }));
+        Utils.Logger.log(`Kernel: worker PID ${pid} spawned [${appId}] (${registry.processes.size} active)`);
+        return { pid, worker, process };
+    }
+
+    function getWorker(pid: number): WorkerProcess | undefined {
+        return workers.get(pid);
     }
 
     function init(): void {
@@ -237,11 +280,16 @@ export const Kernel: IKernel = (() => {
         installPlugin,
         uninstallPlugin,
         launch,
+        spawnWorker,
+        getWorker,
         kill,
         getRegistry,
         getProcess: (pid: number) => registry.processes.get(pid),
         getActiveCount: () => registry.processes.size,
         __reset: () => {
+            watchdog.stop();
+            workers.forEach(w => w.terminate());
+            workers.clear();
             registry.apps = {};
             registry.processes.clear();
             pluginFrameIds.clear();

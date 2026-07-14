@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Isolated process model — Web Worker processes + IPC + watchdog (Web OS roadmap, Fase 1.0)**:
+  The Kernel can now spawn processes that run in a real Web Worker instead of the Kernel's
+  own realm, so heavy work no longer freezes the UI. New pieces: a versioned IPC protocol
+  (`js/core/ipc/protocol.ts`), a transport-agnostic `WorkerProcess` host handle
+  (`ready`/`request`/`ping`/`terminate`), `Kernel.spawnWorker()` / `getWorker()` (processes
+  tagged `kind:'worker'`), and a `ProcessWatchdog` that pings workers and kills unresponsive
+  ones. Demo: `compute.worker.ts` computes primes off-thread (verified: the main thread stays
+  responsive during a multi-second compute). See `docs/webos-roadmap/phase-1-process-model.md`.
 - **Binary file storage in the VFS + Paint "Save as PNG" (Web OS roadmap, Fase 0.2)**:
   The VFS can now store binary/large files out of the JSON tree via a new `VFSBlobStore`
   backend (**OPFS** when available, IndexedDB otherwise, in-memory last resort). Nodes
