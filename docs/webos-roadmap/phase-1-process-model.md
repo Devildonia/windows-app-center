@@ -53,12 +53,22 @@ procesos es incremental y posterior.
   `compute:primes` off-thread (bloquearía la UI si corriera en el hilo principal),
   responde a ping, y puede "colgarse" a propósito para demostrar el watchdog.
 
-### Etapas siguientes (1.x)
-- SDK de app dentro del runtime (Worker/iframe): un pequeño runtime que carga la lógica de
-  la app y habla el contrato IPC.
-- Migrar una app de cómputo real a Worker; una app de UI no confiable a iframe con SDK.
-- Generalizar el `PluginBridge` (allow-list por `contentWindow`) como autenticación de
-  origen del proceso iframe (base de Fase 2 IPC/syscalls).
+### Etapa 1.x (hecha) — App SDK + app real worker-backed
+- **App Runtime SDK** (`js/sdk/appRuntime.ts`): runtime guest transport-agnóstico
+  (`AppRuntime` + `IGuestTransport`; `workerGuestTransport` para Worker, MessagePort de
+  iframe después). Anuncia `sys:ready`, auto-responde `sys:ping`→`pong`, y enruta requests
+  `app` a handlers registrados con respuesta/error por id. El worker demo se reescribió
+  sobre el SDK (solo declara sus handlers). Tests: `AppRuntime.test.js` (7).
+- **App real worker-backed** (`js/apps/PrimeLab.ts`, icono de escritorio `data-launch`):
+  ventana UI en el hilo principal que delega el cálculo de primos a un proceso Worker
+  aislado gestionado por el Kernel; mata el worker al cerrarse. **Verificado en navegador:**
+  computa el 30000º primo off-thread (350377, ~322 ms) con la UI respondiendo (43 ticks),
+  y al cerrar la ventana el proceso worker desaparece (0 leaks).
+
+### Etapas siguientes
+- SDK sobre iframe (MessagePort) para apps de UI no confiables; generalizar el
+  `PluginBridge` (allow-list por `contentWindow`) como autenticación de origen del proceso
+  (base de Fase 2 IPC/syscalls).
 
 ## 3. Contrato IPC (v1)
 

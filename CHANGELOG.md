@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **App Runtime SDK + Prime Lab (Web OS roadmap, Fase 1.x)**: A small guest-side SDK
+  (`js/sdk/appRuntime.ts`) lets an isolated app speak the process IPC protocol declaratively
+  — it announces readiness, auto-answers watchdog pings, and routes requests to registered
+  handlers. The compute worker now runs on it. **Prime Lab** (new desktop app) is the first
+  real app whose heavy work runs in an isolated worker process: the UI window stays on the
+  main thread and delegates the prime search over IPC, so it never freezes; closing the
+  window kills the worker process.
 - **Isolated process model — Web Worker processes + IPC + watchdog (Web OS roadmap, Fase 1.0)**:
   The Kernel can now spawn processes that run in a real Web Worker instead of the Kernel's
   own realm, so heavy work no longer freezes the UI. New pieces: a versioned IPC protocol
