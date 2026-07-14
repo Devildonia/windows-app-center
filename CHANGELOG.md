@@ -6,19 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.5] - 2026-07-14
+
 ### Added
 - **Settings app**: New Windows-style settings hub launched from the Start Menu (⚙️ Settings), with a category sidebar + content panel designed to host more configuration sections over time. First section is **Language & Region**, a live language switcher that calls `i18n.setLang()`.
+- **Localized ragdoll pet speech across 40 languages**: The 2D and 3D ragdoll pets now speak in the selected UI language. Added translation tables for all 40 locales to the `populate-ragdoll-locales.js` generator; universal onomatopoeia (`Zzz`, `Hmm`, `Grr`, `Gulp`, `Pizza?`, `LOL`, …) intentionally fall back to the English defaults. Key parity across all 40 locales is intact.
+- **Plugin API sandbox bridge**: Introduced `PluginBridge`, a curated capability surface exposed to third-party plugins so they interact with the Kernel through a controlled API instead of touching internals directly. Wired into `Kernel`, `PluginManager`, and `WindowApp`.
 
 ### Changed
+- **Live i18n coverage across the static UI**: Desktop icon labels, Start Menu items, sticky notes, and dynamic folder windows (back button, toolbar, address bar) now carry `data-i18n` and relabel in place on language change. `ThemeManager` builds Start Menu labels from `i18n.t()` and re-runs `swapIcons` on the `languagechanged` event. Game README bodies moved out of event listeners into `readme.*` keys.
 - **i18n hardening**:
   - `t()` keys are now type-checked at compile time (`TranslationKey` union derived from the English dictionary via `satisfies`), while still accepting dynamic runtime keys.
   - `setLang()` now dispatches a `languagechanged` event so open windows can re-render; the Settings window uses it to update its labels live.
   - Replaced the repetitive `i18n ? i18n.t(k) : 'English fallback'` pattern in Task Manager and Plugin Manager with a direct `i18n` import (single source of truth; the English fallback already lives inside `t()`).
   - Exported the `translations` table and added key-parity tests ensuring every locale defines exactly the same keys with no empty values.
+- **Dynamic window creation on-demand**: Migrated static windows and dialogs out of `index.html` (reducing it by ~63%, down to 365 lines). Paint, File Explorer, Internet Explorer, Display Properties, and Ragdoll Workshop now build their windows dynamically on launch via `WindowFactory` and register with the Kernel; My Computer, Recycle Bin, Shutdown, and Debug dialogs are created dynamically inside `SystemBridge`. `EventDelegation` binds dynamically loaded inputs at launch.
+- **ResourceManager auto-cleanup integration**: Owner-scoped resource disposal is now wired through the app lifecycle so windows release their `webgl`/`audio`/`listener`/`timer` resources automatically on close.
+- **Strict TypeScript migration** completed for the Ragdoll modules, tightening type safety across the pet subsystem.
+- **README overhaul**: Added a Live Demo link (itch.io) and an animated hero GIF of the 3D physics ragdoll on the Win95 desktop, captured new screenshots (3D ragdoll pet, sandboxed games arcade), and corrected the dev-server URL to `http://localhost:3000` to match `vite.config`.
 
 ### Fixed
+- **2D ragdoll language fallback**: The 2D Stickman looked up `window.MessageLibrary`, a global that is never assigned, so its `messageLibrary` was always null and the pet fell back to raw English category names regardless of language. It now resolves `MessageLibrary` via `Services.get()` (mirroring the 3D ragdoll), so speech localizes on language change.
 - **3D Ragdoll drop behaviour**: Releasing the desktop 3D ragdoll had two long-standing issues. (1) It slammed to the floor because world gravity was Earth-real `-9.81`, far too strong for the bone scale — lowered to `-5.0` for a natural, weighted fall. (2) It always snapped back to the same spot regardless of where it was dropped: the AI recovery path called `setRagdollMode(false)` without moving the root model, so the mixer re-placed the bones relative to the model origin. Centralized the "reposition root model to the hips' resting X/Z" logic inside `Ragdoll3DCore.setRagdollMode(false)` so every recovery path (AI and fall-reactions) keeps the character where it landed.
 - **3D Ragdoll blocked by CSP**: The hardened `script-src 'self'` blocked Rapier3D's WebAssembly instantiation, so the 3D ragdoll failed to start. Added `'wasm-unsafe-eval'` to `script-src` (allows WASM compilation while still blocking `eval()`), and `blob:`/`data:` to `connect-src` so the Three.js `GLTFLoader` can fetch embedded model textures (the model loaded untextured before). Verified: WASM instantiates, blob fetch succeeds, and the ragdoll renders fully textured.
+
+### CI / Testing
+- **Stable e2e gate**: Replaced brittle Playwright `toHaveScreenshot()` pixel comparisons (environment-sensitive across local Windows and CI Ubuntu) with functional assertions (boot completes, desktop + Start button visible, Start menu opens) and removed the orphaned win32 baseline images. The e2e job is no longer `continue-on-error` — it is now a real blocking gate.
+- **Leak budget tests**: Added `LeakBudget` tests asserting owner-scoped resources are fully released, guarding the `ResourceManager` integration.
+- **CI Node bump 20 → 24**: The `package-lock.json` is generated with npm 11 (Node 24), which npm 10 (Node 20) rejected as out-of-sync, failing `npm ci` on every run. Aligned CI to Node 24 to match the dev environment and lockfile.
 
 ## [1.6.4] - 2026-07-07
 
