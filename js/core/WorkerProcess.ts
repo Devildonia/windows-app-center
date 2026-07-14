@@ -27,6 +27,7 @@ interface Pending {
 export class WorkerProcess {
     private _nextId = 1;
     private readonly pending = new Map<number, Pending>();
+    private readonly requestHandlers = new Map<string, (payload: unknown) => unknown | Promise<unknown>>();
     private _ready = false;
     private _terminated = false;
     private resolveReady!: () => void;
@@ -55,10 +56,43 @@ export class WorkerProcess {
             return;
         }
 
-        if (isAppMessage(msg) && typeof msg.id === 'number') {
-            // Response to a prior request.
-            this.settle(msg.id, msg.payload, msg.error);
+        if (isAppMessage(msg)) {
+            if (msg.type === 'response') {
+                // Reply to a request WE sent.
+                if (typeof msg.id === 'number') this.settle(msg.id, msg.payload, msg.error);
+            } else {
+                // Inbound request FROM the process (e.g. a syscall). Duplex IPC.
+                void this.dispatchRequest(msg);
+            }
         }
+    }
+
+    private async dispatchRequest(msg: AppMessage): Promise<void> {
+        const handler = this.requestHandlers.get(msg.type);
+        if (!handler) {
+            this.reply(msg.id, undefined, `unhandled request: ${msg.type}`);
+            return;
+        }
+        try {
+            this.reply(msg.id, await handler(msg.payload));
+        } catch (err) {
+            this.reply(msg.id, undefined, err instanceof Error ? err.message : String(err));
+        }
+    }
+
+    private reply(id: number | undefined, payload?: unknown, error?: string): void {
+        const msg: AppMessage = { ch: 'app', type: 'response' };
+        if (id !== undefined) msg.id = id;
+        if (payload !== undefined) msg.payload = payload;
+        if (error !== undefined) msg.error = error;
+        this.transport.postMessage(msg);
+    }
+
+    /** Registers a handler for inbound requests of `type` from the process
+     *  (used by the syscall broker to serve fs/notify/log calls over the channel). */
+    onRequest(type: string, handler: (payload: unknown) => unknown | Promise<unknown>): this {
+        this.requestHandlers.set(type, handler);
+        return this;
     }
 
     private settle(id: number, payload: unknown, error?: string): void {

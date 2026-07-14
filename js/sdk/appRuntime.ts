@@ -22,10 +22,43 @@ export interface IGuestTransport {
 
 export class AppRuntime {
     private readonly handlers = new Map<string, RequestHandler>();
+    private readonly pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
+    private nextId = 1;
     private started = false;
 
     constructor(private readonly transport: IGuestTransport) {
         this.transport.onMessage(m => { void this.handle(m); });
+    }
+
+    /**
+     * Calls the host and resolves with its response — the guest→host direction
+     * (syscalls). `syscall('fs.read', {...})` reaches the host's syscall broker.
+     */
+    request(type: string, payload?: unknown, timeoutMs = 10_000): Promise<unknown> {
+        const id = this.nextId++;
+        const msg: AppMessage = { ch: 'app', type, id, payload };
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this.pending.delete(id);
+                reject(new Error(`request "${type}" timed out`));
+            }, timeoutMs);
+            this.pending.set(id, { resolve, reject, timer });
+            this.transport.post(msg);
+        });
+    }
+
+    /** Ergonomic alias for a host syscall. */
+    syscall(name: string, args?: unknown, timeoutMs?: number): Promise<unknown> {
+        return this.request(name, args, timeoutMs);
+    }
+
+    private settle(id: number, payload: unknown, error?: string): void {
+        const p = this.pending.get(id);
+        if (!p) return;
+        clearTimeout(p.timer);
+        this.pending.delete(id);
+        if (error) p.reject(new Error(error));
+        else p.resolve(payload);
     }
 
     /** Registers a handler for an app request `type`. Chainable. */
@@ -56,7 +89,12 @@ export class AppRuntime {
             if (msg.type === 'ping') this.transport.post({ ch: 'sys', type: 'pong', id: msg.id });
             return;
         }
-        if (isAppMessage(msg) && msg.type !== 'response') {
+        if (isAppMessage(msg)) {
+            if (msg.type === 'response') {
+                // Reply to a syscall/request WE sent to the host.
+                if (typeof msg.id === 'number') this.settle(msg.id, msg.payload, msg.error);
+                return;
+            }
             const handler = this.handlers.get(msg.type);
             if (!handler) {
                 this.reply(msg.id, undefined, `unknown request: ${msg.type}`);

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Syscalls over the process channel (Web OS roadmap, Fase 2)**: Isolated processes
+  (Worker/iframe) can now reach system services only through mediated *syscalls* on their
+  dedicated channel, never directly. IPC is now full-duplex — the guest App SDK gains
+  `syscall(name, args)` and the host `WorkerProcess` routes inbound requests. A new
+  `SyscallBroker` serves `sys.log`, `notify`, `fs.read`, `fs.list`, and `fs.write` against the
+  real VFS/Notify, guarded by a per-process capability set and an `fsRoot` that confines `fs.*`
+  paths (default `C:\DOCUMENTS`). Verified: an iframe process writes a file via `fs.write`, and
+  a write outside its `fsRoot` is denied. See `docs/webos-roadmap/phase-2-syscalls.md`.
 - **Iframe processes over a dedicated MessagePort (Web OS roadmap, Fase 1.y)**: Processes can
   now run in a sandboxed iframe that talks to the Kernel over a dedicated, authenticated
   `MessagePort` instead of the global `window` bus. New MessagePort transports (host + guest)

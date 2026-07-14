@@ -21,8 +21,11 @@ window.addEventListener('message', (e: MessageEvent) => {
     const port = e.ports[0];
     if (!port) return;
 
-    createPortRuntime(port)
-        .on('echo', (payload) => payload)
+    const rt = createPortRuntime(port);
+    rt.on('echo', (payload) => payload)
         .on('reverse', (payload) => String(payload).split('').reverse().join(''))
+        // Demonstrates a syscall: the guest asks the host to write a file via the
+        // mediated fs.write syscall (the guest can't touch the VFS directly).
+        .on('save', (payload) => rt.syscall('fs.write', payload))
         .start();
 }, { once: true });
