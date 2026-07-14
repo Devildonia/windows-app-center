@@ -130,3 +130,18 @@ export function workerTransportFromWorker(worker: Worker): IProcessTransport {
 export function workerTransport(url: URL): IProcessTransport {
     return workerTransportFromWorker(new Worker(url, { type: 'module' }));
 }
+
+/**
+ * Transport over a dedicated MessagePort — a point-to-point channel (from a
+ * `MessageChannel`) instead of the global `window` bus. Used for iframe
+ * processes: the host keeps one port, the guest gets the other, so messages
+ * never touch the shared window and can't be spoofed by other frames.
+ */
+export function messagePortTransport(port: MessagePort): IProcessTransport {
+    port.start();
+    return {
+        postMessage: (msg) => port.postMessage(msg),
+        onMessage: (handler) => { port.onmessage = (e: MessageEvent) => handler(e.data); },
+        terminate: () => { try { port.close(); } catch { /* already closed */ } },
+    };
+}

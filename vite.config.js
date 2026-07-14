@@ -27,7 +27,8 @@ export default defineConfig({
     sourcemap: 'hidden',  // Sprint 1 bonus: source maps sin exponerlos públicamente
     rollupOptions: {
       input: {
-        main: 'index.html'
+        main: 'index.html',
+        processGuest: 'process-guest.html'
       },
     },
   },

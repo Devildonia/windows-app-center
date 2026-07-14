@@ -8,6 +8,10 @@
 
 export const IPC_VERSION = 1;
 
+/** Handshake message the host posts to a new iframe process to hand over the
+ *  dedicated MessagePort. The guest must accept it only from `window.parent`. */
+export const IFRAME_CONNECT_TYPE = 'sys:connect';
+
 /** System-channel messages: lifecycle + liveness (used by the watchdog). */
 export type SysMessage =
     | { ch: 'sys'; type: 'ready' }

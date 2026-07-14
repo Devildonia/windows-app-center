@@ -65,10 +65,34 @@ procesos es incremental y posterior.
   computa el 30000º primo off-thread (350377, ~322 ms) con la UI respondiendo (43 ticks),
   y al cerrar la ventana el proceso worker desaparece (0 leaks).
 
+### Etapa 1.y (hecha) — Canal MessagePort dedicado + proceso iframe
+- **Transportes MessagePort**: `messagePortTransport` (host, en `WorkerProcess.ts`) y
+  `messagePortGuestTransport`/`createPortRuntime` (guest, en `appRuntime.ts`) → el mismo
+  `WorkerProcess`/`AppRuntime` habla por un canal punto-a-punto (de un `MessageChannel`),
+  no el bus `window` global.
+- **Proceso iframe** (`js/core/IframeProcess.ts` + `Kernel.spawnIframe`, `kind:'iframe'`):
+  crea un iframe sandbox, hace un **handshake autenticado** — el host transfiere el
+  MessagePort SOLO a su iframe (`contentWindow.postMessage(..., [port])`), y el guest lo
+  acepta SOLO de `window.parent`. Es la autenticación de origen por proceso que generaliza
+  el allow-list del `PluginBridge`. `kill()` cierra el puerto y elimina el iframe.
+- **Guest con SDK** (`js/sdk/guestBoot.ts` + `process-guest.html`, entry de Vite): dentro
+  del iframe corre un `AppRuntime` del SDK sobre el puerto. Tests: `PortProcess.test.js` (4,
+  SDK end-to-end sobre un `MessageChannel`). **Verificado en navegador:** el guest anuncia
+  ready por el puerto, responde `echo`/`reverse`/`ping`, y el iframe se elimina al matar el
+  proceso.
+
+> **Hallazgo (CSP):** la CSP endurecida del app (`script-src 'self'`) **bloquea scripts
+> inline/cross-origin** en iframes `srcdoc`/opacos → un guest de origen opaco no puede
+> cargar código bajo esta CSP. Por eso el guest se **sirve desde 'self'** y el iframe usa
+> `allow-same-origin` (aislamiento de realm/documento + canal dedicado autenticado, pero
+> mismo origen). El aislamiento de **origen opaco** para apps de terceros no confiables
+> requiere servir los guests desde un **origen separado** (subdominio) — pendiente de
+> despliegue, no de código.
+
 ### Etapas siguientes
-- SDK sobre iframe (MessagePort) para apps de UI no confiables; generalizar el
-  `PluginBridge` (allow-list por `contentWindow`) como autenticación de origen del proceso
-  (base de Fase 2 IPC/syscalls).
+- Servir guests de apps de terceros desde un origen separado para aislamiento de origen
+  opaco real; migrar una app de UI existente a proceso iframe; empezar Fase 2 (syscalls
+  `fs.*`/`window.*`/… sobre el canal por proceso, con el broker de permisos de Fase 3).
 
 ## 3. Contrato IPC (v1)
 

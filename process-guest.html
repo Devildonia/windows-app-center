@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Process Guest</title>
+</head>
+<body>
+    <!-- Isolated process runtime host. Loads the guest SDK bootstrap, which waits
+         for the host's authenticated MessagePort handshake. Served from 'self'
+         so it runs under the app's strict CSP. -->
+    <script type="module" src="/js/sdk/guestBoot.ts"></script>
+</body>
+</html>

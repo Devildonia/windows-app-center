@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Iframe processes over a dedicated MessagePort (Web OS roadmap, Fase 1.y)**: Processes can
+  now run in a sandboxed iframe that talks to the Kernel over a dedicated, authenticated
+  `MessagePort` instead of the global `window` bus. New MessagePort transports (host + guest)
+  let the same `WorkerProcess`/App SDK run over a point-to-point channel; `Kernel.spawnIframe()`
+  performs an authenticated handshake (the host transfers the port only to its own iframe; the
+  guest accepts it only from `window.parent`) — the per-process origin auth that generalizes the
+  PluginBridge allow-list. The App SDK runs inside the iframe guest (`js/sdk/guestBoot.ts`).
+  Note: the app's strict CSP (`script-src 'self'`) blocks inline/opaque-origin guest scripts, so
+  guests are served from `'self'` with `allow-same-origin`; full opaque-origin isolation for
+  untrusted third-party apps requires a separate origin (see docs/webos-roadmap).
 - **App Runtime SDK + Prime Lab (Web OS roadmap, Fase 1.x)**: A small guest-side SDK
   (`js/sdk/appRuntime.ts`) lets an isolated app speak the process IPC protocol declaratively
   — it announces readiness, auto-answers watchdog pings, and routes requests to registered

@@ -26,8 +26,9 @@ export interface IProcess {
     instance: IWindowsApp;
     windowId: string | null;
     status: 'running' | 'terminated';
-    /** 'app' = runs in the Kernel realm (default); 'worker' = isolated Web Worker. */
-    kind?: 'app' | 'worker';
+    /** 'app' = runs in the Kernel realm (default); 'worker' = isolated Web Worker;
+     *  'iframe' = isolated sandboxed iframe over a MessagePort. */
+    kind?: 'app' | 'worker' | 'iframe';
 }
 
 export interface IWindowsAppConstructor {

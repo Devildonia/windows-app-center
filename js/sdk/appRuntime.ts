@@ -88,3 +88,17 @@ export function workerGuestTransport(): IGuestTransport {
 export function createWorkerRuntime(): AppRuntime {
     return new AppRuntime(workerGuestTransport());
 }
+
+/** Guest transport over a dedicated MessagePort (for iframe processes). */
+export function messagePortGuestTransport(port: MessagePort): IGuestTransport {
+    port.start();
+    return {
+        post: (msg) => port.postMessage(msg),
+        onMessage: (handler) => { port.onmessage = (e: MessageEvent) => handler(e.data); },
+    };
+}
+
+/** Convenience: an AppRuntime wired to a MessagePort. */
+export function createPortRuntime(port: MessagePort): AppRuntime {
+    return new AppRuntime(messagePortGuestTransport(port));
+}

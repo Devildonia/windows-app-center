@@ -16,6 +16,7 @@ import { PluginManager } from './PluginManager';
 import { PluginBridge } from './PluginBridge.js';
 import { WorkerProcess, type IProcessTransport } from './WorkerProcess';
 import { ProcessWatchdog } from './ProcessWatchdog';
+import { createIframeTransport, type IframeSpawnOptions } from './IframeProcess';
 
 export interface IAppRegistryEntry {
     appClass: IWindowsAppConstructor;
@@ -35,6 +36,7 @@ export interface IKernel {
     uninstallPlugin(id: string): boolean;
     launch(appId: string, params?: Record<string, unknown>): IProcess | null;
     spawnWorker(appId: string, transport: IProcessTransport, opts?: { windowId?: string | null }): { pid: number; worker: WorkerProcess; process: IProcess };
+    spawnIframe(appId: string, opts?: IframeSpawnOptions & { windowId?: string | null }): Promise<{ pid: number; worker: WorkerProcess; process: IProcess; iframe: HTMLIFrameElement }>;
     getWorker(pid: number): WorkerProcess | undefined;
     kill(pid: number): boolean;
     getRegistry(): { apps: Record<string, IAppRegistryEntry>, processes: IProcess[] };
@@ -226,26 +228,53 @@ export const Kernel: IKernel = (() => {
     }
 
     /**
-     * Spawns an isolated (Web Worker) process. The caller supplies a transport
-     * (workerTransport(url) in the app, a loopback in tests). Returns the pid and
-     * the WorkerProcess handle for request()/ready. The watchdog auto-starts.
+     * Registers an isolated process over any transport (Worker or iframe port).
+     * Shared by spawnWorker/spawnIframe. `onTerminate` runs extra teardown (e.g.
+     * removing an iframe element) when the process is killed.
      */
-    function spawnWorker(appId: string, transport: IProcessTransport, opts: { windowId?: string | null } = {}): { pid: number; worker: WorkerProcess; process: IProcess } {
+    function spawnProcess(appId: string, transport: IProcessTransport, opts: { windowId?: string | null; kind: 'worker' | 'iframe'; onTerminate?: () => void }): { pid: number; worker: WorkerProcess; process: IProcess } {
         const worker = new WorkerProcess(transport);
         const pid = _nextPid++;
         const windowId = opts.windowId ?? null;
 
-        // Adapter so a worker process fits IProcess.instance (windowId + terminate).
-        const instance: IWindowsApp = { windowId, terminate: () => worker.terminate() };
-        const process: IProcess = { pid, appId, instance, windowId, status: 'running', kind: 'worker' };
+        // Adapter so a process fits IProcess.instance (windowId + terminate).
+        const instance: IWindowsApp = {
+            windowId,
+            terminate: () => { worker.terminate(); opts.onTerminate?.(); },
+        };
+        const process: IProcess = { pid, appId, instance, windowId, status: 'running', kind: opts.kind };
 
         registry.processes.set(pid, process);
         workers.set(pid, worker);
         watchdog.start();
 
         window.dispatchEvent(new CustomEvent('kernel:process-started', { detail: process }));
-        Utils.Logger.log(`Kernel: worker PID ${pid} spawned [${appId}] (${registry.processes.size} active)`);
+        Utils.Logger.log(`Kernel: ${opts.kind} PID ${pid} spawned [${appId}] (${registry.processes.size} active)`);
         return { pid, worker, process };
+    }
+
+    /**
+     * Spawns an isolated Web Worker process. The caller supplies a transport
+     * (workerTransport(url) in the app, a loopback in tests). Returns the pid and
+     * the WorkerProcess handle for request()/ready. The watchdog auto-starts.
+     */
+    function spawnWorker(appId: string, transport: IProcessTransport, opts: { windowId?: string | null } = {}): { pid: number; worker: WorkerProcess; process: IProcess } {
+        return spawnProcess(appId, transport, { windowId: opts.windowId ?? null, kind: 'worker' });
+    }
+
+    /**
+     * Spawns a sandboxed iframe process. Builds the iframe + authenticated
+     * MessagePort handshake (see IframeProcess), then registers it as a process
+     * whose kill() also removes the iframe.
+     */
+    async function spawnIframe(appId: string, opts: IframeSpawnOptions & { windowId?: string | null } = {}): Promise<{ pid: number; worker: WorkerProcess; process: IProcess; iframe: HTMLIFrameElement }> {
+        const { transport, iframe } = await createIframeTransport(opts);
+        const r = spawnProcess(appId, transport, {
+            windowId: opts.windowId ?? null,
+            kind: 'iframe',
+            onTerminate: () => iframe.remove(),
+        });
+        return { ...r, iframe };
     }
 
     function getWorker(pid: number): WorkerProcess | undefined {
@@ -281,6 +310,7 @@ export const Kernel: IKernel = (() => {
         uninstallPlugin,
         launch,
         spawnWorker,
+        spawnIframe,
         getWorker,
         kill,
         getRegistry,
