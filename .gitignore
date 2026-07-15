@@ -153,3 +153,6 @@ node_modules
 
 # Claude Code local (machine-specific) settings
 .claude/settings.local.json
+
+# Release/build archives — never commit them (a 21 MB zip once slipped in via `git add -A`)
+*.zip
