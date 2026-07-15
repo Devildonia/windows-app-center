@@ -28,6 +28,11 @@ interface AppPackage { manifest: AppManifest; files: Record<string, string>; }
 `validateManifest`/`validatePackage` comprueban id, semver, entry presente en `files`, y que
 las `permissions` sean capacidades conocidas. `compareVersions` decide install vs update.
 
+**Seguridad de rutas (auditoría M2):** toda clave de `files` y el `entry` deben ser rutas
+**relativas seguras** (`Utils.isSafeRelativePath`): sin segmentos `..`, sin prefijo de unidad
+(`C:`) y sin separador inicial. Se rechaza en la frontera (`validatePackage`) y se re-comprueba
+al escribir (`writeFiles`), en vez de confiar en cómo la VFS resuelve los paths.
+
 ## 2. PackageManager (`js/core/PackageManager.ts`)
 
 - **install(pkg)**: valida → si ya existe, exige versión **estrictamente mayor** (rechaza
@@ -66,7 +71,17 @@ vez el home del paquete y el `fsRoot` al que se confinan sus syscalls `fs.*`.
   iframe vivo** de la app instalada escribe en su home con la capability declarada, una
   capability **no declarada se rechaza sin prompt**, y uninstall deja todo limpio.
 
-## 5. Pendiente
+## 5. Alcance de la integridad (auditoría O1)
+
+El hash SHA-256 sellado al instalar es un **detector de cambios**, no una garantía de autoría.
+`PackageManager.verify(id, pkg)` re-hashea un paquete y lo compara con el sello registrado, útil
+para detectar manipulación/corrupción antes de reinstalar. Lo que **no** hace todavía:
+- no prueba **quién** produjo el paquete → hace falta **firma** (SubtleCrypto);
+- no hay verificación **al lanzar**, porque los paquetes aún no se ejecutan desde el registro
+  (no existe un loader que cargue el `entry`).
+
+## 6. Pendiente
 - **Contenedor zip** real (`.wapp` = zip) — cargador que produzca un `AppPackage`.
 - **Firma** con SubtleCrypto (verificar autoría, no solo integridad) y catálogo remoto.
+- **Loader de paquetes** que lance el `entry` en un proceso iframe y verifique la integridad ahí.
 - UI de tienda/gestor de paquetes (sobre el Plugin Manager existente) y de permisos.

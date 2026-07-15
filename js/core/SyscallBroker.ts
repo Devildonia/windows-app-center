@@ -44,10 +44,25 @@ function asString(v: unknown): string {
     return typeof v === 'string' ? v : '';
 }
 
-/** Rejects fs.* paths that escape the process's fsRoot. */
+/** Notification levels a process may request. Anything else is refused so a
+ *  guest can't reach prototype members via `notify[level]`. */
+const NOTIFY_LEVELS = new Set(['info', 'success', 'warn', 'error']);
+
+/**
+ * Rejects fs.* paths that escape the process's fsRoot.
+ *
+ * Traversal (`..`) is refused explicitly at this boundary — NOT left to the VFS.
+ * `VFS.resolve` currently treats `..` as a literal node name, so traversal fails
+ * by accident; if that ever changed, a path like `<root>\..\..\WINDOWS` would
+ * pass a naive prefix check. Reject first, then compare normalized paths.
+ */
 function assertInRoot(path: string, ctx: SyscallContext): void {
-    const norm = path.replace(/\//g, '\\');
-    if (norm !== ctx.fsRoot && !norm.startsWith(ctx.fsRoot + '\\')) {
+    if (Utils.hasTraversal(path)) {
+        throw new Error(`fs access denied (path traversal): ${path}`);
+    }
+    const norm = Utils.normalizeVfsPath(path);
+    const root = Utils.normalizeVfsPath(ctx.fsRoot);
+    if (norm !== root && !norm.startsWith(root + '\\')) {
         throw new Error(`fs access denied outside ${ctx.fsRoot}: ${path}`);
     }
 }
@@ -59,10 +74,12 @@ const HANDLERS: Record<string, (args: Args, ctx: SyscallContext) => unknown | Pr
     },
     'notify': (args) => {
         const notify = Services.get('Notify');
-        const level = asString(args.level) || 'info';
-        const message = asString(args.message);
-        if (notify && typeof (notify as any)[level] === 'function') (notify as any)[level](message);
-        else notify?.info(message);
+        if (!notify) return true;
+        const requested = asString(args.level);
+        // Allow-list the level: an arbitrary string would let a guest reach
+        // prototype members (constructor, toString…) through the index access.
+        const level = NOTIFY_LEVELS.has(requested) ? requested : 'info';
+        (notify as unknown as Record<string, (m: string) => void>)[level]!(asString(args.message));
         return true;
     },
     'fs.read': (args, ctx) => {

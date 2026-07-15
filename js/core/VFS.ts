@@ -463,9 +463,8 @@ export const VFS: IVFS = (() => {
         }
         const parent = resolve(path);
         if (!parent || parent.type !== 'dir' || !parent.children) return false;
-        const existing = parent.children[safeName];
-        if (existing && existing.type !== 'file') {
-            Utils.Logger.warn(`VFS: cannot write "${safeName}" — a ${existing.type} with that name exists`);
+        if (parent.children[safeName] && parent.children[safeName]!.type !== 'file') {
+            Utils.Logger.warn(`VFS: cannot write "${safeName}" — a ${parent.children[safeName]!.type} with that name exists`);
             return false;
         }
         const blobRef = `blob-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -475,9 +474,16 @@ export const VFS: IVFS = (() => {
             Utils.Logger.error(`VFS: failed to store blob for "${safeName}"`, err);
             return false;
         }
-        // Success: free any blob the previous node held, then swap in metadata.
-        releaseBlob(existing);
-        parent.children[safeName] = { name: safeName, type: 'file', blobRef, size: data.size, mime: data.type || '' };
+        // Re-resolve AFTER the await: a concurrent write to the same path could
+        // have swapped the node while the blob was being stored, and releasing a
+        // stale reference would free the winner's blob.
+        const current = resolve(path);
+        if (!current || current.type !== 'dir' || !current.children) {
+            void VFSBlobStore.delete(blobRef); // parent vanished — don't orphan our blob
+            return false;
+        }
+        releaseBlob(current.children[safeName]);
+        current.children[safeName] = { name: safeName, type: 'file', blobRef, size: data.size, mime: data.type || '' };
         save();
         return true;
     }

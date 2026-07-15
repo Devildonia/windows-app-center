@@ -14,13 +14,18 @@
 import { createPortRuntime } from './appRuntime';
 import { IFRAME_CONNECT_TYPE } from '../core/ipc/protocol';
 
-window.addEventListener('message', (e: MessageEvent) => {
+// NOTE: deliberately NOT `{ once: true }`. With `once` the listener is consumed
+// by the FIRST message of any kind, so a stray postMessage from another frame
+// would burn it and the real handshake from the host would never be seen. Keep
+// listening until a valid handshake arrives, then detach.
+function onConnect(e: MessageEvent): void {
     // Per-process auth: only accept the port from our host (the parent frame).
     if (e.source !== window.parent) return;
     if (!e.data || e.data.type !== IFRAME_CONNECT_TYPE) return;
     const port = e.ports[0];
     if (!port) return;
 
+    window.removeEventListener('message', onConnect); // handshake done
     const rt = createPortRuntime(port);
     rt.on('echo', (payload) => payload)
         .on('reverse', (payload) => String(payload).split('').reverse().join(''))
@@ -28,4 +33,6 @@ window.addEventListener('message', (e: MessageEvent) => {
         // mediated fs.write syscall (the guest can't touch the VFS directly).
         .on('save', (payload) => rt.syscall('fs.write', payload))
         .start();
-}, { once: true });
+}
+
+window.addEventListener('message', onConnect);

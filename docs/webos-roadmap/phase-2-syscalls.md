@@ -36,9 +36,15 @@ ejecutan contra los servicios reales del host:
 
 **Guardas (Fase 2):**
 - **Capacidades**: `ctx.allowed: Set<string>` — el proceso solo puede invocar los syscalls
-  concedidos; el resto → `permission denied`.
-- **Confinamiento fs**: `ctx.fsRoot` (por defecto `C:\DOCUMENTS`) — los paths de `fs.*` deben
-  quedar dentro de la raíz; fuera → `fs access denied`.
+  concedidos; el resto → `permission denied`. *(Fase 3 lo sustituye por consentimiento.)*
+- **Confinamiento fs**: `ctx.fsRoot` — los paths de `fs.*` deben quedar dentro de la raíz;
+  fuera → `fs access denied`. *(Fase 3 lo cambia al home por app.)*
+- **Anti-traversal (auditoría M2)**: `assertInRoot` **rechaza explícitamente** cualquier path
+  con segmentos `..` antes de comparar, y compara paths normalizados. Antes, un path como
+  `<fsRoot>\..\..\WINDOWS` **pasaba** el prefijo y solo fallaba por accidente (`VFS.resolve`
+  trata `..` como nombre literal, no como "subir"): defensa por accidente, no por diseño.
+- **Allow-list de `notify.level` (auditoría B2)**: solo `info`/`success`/`warn`/`error`; un
+  `level` arbitrario indexaba el servicio y alcanzaba miembros del prototipo.
 
 El Kernel adjunta el broker en `spawnProcess` (Worker e iframe) con un set de syscalls por
 defecto (`DEFAULT_SYSCALLS`) y `fsRoot` configurable por `spawnWorker/spawnIframe`.

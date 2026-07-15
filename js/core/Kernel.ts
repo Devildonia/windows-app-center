@@ -235,9 +235,14 @@ export const Kernel: IKernel = (() => {
      * Shared by spawnWorker/spawnIframe. `onTerminate` runs extra teardown (e.g.
      * removing an iframe element) when the process is killed.
      */
-    /** Per-app home directory under C:\APPS, created on demand (Fase 3 namespacing). */
+    /**
+     * Per-app home directory under C:\APPS, created on demand (Fase 3 namespacing).
+     * Uses the SAME sanitizer as VFS.mkdir (Utils.sanitizePath) so the returned
+     * fsRoot always names the directory that was actually created — a different
+     * local regex could diverge for odd ids and hand back a root that doesn't exist.
+     */
     function ensureAppHome(appId: string): string {
-        const safe = appId.replace(/[^a-z0-9._-]/gi, '_');
+        const safe = Utils.sanitizePath(appId) || 'unknown-app';
         VFS.mkdir('C:\\', 'APPS');            // idempotent
         VFS.mkdir('C:\\APPS', safe);          // idempotent
         return `C:\\APPS\\${safe}`;

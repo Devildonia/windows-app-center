@@ -78,7 +78,13 @@ export const PackageManager = (() => {
     /** Writes the package files into the app's home dir. */
     function writeFiles(home: string, files: Record<string, string>): void {
         for (const [rel, content] of Object.entries(files)) {
-            const segments = rel.replace(/\//g, '\\').split('\\').filter(Boolean);
+            // Defence in depth: validatePackage already rejects unsafe keys, but
+            // never build a path from an unchecked key.
+            if (!Utils.isSafeRelativePath(rel)) {
+                Utils.Logger.warn(`[PackageManager] skipping unsafe file path: ${rel}`);
+                continue;
+            }
+            const segments = Utils.pathSegments(rel);
             const name = segments.pop();
             if (!name) continue;
             const dir = segments.length ? `${home}\\${segments.join('\\')}` : home;
@@ -128,6 +134,21 @@ export const PackageManager = (() => {
         return { ok: true, updated, app };
     }
 
+    /**
+     * Re-hashes `pkg` and compares it with the integrity stamped at install —
+     * use it to detect a tampered/corrupted package before (re)installing.
+     *
+     * Scope: this proves the bytes are UNCHANGED, not who produced them.
+     * Authenticity needs signing (SubtleCrypto), and there is no launch-time
+     * check yet because packages aren't executed from the registry. See
+     * docs/webos-roadmap/phase-4-packaging.md.
+     */
+    async function verify(id: string, pkg: AppPackage): Promise<boolean> {
+        const installed = registry[id];
+        if (!installed) return false;
+        return (await packageIntegrity(pkg)) === installed.integrity;
+    }
+
     function uninstall(id: string): boolean {
         if (!registry[id]) return false;
         VFS.deleteNode(APPS_ROOT, id);   // removes the home dir + its files/blobs
@@ -141,5 +162,5 @@ export const PackageManager = (() => {
 
     function __reset(): void { registry = {}; }
 
-    return { init, install, uninstall, list, get, __reset };
+    return { init, install, uninstall, verify, list, get, __reset };
 })();

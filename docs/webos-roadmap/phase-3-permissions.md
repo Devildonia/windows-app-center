@@ -18,7 +18,12 @@ Media las capacidades de cada proceso con consentimiento:
 - **Consentimiento persistido** en la VFS (`C:\WINDOWS\SYSTEM\permissions.json`); se recarga
   al arrancar (`PermissionBroker.init()` en `Kernel.init`).
 - **Prompt inyectable** (`setPrompt`): en la app es un modal Allow/Deny; en tests se
-  inyecta un decisor automático. Un prompt que lanza excepción = `denied`.
+  inyecta un decisor automático. Un prompt que lanza excepción = `denied`. El modal **escapa**
+  el `appId` (auditoría B1).
+- **Dedupe de consentimiento (auditoría M1)**: `check()` cachea la promesa **en vuelo** por
+  `(appId, capability)`. Sin esto, un proceso que lanza N syscalls de la misma capacidad antes
+  de que el usuario responda abría **N modales apilados** y ninguno registraba la decisión hasta
+  que el primero resolvía. Ahora N llamadas concurrentes comparten un único diálogo.
 - `peek`/`set` para leer/fijar decisiones (UI de ajustes, tests).
 
 ## 2. Home dir por app (namespacing VFS)

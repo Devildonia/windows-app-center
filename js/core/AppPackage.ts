@@ -10,6 +10,8 @@
  */
 
 /** Capabilities an app may declare. Mirrors the PermissionBroker's vocabulary. */
+import { Utils } from '../utils';
+
 export const KNOWN_PERMISSIONS = ['fs:read', 'fs:write', 'notify', 'net'] as const;
 
 export interface AppManifest {
@@ -51,6 +53,9 @@ export function validateManifest(m: unknown): { ok: boolean; error?: string } {
     if (typeof x.entry !== 'string' || !x.entry.trim()) {
         return { ok: false, error: 'manifest.entry is required' };
     }
+    if (!Utils.isSafeRelativePath(x.entry)) {
+        return { ok: false, error: `manifest.entry must be a safe relative path: ${x.entry}` };
+    }
     if (x.permissions !== undefined) {
         if (!Array.isArray(x.permissions)) {
             return { ok: false, error: 'manifest.permissions must be an array' };
@@ -67,6 +72,16 @@ export function validatePackage(pkg: unknown): { ok: boolean; error?: string } {
     const m = validateManifest(p.manifest);
     if (!m.ok) return m;
     if (!p.files || typeof p.files !== 'object') return { ok: false, error: 'package.files is required' };
+
+    // Every file key must be a safe RELATIVE path. Reject `..` segments, drive
+    // prefixes and leading separators at this boundary so a package can never
+    // write outside its own home, regardless of how the VFS resolves paths.
+    for (const key of Object.keys(p.files)) {
+        if (!Utils.isSafeRelativePath(key)) {
+            return { ok: false, error: `unsafe file path in package: ${key}` };
+        }
+    }
+
     const entry = (p.manifest as AppManifest).entry;
     if (!(entry in p.files)) return { ok: false, error: `package.files is missing the entry "${entry}"` };
     return { ok: true };

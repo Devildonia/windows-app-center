@@ -6,6 +6,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Path traversal refused at the boundary (audit M2)**: `fs.*` syscalls, package file keys and
+  a manifest's `entry` now explicitly reject `..` segments, drive prefixes and absolute paths.
+  Traversal previously failed only *incidentally* — `VFS.resolve` treats `..` as a literal node
+  name — so a path like `<fsRoot>\..\..\WINDOWS` passed the prefix check and was stopped by
+  accident rather than by design. New canonical helpers (`Utils.hasTraversal`,
+  `isSafeRelativePath`, `normalizeVfsPath`, `pathSegments`) are now the single source of truth.
+- **Consent dialog escapes the app id (audit B1)**: `PermissionBroker`'s default prompt ran the
+  app id through `innerHTML` unescaped; it is now escaped with `Utils.escapeHTML`.
+- **`notify` syscall level allow-listed (audit B2)**: a guest-supplied `level` indexed the Notify
+  service directly, reaching prototype members (`constructor`, `toString`…). Only
+  `info`/`success`/`warn`/`error` are accepted now; anything else falls back to `info`.
+
+### Fixed
+- **Concurrent consent prompts (audit M1)**: several syscalls needing the same capability before
+  the user answered each opened their own modal (a stack of dialogs) and none recorded the
+  decision until the first resolved. The broker now shares one in-flight prompt per
+  `(app, capability)`, so N concurrent requests raise a single dialog and all resolve from it.
+- **Iframe guest handshake was fragile (audit B3)**: the guest's `message` listener used
+  `{ once: true }`, so a stray message from any frame consumed it before the host's real
+  handshake could arrive. It now stays subscribed until a valid handshake and detaches then.
+- **Blob write race (audit B4)**: `VFS.writeFileAsync` captured the existing node *before*
+  awaiting the blob store, so two concurrent writes to one path could free the winner's blob. The
+  node is re-resolved after the await, and the blob is cleaned up if the parent disappeared.
+- **App home sanitizer aligned (audit B5)**: `Kernel.ensureAppHome` used its own regex while
+  `VFS.mkdir` uses `Utils.sanitizePath`, so odd ids could return an `fsRoot` naming a directory
+  that was never created. Both use the same sanitizer now.
+
+### Added
+- **`PackageManager.verify(id, pkg)` (audit O1)**: re-hashes a package and compares it with the
+  integrity stamped at install, so tampering/corruption is detectable before a re-install.
+  Documented scope: it proves the bytes are unchanged, not who produced them — authenticity still
+  needs signing, and there is no launch-time check because packages aren't executed from the
+  registry yet.
+
 ## [1.6.6] - 2026-07-15
 
 This release turns the desktop simulator into a real **Web OS**: a full 6-phase roadmap

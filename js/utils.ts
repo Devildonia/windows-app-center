@@ -174,6 +174,44 @@ function sanitizePath(name: string): string {
         .substring(0, 255);              // Max length
 }
 
+/** Splits a VFS path into segments, treating `/` and `\` alike. */
+function pathSegments(path: string): string[] {
+    if (typeof path !== 'string') return [];
+    return path.replace(/\//g, '\\').split('\\').filter(Boolean);
+}
+
+/**
+ * True when any segment is `..` — i.e. the path attempts directory traversal.
+ * Callers must REJECT such paths at the boundary rather than rely on how the VFS
+ * happens to resolve them (today `VFS.resolve` treats `..` as a literal name, so
+ * traversal fails by accident, not by design).
+ */
+function hasTraversal(path: string): boolean {
+    return pathSegments(path).some(seg => seg === '..');
+}
+
+/**
+ * True when `path` is a safe *relative* path usable as a key inside a package or
+ * an app home: no `..` segments, no drive prefix (`C:`) and no leading separator
+ * (both of which would make it absolute).
+ */
+function isSafeRelativePath(path: string): boolean {
+    if (typeof path !== 'string' || !path.trim()) return false;
+    if (/^[a-z]:/i.test(path)) return false;   // drive prefix -> absolute
+    if (/^[\\/]/.test(path)) return false;     // leading separator -> absolute
+    return !hasTraversal(path);
+}
+
+/**
+ * Normalizes an absolute VFS path for comparison: unifies separators, drops
+ * empty segments and trailing separators. Does NOT resolve `..` — use
+ * hasTraversal() to reject those first.
+ */
+function normalizeVfsPath(path: string): string {
+    const segs = pathSegments(path);
+    return segs.join('\\');
+}
+
 // ============================================
 // DEBOUNCING
 // ============================================
@@ -521,6 +559,10 @@ export const Utils = {
     escapeHTML,
     sanitizeHTML,
     sanitizePath,
+    pathSegments,
+    hasTraversal,
+    isSafeRelativePath,
+    normalizeVfsPath,
     debounce,
     throttle,
     getElement,
