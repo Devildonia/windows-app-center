@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Security
+- **Iframe processes now run on a true opaque origin**: the process guest is shipped as a
+  self-contained classic (IIFE) bundle, which lets the sandbox drop `allow-same-origin`. A
+  process can no longer reach the host DOM, `localStorage` or IndexedDB — only its dedicated,
+  authenticated port. Verified: the host cannot read the guest's document (`contentDocument`
+  is `null`) or its storage (`SecurityError`), and the same-origin policy is symmetric.
+
+  **This corrects an earlier wrong diagnosis.** v1.6.6 claimed the hardened CSP
+  (`script-src 'self'`) blocked opaque-origin guests and that a *separate origin* was required.
+  Both parts were wrong: CSP is not inherited by an iframe with a `src` (only by `srcdoc`,
+  which is what had been tested), and the real blocker was **ES module CORS** — a module
+  fetched from a `null` origin is refused, while classic scripts are not CORS-checked. So real
+  third-party isolation needs no extra hosting and works anywhere the app is deployed. A
+  separate origin remains worthwhile as defence in depth, not as a prerequisite.
+
+### Security
 - **Path traversal refused at the boundary (audit M2)**: `fs.*` syscalls, package file keys and
   a manifest's `entry` now explicitly reject `..` segments, drive prefixes and absolute paths.
   Traversal previously failed only *incidentally* — `VFS.resolve` treats `..` as a literal node
@@ -33,8 +48,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **App home sanitizer aligned (audit B5)**: `Kernel.ensureAppHome` used its own regex while
   `VFS.mkdir` uses `Utils.sanitizePath`, so odd ids could return an `fsRoot` naming a directory
   that was never created. Both use the same sanitizer now.
+- **Raw NUL byte removed from source**: the consent broker's in-flight key embedded a literal
+  `U+0000` control character in `PermissionBroker.ts`, which made tooling treat the file as
+  binary. It now uses an escape sequence — identical behaviour, plain-ASCII source. (The audit
+  read the NUL as a space and called it cosmetic; the separator was in fact already correct,
+  but the raw control character was not.)
 
 ### Added
+- **Error-path test coverage**: dedicated tests for the branches an OS lives or dies on, which
+  the v1.6.6 audit flagged as the thinnest part of the suite — storage **quota** exhaustion
+  (persist fails → surfaced via Notify, never throws, in-memory tree stays usable), **denied
+  permissions** (remembered, survives reload, a thrown prompt counts as denied) and **dead
+  processes** (requests on a terminated process reject instead of hanging, in-flight requests
+  are rejected on terminate, timeouts fire, terminate is idempotent even when the transport
+  throws, unhandled syscalls answer with an error, and the watchdog kills a crashed process
+  then forgets it). `WorkerProcess` branch coverage 71% → 82%, `IframeProcess` 0% → 33%.
 - **`PackageManager.verify(id, pkg)` (audit O1)**: re-hashes a package and compares it with the
   integrity stamped at install, so tampering/corruption is detectable before a re-install.
   Documented scope: it proves the bytes are unchanged, not who produced them — authenticity still

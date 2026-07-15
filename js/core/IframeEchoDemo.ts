@@ -4,12 +4,11 @@
  * over a dedicated, authenticated MessagePort — proving the iframe-process path
  * end-to-end with the SDK inside the guest.
  *
- * The guest is SERVED from 'self' (process-guest.html) because the app's strict
- * CSP (`script-src 'self'`) blocks inline/cross-origin guest scripts, and the
- * iframe uses `allow-same-origin` so the served module loads and the parent-origin
- * check works — first-party realm/document isolation plus a spoof-proof channel.
- * Full opaque-origin isolation for untrusted third-party apps needs a separate
- * origin (deployment concern). See docs/webos-roadmap/phase-1-process-model.md.
+ * The guest runs with an OPAQUE ORIGIN (`sandbox="allow-scripts"`, no
+ * `allow-same-origin`): it cannot reach the host DOM, localStorage or IndexedDB —
+ * only its dedicated port. That works because the guest is served as a classic
+ * IIFE bundle (see vite.guest.config.js); an ES module would be CORS-refused from
+ * a null origin. See docs/webos-roadmap/phase-1-process-model.md.
  */
 
 import { Kernel } from './Kernel';
@@ -24,10 +23,9 @@ export interface EchoIframeHandle {
     iframe: HTMLIFrameElement;
 }
 
-/** Spawns the SDK-based guest as an isolated iframe process. */
+/** Spawns the SDK-based guest as an isolated iframe process (opaque origin). */
 export function spawnEchoIframe(): Promise<EchoIframeHandle> {
-    return Kernel.spawnIframe('echo-iframe', {
-        src: PROCESS_GUEST_URL,
-        sandbox: 'allow-same-origin',
-    });
+    // No extra sandbox tokens: IframeProcess applies `allow-scripts` alone, which
+    // keeps the guest on an opaque origin.
+    return Kernel.spawnIframe('echo-iframe', { src: PROCESS_GUEST_URL });
 }

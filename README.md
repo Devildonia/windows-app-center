@@ -337,7 +337,7 @@ packaging → session) shipped in **v1.6.6**; design notes per phase live in
 - **Real zip container** for `.wapp` packages (the manager already takes a parsed package, so a zip loader plugs in) plus **package signing** via SubtleCrypto, and a store/catalog UI.
 - **Permissions UI** — review, grant and revoke app capabilities from Settings.
 - **Virtual workspaces** — multiple desktops (no compositor needed; just group windows per workspace).
-- **Opaque-origin guests** — serve third-party apps from a separate origin so untrusted code runs with a true opaque origin (today's strict CSP blocks inline/cross-origin guest scripts, so guests are served from `'self'`).
+- **Separate-origin guests** — serve third-party apps from a subdomain for defence in depth on top of today's opaque-origin sandbox (it would also isolate each guest's own storage).
 - More capabilities: `net.fetch`, `clipboard.*`, `window.open`.
 
 See the [CHANGELOG](CHANGELOG.md) `[Unreleased]` section for the latest.
@@ -348,7 +348,7 @@ See the [CHANGELOG](CHANGELOG.md) `[Unreleased]` section for the latest.
 
 - **Persistence** is client-side: the VFS tree lives in **IndexedDB** and binary files in **OPFS** (hundreds of MB, subject to the browser's storage quota), with a `localStorage` fallback where IndexedDB is unavailable. Durability on an abrupt close is best-effort — async writes are flushed on `visibilitychange`, which is more reliable than `beforeunload`.
 - **Single-user / client-side only** — no accounts, no server sync.
-- **Third-party code isolation** — apps run in a sandboxed iframe with a dedicated, authenticated channel, but the hardened CSP (`script-src 'self'`) blocks inline/cross-origin guest scripts, so guests are served from `'self'` with `allow-same-origin`: that's realm/document isolation, not opaque-origin isolation. Truly untrusted third-party code needs a separate origin (see Roadmap). By design, no untrusted code is `eval`'d.
+- **Third-party code isolation** — apps run in a sandboxed iframe with an **opaque origin** (`allow-scripts`, no `allow-same-origin`) and reach the system only through a dedicated, authenticated channel: they cannot touch the host DOM, `localStorage` or IndexedDB. A **separate origin** (subdomain) would still add defence in depth — it would also isolate the guest's *own* storage and cover sandbox escapes — but it is no longer required for third-party isolation. By design, no untrusted code is `eval`'d.
 - Fake "hardware" figures in the Task Manager *System* tab are **simulated** (deterministic), not real device telemetry.
 
 ---

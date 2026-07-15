@@ -81,13 +81,26 @@ procesos es incremental y posterior.
   ready por el puerto, responde `echo`/`reverse`/`ping`, y el iframe se elimina al matar el
   proceso.
 
-> **Hallazgo (CSP):** la CSP endurecida del app (`script-src 'self'`) **bloquea scripts
-> inline/cross-origin** en iframes `srcdoc`/opacos → un guest de origen opaco no puede
-> cargar código bajo esta CSP. Por eso el guest se **sirve desde 'self'** y el iframe usa
-> `allow-same-origin` (aislamiento de realm/documento + canal dedicado autenticado, pero
-> mismo origen). El aislamiento de **origen opaco** para apps de terceros no confiables
-> requiere servir los guests desde un **origen separado** (subdominio) — pendiente de
-> despliegue, no de código.
+> **⚠️ Diagnóstico corregido (v1.6.7).** La nota original de esta fase decía que la CSP
+> (`script-src 'self'`) impedía un guest de origen opaco y que hacía falta un **origen
+> separado**. **Era incorrecto**, por dos motivos:
+>
+> 1. **La CSP no se hereda** en un iframe con `src` a un documento servido — solo la heredan
+>    `srcdoc`/`data:`/`blob:`. Lo que se probó entonces fue `srcdoc`, de ahí la conclusión
+>    equivocada. El documento del guest tiene su propia CSP (ninguna, en nuestro caso).
+> 2. El bloqueo real era el **CORS de los módulos ES**: un `import` desde un origen opaco
+>    viaja con `Origin: null` y se rechaza. Los **scripts clásicos no pasan por CORS**.
+>
+> **Solución (v1.6.7):** el guest se compila como **IIFE clásico autocontenido**
+> (`vite.guest.config.js` → `public/process-guest.js`) y el iframe corre con
+> `sandbox="allow-scripts"` **sin `allow-same-origin`** → **origen opaco real**, sin
+> necesidad de un origen separado ni de hosting propio. Verificado: el padre no puede leer
+> el DOM del guest (`contentDocument === null`) ni su almacenamiento (`SecurityError`), y la
+> política de mismo origen es simétrica, así que el guest tampoco alcanza al host.
+>
+> Un **origen separado** (subdominio) seguiría siendo defensa en profundidad —protegería
+> además el almacenamiento propio del guest y cubriría fallos del sandbox— pero ya no es
+> el requisito para aislar apps de terceros.
 
 ### Etapas siguientes
 - Servir guests de apps de terceros desde un origen separado para aislamiento de origen

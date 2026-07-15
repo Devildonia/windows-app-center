@@ -27,8 +27,10 @@ export default defineConfig({
     sourcemap: 'hidden',  // Sprint 1 bonus: source maps sin exponerlos públicamente
     rollupOptions: {
       input: {
-        main: 'index.html',
-        processGuest: 'process-guest.html'
+        // The iframe-process guest is NOT an input here: it lives in public/ and is
+        // built separately as a classic IIFE (see vite.guest.config.js) so it can run
+        // in an opaque-origin sandbox.
+        main: 'index.html'
       },
     },
   },

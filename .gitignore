@@ -156,3 +156,6 @@ node_modules
 
 # Release/build archives — never commit them (a 21 MB zip once slipped in via `git add -A`)
 *.zip
+
+# Generated iframe-process guest bundle (built from js/sdk/guestBoot.ts by `npm run build:guest`)
+public/process-guest.js

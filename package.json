@@ -6,6 +6,8 @@
   "main": "main.ts",
   "scripts": {
     "dev": "vite",
+    "predev": "npm run build:guest",
+    "build:guest": "vite build --config vite.guest.config.js",
     "test": "vitest",
     "test:run": "vitest run --reporter=verbose",
     "test:ui": "vitest --ui",
@@ -15,7 +17,7 @@
     "lint": "eslint js/ main.ts",
     "lint:fix": "eslint js/ main.ts --fix",
     "typecheck": "tsc --noEmit",
-    "build": "npm run build:games && vite build",
+    "build": "npm run build:guest && npm run build:games && vite build",
     "build:games": "npx tailwindcss -i tailwind-games.css -o public/css/tailwind-games.css --content \"./public/games/**/*.html\" --minify",
     "generate:app": "node scripts/create-app.js",
     "preview": "vite preview"
