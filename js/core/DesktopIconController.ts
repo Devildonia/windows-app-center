@@ -4,6 +4,31 @@ let draggableListenersAttached = false;
 let mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let mouseUpHandler: (() => void) | null = null;
 
+/** Desktop grid: icons sit on 100px columns/rows starting at (20, 20). */
+const GRID = { x0: 20, y0: 20, dx: 100, dy: 100, rowsPerColumn: 9 };
+
+const slotKey = (x: number, y: number): string => `${x},${y}`;
+
+/**
+ * Picks the next unclaimed grid slot (top-to-bottom, then next column) and marks
+ * it taken. Used for icons with no explicit default: without this they keep
+ * `position:absolute` and no left/top, so they pile up at (0,0) on top of My
+ * Computer — which is exactly what happened when Prime Lab was added.
+ */
+function nextFreeSlot(occupied: Set<string>): { x: number, y: number } {
+    for (let col = 0; col < 50; col++) {
+        for (let row = 0; row < GRID.rowsPerColumn; row++) {
+            const x = GRID.x0 + col * GRID.dx;
+            const y = GRID.y0 + row * GRID.dy;
+            if (!occupied.has(slotKey(x, y))) {
+                occupied.add(slotKey(x, y));
+                return { x, y };
+            }
+        }
+    }
+    return { x: GRID.x0, y: GRID.y0 };
+}
+
 export function initializeDraggableIcons(): void {
     Utils.Logger.log("[DRAG] Initializing draggable icons...");
 
@@ -20,8 +45,15 @@ export function initializeDraggableIcons(): void {
         'icon-games-folder': { x: 120, y: 20 },
         'icon-terminal': { x: 120, y: 120 },
         'icon-taskmanager': { x: 120, y: 220 },
-        'icon-pluginmanager': { x: 120, y: 320 }
+        'icon-pluginmanager': { x: 120, y: 320 },
+        'icon-primelab': { x: 120, y: 420 }
     };
+
+    // Every slot a default already claims — so auto-placed icons land beside them,
+    // never on top of them.
+    const occupied = new Set<string>(
+        Object.values(defaultPositions).map(p => slotKey(p.x, p.y))
+    );
 
     const icons = document.querySelectorAll('#system-icons .icon, #app-launch-zone .icon');
     let draggedIcon: HTMLElement | null = null;
@@ -32,18 +64,19 @@ export function initializeDraggableIcons(): void {
         const savedPosition = localStorage.getItem(`icon-pos-${icon.id}`);
         icon.style.position = 'absolute';
 
+        let placed = false;
         if (savedPosition) {
             try {
                 const pos = JSON.parse(savedPosition);
                 icon.style.left = pos.x + 'px';
                 icon.style.top = pos.y + 'px';
-            } catch (_) {}
-        } else if (defaultPositions[icon.id]) {
-            const pos = defaultPositions[icon.id];
-            if (pos) {
-                icon.style.left = pos.x + 'px';
-                icon.style.top = pos.y + 'px';
-            }
+                placed = true;
+            } catch (_) { /* corrupt entry — fall through to a default/free slot */ }
+        }
+        if (!placed) {
+            const pos = defaultPositions[icon.id] ?? nextFreeSlot(occupied);
+            icon.style.left = pos.x + 'px';
+            icon.style.top = pos.y + 'px';
         }
 
         icon.addEventListener('mousedown', (e: MouseEvent) => {

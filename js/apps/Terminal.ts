@@ -235,7 +235,7 @@ export class Terminal implements IWindowsApp {
             this.writeOutput('  help         - Show this help menu');
         } else if (cmd === 'ver') {
             this.writeOutput('MS-DOS Prompt [Version 4.00.950]');
-            this.writeOutput(`Windows App Center version: ${CONFIG.APP?.VERSION || '1.6.6'}`);
+            this.writeOutput(`Windows App Center version: ${CONFIG.APP?.VERSION || '1.6.7'}`);
         } else if (cmd === 'cls' || cmd === 'clear') {
             if (this.outputContainer) this.outputContainer.innerHTML = '';
         } else if (cmd === 'cd') {

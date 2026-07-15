@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.7] - 2026-07-15
+
+**The final Windows App Center release.** A hardening pass that closes every finding of the
+v1.6.6 architecture audit and lifts iframe processes to real origin isolation. Development
+continues under a new name — see the Roadmap in the README.
+
 ### Security
 - **Iframe processes now run on a true opaque origin**: the process guest is shipped as a
   self-contained classic (IIFE) bundle, which lets the sandbox drop `allow-same-origin`. A
@@ -48,6 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **App home sanitizer aligned (audit B5)**: `Kernel.ensureAppHome` used its own regex while
   `VFS.mkdir` uses `Utils.sanitizePath`, so odd ids could return an `fsRoot` naming a directory
   that was never created. Both use the same sanitizer now.
+- **Prime Lab's desktop icon sat on top of My Computer**: desktop icons are placed from a
+  hardcoded position map, and an icon with no entry got `position:absolute` with no
+  coordinates — so it landed at (0,0), overlapping the first icon. Prime Lab now has its grid
+  slot, and any icon without an entry is auto-placed in the next free slot instead of piling up
+  at the origin.
 - **Raw NUL byte removed from source**: the consent broker's in-flight key embedded a literal
   `U+0000` control character in `PermissionBroker.ts`, which made tooling treat the file as
   binary. It now uses an escape sequence — identical behaviour, plain-ASCII source. (The audit

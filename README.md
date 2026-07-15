@@ -56,7 +56,7 @@ The "desktop in the browser" space is crowded — so this project leans on **eng
 - 🧠 **Real OS primitives, not a mockup.** A process `Kernel` that spawns genuinely **isolated processes** (Web Worker / sandboxed iframe) over an authenticated per-process IPC channel — a `while(true)` in an app can't freeze the desktop, and a watchdog kills it. Apps reach the system only through **mediated syscalls** gated by **user-consented capabilities**, and are confined to their own home directory.
 - 🦴 **A 3D physics pet.** An interactive ragdoll powered by **Rapier3D + Three.js** with grab physics, procedural animation, and an AI state machine — a differentiator you won't find in most desktop clones.
 - 🔬 **Determinism by design.** Zero `Math.random()` in logic paths; seeded PRNG where reproducibility matters. Hot paths are zero-allocation with a fixed-timestep loop.
-- ✅ **626 tests** (unit, characterization & Playwright E2E) with coverage gates in CI — rare in this niche.
+- ✅ **660 tests** (unit, characterization & Playwright E2E) with coverage gates in CI — rare in this niche.
 - 🎨 **Intentional aesthetics.** Pixel-accurate Win95 chrome plus a "Modern" theme, driven by a token-based theme engine — no AI-default look.
 - 🧩 **Built to be extended.** Auto-registering apps, a scaffolder (`npm run generate:app`), and a runtime plugin API.
 
@@ -179,7 +179,7 @@ Use `↑` / `↓` to navigate command history.
 
 ## ✅ Testing
 
-**626 tests across 55 files** — unit, *characterization* (behavior-locking tests for the Kernel, Window Manager, and Audio Manager), regression tests that encode every audit finding, and Playwright end-to-end boot/interaction specs. Coverage thresholds are enforced as blocking CI gates.
+**660 tests across 57 files** — unit, *characterization* (behavior-locking tests for the Kernel, Window Manager, and Audio Manager), regression tests that encode every audit finding, error-path tests (storage quota, denied permissions, crashed processes), and Playwright end-to-end boot/interaction specs. Coverage thresholds are enforced as blocking CI gates.
 
 ```bash
 npm test              # watch mode
