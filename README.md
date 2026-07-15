@@ -24,10 +24,10 @@
 
 ---
 
-Windows App Center is a fully functional desktop environment that runs entirely in the browser — but under the retro Win95 chrome sits a deliberately **production-grade architecture**: a process Kernel, a reactive Service Container, a virtual file system, a 3D physics engine, and a 464-test suite. It doubles as a **sandbox for developing modular systems** (VFS, Kernel, Rapier3D, Resource lifecycle) that can be extracted and ported into other projects.
+Windows App Center is a fully functional desktop environment that runs entirely in the browser — but under the retro Win95 chrome sits a deliberately **production-grade architecture**: a process Kernel that spawns **isolated Worker/iframe processes**, mediated **syscalls** behind user-consented **permissions**, an async **IndexedDB/OPFS** file system, a 3D physics engine, and a 626-test suite. It doubles as a **sandbox for developing modular systems** (VFS, Kernel, IPC, Rapier3D, Resource lifecycle) that can be extracted and ported into other projects.
 
 > [!NOTE]
-> Audited for stability, security, and performance (July 2026). See the [CHANGELOG](CHANGELOG.md) for the full version history.
+> Audited for stability, security, and performance (July 2026) — all findings remediated with regression tests. Since v1.6.6 the system follows a 6-phase **Web OS** architecture; per-phase design notes live in [`docs/webos-roadmap/`](docs/webos-roadmap/). See the [CHANGELOG](CHANGELOG.md) for the full version history.
 
 ## 📋 Table of Contents
 - [Why this exists](#-why-this-exists)
@@ -53,10 +53,10 @@ Windows App Center is a fully functional desktop environment that runs entirely 
 
 The "desktop in the browser" space is crowded — so this project leans on **engineering quality** rather than feature count:
 
-- 🧠 **Real OS primitives, not a mockup.** A process `Kernel` with a live registry, a dependency-injected `Service Container`, an event-driven core, and per-owner resource lifecycle management.
+- 🧠 **Real OS primitives, not a mockup.** A process `Kernel` that spawns genuinely **isolated processes** (Web Worker / sandboxed iframe) over an authenticated per-process IPC channel — a `while(true)` in an app can't freeze the desktop, and a watchdog kills it. Apps reach the system only through **mediated syscalls** gated by **user-consented capabilities**, and are confined to their own home directory.
 - 🦴 **A 3D physics pet.** An interactive ragdoll powered by **Rapier3D + Three.js** with grab physics, procedural animation, and an AI state machine — a differentiator you won't find in most desktop clones.
 - 🔬 **Determinism by design.** Zero `Math.random()` in logic paths; seeded PRNG where reproducibility matters. Hot paths are zero-allocation with a fixed-timestep loop.
-- ✅ **464 tests** (unit, characterization & Playwright E2E) with coverage gates in CI — rare in this niche.
+- ✅ **626 tests** (unit, characterization & Playwright E2E) with coverage gates in CI — rare in this niche.
 - 🎨 **Intentional aesthetics.** Pixel-accurate Win95 chrome plus a "Modern" theme, driven by a token-based theme engine — no AI-default look.
 - 🧩 **Built to be extended.** Auto-registering apps, a scaffolder (`npm run generate:app`), and a runtime plugin API.
 
@@ -77,10 +77,15 @@ The "desktop in the browser" space is crowded — so this project leans on **eng
 ## ✨ Features
 
 ### 🏢 Desktop Environment
-- **Process Kernel** — a real process table (`launch`/`kill`, PID registry, singleton handling) that owns every app's lifecycle.
+- **Process Kernel** — a real process table (`launch`/`kill`, PID registry, singleton handling) that owns every app's lifecycle, and spawns **isolated processes**: `spawnWorker()` (Web Worker) and `spawnIframe()` (sandboxed iframe over an authenticated `MessagePort`), each tagged with its `kind`.
+- **Process isolation + watchdog** — heavy work runs off the main thread, so an app can't freeze the desktop; a `ProcessWatchdog` pings processes and kills unresponsive ones. **Prime Lab** demos it: the UI stays live while a worker crunches primes.
+- **App Runtime SDK** — a guest-side SDK (`js/sdk/appRuntime.ts`) so an isolated app speaks the IPC protocol declaratively: it announces readiness, auto-answers pings, routes requests, and calls `syscall(name, args)`.
+- **Syscalls + permissions** — processes reach the system only through mediated syscalls (`fs.read`/`fs.list`/`fs.write`/`notify`/`sys.log`), gated by a `PermissionBroker` that asks the user on first use and remembers the decision, and confined to the app's own home dir (`C:\APPS\<id>`).
+- **App packaging** — install `.wapp` packages: an `app.json` manifest (id, semver, entry, declared `permissions`) validated and versioned, files laid into the app home, SHA-256 integrity stamp, a local registry, clean updates and uninstall. Declared permissions are the ceiling the broker enforces.
 - **Service Container (DI)** — decoupled systems (Kernel, VFS, Window Manager, Audio, Resource Manager) resolved through a typed registry.
-- **Virtual File System** — hierarchical directories persisted to `localStorage` with debounced writes and quota handling.
-- **Native Window Manager** — drag, resize, minimize, maximize, z-index focus, and deterministic teardown.
+- **Virtual File System** — hierarchical directories persisted **asynchronously to IndexedDB** (escaping the ~5–10 MB `localStorage` cap), with binary/large files stored out-of-tree in **OPFS**, debounced writes, quota handling and automatic migration from the legacy `localStorage` tree.
+- **Native Window Manager** — drag, resize, minimize, maximize, z-index focus, **Aero-style edge snapping**, and deterministic teardown.
+- **Session resume** — the desktop remembers which apps are open and their layout, and restores them on reload.
 - **Resource Manager** — owner-scoped registry (WebGL, audio, listeners, timers) with LIFO disposal for leak-free cleanup.
 - **Theme Engine** — switch between *Classic Win95* and *Modern* live; all UI is token-driven.
 - **Plugin API** — validate and register/unregister third-party apps at runtime through the Kernel.
@@ -174,7 +179,7 @@ Use `↑` / `↓` to navigate command history.
 
 ## ✅ Testing
 
-**464 tests across 43 files** — unit, *characterization* (behavior-locking tests for the Kernel, Window Manager, and Audio Manager), and Playwright end-to-end boot/interaction specs. Coverage thresholds are enforced as blocking CI gates.
+**626 tests across 55 files** — unit, *characterization* (behavior-locking tests for the Kernel, Window Manager, and Audio Manager), regression tests that encode every audit finding, and Playwright end-to-end boot/interaction specs. Coverage thresholds are enforced as blocking CI gates.
 
 ```bash
 npm test              # watch mode
@@ -186,7 +191,7 @@ npm run typecheck     # tsc --noEmit
 npm run lint          # ESLint
 ```
 
-**CI (GitHub Actions):** runs on every push/PR to `main`. `typecheck`, `lint`, and `test:run` are blocking quality gates; E2E runs as an informative check.
+**CI (GitHub Actions):** runs on every push/PR to `main`, in three blocking jobs — **Code Quality** (`lint` + `typecheck` + `test:coverage`), **E2E** (Playwright), and **Production Build**.
 
 ---
 
@@ -201,28 +206,42 @@ graph TD
         K[Kernel]
         VFS[Virtual File System]
         WM[Window Manager]
-        DM[Desktop Manager]
-        AM[Audio Manager]
         RM[Resource Manager]
-        PM[Plugin Manager]
+        PkgM[Package Manager]
+        PB[Permission Broker]
+        SB[Syscall Broker]
     end
 
-    Services --> Apps[Applications]
+    Services --> Apps[In-realm Apps]
     Apps --> Notepad
     Apps --> Paint
-    Apps --> Explorer
     Apps --> Terminal[MS-DOS Prompt]
-    Apps --> TaskManager[Task Manager]
-    K --> PM
-    PM -.installs.-> Apps
 
-    OS --> Physics[Physics Engines]
-    Physics --> Rapier3D
-    Physics --> MatterJS
+    K -->|spawnWorker / spawnIframe| Proc[Isolated Processes]
+    Proc --> W[Web Worker]
+    Proc --> IF[Sandboxed iframe]
+    W <-->|IPC| SB
+    IF <-->|MessagePort IPC| SB
+    SB -->|capability check| PB
+    PB -->|consent + grants| VFS
+    SB -->|mediated fs.* / notify| VFS
+    PkgM -->|installs to C:\APPS\id| VFS
+    PkgM -->|declares ceiling| PB
+
+    VFS --> IDB[(IndexedDB · tree)]
+    VFS --> OPFS[(OPFS · blobs)]
 ```
 
+Isolated processes never touch the VFS directly: they issue **syscalls** over their own
+authenticated IPC channel, the **Syscall Broker** checks the capability with the
+**Permission Broker** (user consent, remembered), and only then does it reach the VFS —
+confined to the app's home directory.
+
 ### Architecture highlights
-- **Kernel** — a `Map<pid, process>` registry with immediate cleanup on `kill()` and automatic `terminate()` propagation to app instances. Singleton apps refocus their running instance instead of duplicating.
+- **Kernel** — a `Map<pid, process>` registry with immediate cleanup on `kill()` and automatic `terminate()` propagation to app instances. Singleton apps refocus their running instance instead of duplicating. Processes are tagged `app` (in-realm), `worker` or `iframe`.
+- **Process isolation & IPC** — `spawnWorker()`/`spawnIframe()` run code off the Kernel's realm behind a versioned IPC protocol. The host handle (`WorkerProcess`) talks to an injectable transport, so a Worker, a `MessagePort` or a test loopback are interchangeable. iframe processes get a **dedicated, authenticated `MessagePort`** (the host hands the port only to its own iframe; the guest accepts it only from `window.parent`) instead of the global `window` bus.
+- **Syscalls, permissions & packaging** — a `SyscallBroker` mediates `fs.*`/`notify`/`sys.log`; a `PermissionBroker` asks the user for consent per capability and persists the grant; a `PackageManager` installs versioned `.wapp` packages whose manifest declares the permission ceiling. Every app is confined to `C:\APPS\<id>`.
+- **VFS** — an in-memory tree (synchronous reads) over async **IndexedDB** persistence, with binary blobs in **OPFS** so large files never bloat the serialized tree.
 - **Event-driven core** — a zero-allocation event bus where each handler is isolated (one failing listener never breaks the others), plus a reactive, persisted store.
 - **Service Container** — a typed DI registry with async resolution (`whenReady`) and HMR-safe `unregister`.
 - **Resource Manager** — owner-scoped disposables with LIFO teardown; `Kernel.kill()` and each app's `terminate()` release their WebGL contexts, audio nodes, listeners, and timers deterministically.
@@ -235,20 +254,30 @@ graph TD
 ```text
 windows-app-center/
 ├─ js/
-│  ├─ core/        # Kernel, EventBus, Store, Service Container, VFS,
-│  │               # ResourceManager, PluginManager, Ragdoll3D core…
-│  ├─ apps/        # Notepad, Paint, Terminal, TaskManager, Explorer… (auto-registered)
-│  ├─ ui/          # WindowFactory, TouchManager, ShaderWallpaper…
+│  ├─ core/        # Kernel, EventBus, Store, Service Container, Ragdoll3D core…
+│  │  ├─ ipc/      # versioned process IPC protocol
+│  │  ├─ VFS·VFSStore·VFSBlobStore        # tree + IndexedDB + OPFS blobs
+│  │  ├─ WorkerProcess·IframeProcess      # isolated process handles + transports
+│  │  ├─ ProcessWatchdog·SyscallBroker    # liveness + mediated system access
+│  │  ├─ PermissionBroker·PackageManager  # consent/grants + .wapp install
+│  │  └─ SessionManager·ResourceManager   # session resume + leak-free teardown
+│  ├─ apps/        # Notepad, Paint, Terminal, PrimeLab, TaskManager… (auto-registered)
+│  ├─ sdk/         # guest-side App Runtime SDK (appRuntime, guestBoot)
+│  ├─ workers/     # worker-process entries (compute.worker.ts)
+│  ├─ ui/          # WindowFactory, WindowInteractions (drag/snap), ShaderWallpaper…
 │  ├─ audio/       # AudioManager, procedural synth
 │  ├─ services/    # i18n and other cross-cutting services
 │  └─ utils.ts     # shared helpers (escapeHTML, eventManager, logger…)
+├─ docs/
+│  └─ webos-roadmap/  # per-phase design notes (0 → 5)
 ├─ public/
 │  ├─ games/       # sandboxed iframe games
 │  ├─ css/themes/  # theme-base / theme-win95 / theme-modern tokens
 │  └─ sw.js        # PWA service worker source (Workbox injectManifest)
 ├─ test/           # Vitest unit/characterization + Playwright E2E
 ├─ scripts/        # create-app.js scaffolder
-└─ main.ts         # entry — auto-registers every app in js/apps/*
+├─ process-guest.html  # iframe process guest document (Vite entry)
+└─ main.ts         # entry — hydrates the VFS, boots the OS, resumes the session
 ```
 
 ---
@@ -301,10 +330,15 @@ Best experienced in a recent **Chromium-based browser** (Chrome, Edge, Brave). R
 
 ## 🗺️ Roadmap
 
-- **Settings hub** — a Windows-style settings app with a category sidebar (Language & Region live language switcher shipped first). *(in progress)*
-- **i18n hardening** — compile-time-checked translation keys and locale key-parity tests.
-- Deeper plugin loading (sandboxed `src` plugins in isolated iframes).
-- Automated leak-budget E2E (open/close each app N times; assert resource counters return to baseline).
+The 6-phase **Web OS** roadmap (async VFS → isolated processes → syscalls → permissions →
+packaging → session) shipped in **v1.6.6**; design notes per phase live in
+[`docs/webos-roadmap/`](docs/webos-roadmap/). What's next:
+
+- **Real zip container** for `.wapp` packages (the manager already takes a parsed package, so a zip loader plugs in) plus **package signing** via SubtleCrypto, and a store/catalog UI.
+- **Permissions UI** — review, grant and revoke app capabilities from Settings.
+- **Virtual workspaces** — multiple desktops (no compositor needed; just group windows per workspace).
+- **Opaque-origin guests** — serve third-party apps from a separate origin so untrusted code runs with a true opaque origin (today's strict CSP blocks inline/cross-origin guest scripts, so guests are served from `'self'`).
+- More capabilities: `net.fetch`, `clipboard.*`, `window.open`.
 
 See the [CHANGELOG](CHANGELOG.md) `[Unreleased]` section for the latest.
 
@@ -312,9 +346,9 @@ See the [CHANGELOG](CHANGELOG.md) `[Unreleased]` section for the latest.
 
 ## ⚠️ Known Limitations
 
-- **Persistence** is `localStorage`-backed (~5 MB per origin); the VFS is not meant for large files.
+- **Persistence** is client-side: the VFS tree lives in **IndexedDB** and binary files in **OPFS** (hundreds of MB, subject to the browser's storage quota), with a `localStorage` fallback where IndexedDB is unavailable. Durability on an abrupt close is best-effort — async writes are flushed on `visibilitychange`, which is more reliable than `beforeunload`.
 - **Single-user / client-side only** — no accounts, no server sync.
-- **Plugin Manager install UI** currently validates and manages plugins, but loading arbitrary third-party code from a URL is intentionally stubbed pending a sandboxed loader (see Roadmap) — by design, no untrusted code is `eval`'d.
+- **Third-party code isolation** — apps run in a sandboxed iframe with a dedicated, authenticated channel, but the hardened CSP (`script-src 'self'`) blocks inline/cross-origin guest scripts, so guests are served from `'self'` with `allow-same-origin`: that's realm/document isolation, not opaque-origin isolation. Truly untrusted third-party code needs a separate origin (see Roadmap). By design, no untrusted code is `eval`'d.
 - Fake "hardware" figures in the Task Manager *System* tab are **simulated** (deterministic), not real device telemetry.
 
 ---

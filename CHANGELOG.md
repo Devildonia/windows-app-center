@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.6] - 2026-07-15
+
+This release turns the desktop simulator into a real **Web OS**: a full 6-phase roadmap
+(async file system → isolated processes → mediated syscalls → user-consented permissions →
+app packaging → session resume), plus the remediation of a full architecture audit. Design
+notes for every phase live in `docs/webos-roadmap/`.
+
 ### Added
 - **Session resume + window snapping (Web OS roadmap, Fase 5)**: The desktop now remembers your
   session — which apps are open and their window layout — and restores it on reload. A new
@@ -41,8 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `syscall(name, args)` and the host `WorkerProcess` routes inbound requests. A new
   `SyscallBroker` serves `sys.log`, `notify`, `fs.read`, `fs.list`, and `fs.write` against the
   real VFS/Notify, guarded by a per-process capability set and an `fsRoot` that confines `fs.*`
-  paths (default `C:\DOCUMENTS`). Verified: an iframe process writes a file via `fs.write`, and
-  a write outside its `fsRoot` is denied. See `docs/webos-roadmap/phase-2-syscalls.md`.
+  paths (Fase 3 below replaces that static set with user consent, and the root with a per-app
+  home). Verified: an iframe process writes a file via `fs.write`, and a write outside its
+  `fsRoot` is denied. See `docs/webos-roadmap/phase-2-syscalls.md`.
 - **Iframe processes over a dedicated MessagePort (Web OS roadmap, Fase 1.y)**: Processes can
   now run in a sandboxed iframe that talks to the Kernel over a dedicated, authenticated
   `MessagePort` instead of the global `window` bus. New MessagePort transports (host + guest)
@@ -98,6 +106,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Re-audit low-severity regressions**: Settings panel listeners are now tracked and
   removed on re-render/terminate; the Kernel resolves a plugin's trusted iframe id the
   same way on install and uninstall.
+- **CI `npm ci` failing on Linux**: The lockfile was missing the Linux native optional
+  bindings (`@rolldown/binding-linux-*`), so CI's install step failed on ubuntu even though
+  `npm ci` passed on Windows — blocking every job. Fully regenerated the lockfile from a clean
+  `npm install` (a partial `--package-lock-only` reconcile was not enough over an already
+  incomplete lock).
+
+### Dependencies
+- Added `fake-indexeddb` (dev) to test the IndexedDB-backed VFS, and refreshed
+  `public/mockServiceWorker.js` to match msw 2.15.0.
 
 ## [1.6.5] - 2026-07-14
 
