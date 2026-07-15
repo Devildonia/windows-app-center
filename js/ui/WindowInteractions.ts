@@ -20,6 +20,9 @@ interface IActiveInteraction {
 }
 
 export class WindowInteractions {
+    /** Distance from a work-area edge (px) that triggers a snap on drag release. */
+    private static readonly SNAP_EDGE = 12;
+
     private readonly _dragRegistry = new Map<string, IInteractionEntry>();
     private readonly _resizeRegistry = new Map<string, IInteractionEntry>();
 
@@ -114,6 +117,7 @@ export class WindowInteractions {
 
         let isDragging = false;
         let startX: number, startY: number, initialX: number, initialY: number;
+        let lastX = 0, lastY = 0;
 
         this.bind(
             windowId,
@@ -126,6 +130,8 @@ export class WindowInteractions {
                 isDragging = true;
                 startX = mouseEvt.clientX;
                 startY = mouseEvt.clientY;
+                lastX = mouseEvt.clientX;
+                lastY = mouseEvt.clientY;
 
                 // Get current position
                 const rect = win.getBoundingClientRect();
@@ -141,6 +147,9 @@ export class WindowInteractions {
             (mouseEvt) => {
                 if (!isDragging) return;
 
+                lastX = mouseEvt.clientX;
+                lastY = mouseEvt.clientY;
+
                 const deltaX = mouseEvt.clientX - startX;
                 const deltaY = mouseEvt.clientY - startY;
 
@@ -149,11 +158,45 @@ export class WindowInteractions {
                 win.style.transform = 'none'; // Remove centering transform
             },
             () => {
+                if (isDragging) this.applySnap(win, lastX, lastY);
                 isDragging = false;
             }
         );
 
         Utils.Logger.window(`Window ${windowId} is now draggable`);
+    }
+
+    /** The usable desktop area (excludes the taskbar when #desktop is present). */
+    private workArea(): { width: number; height: number } {
+        const desktop = document.getElementById('desktop');
+        return {
+            width: desktop?.clientWidth || window.innerWidth,
+            height: desktop?.clientHeight || window.innerHeight,
+        };
+    }
+
+    /**
+     * Aero-style snapping (Fase 5): releasing a drag against the top edge
+     * maximizes the window; against the left/right edge it fills that half of
+     * the work area. Returns the applied geometry, or null when no snap applies.
+     */
+    public applySnap(win: HTMLElement, x: number, y: number): { left: number; top: number; width: number; height: number } | null {
+        const { width: W, height: H } = this.workArea();
+        const E = WindowInteractions.SNAP_EDGE;
+
+        let geo: { left: number; top: number; width: number; height: number } | null = null;
+        if (y <= E) geo = { left: 0, top: 0, width: W, height: H };                                      // maximize
+        else if (x <= E) geo = { left: 0, top: 0, width: Math.round(W / 2), height: H };                 // left half
+        else if (x >= W - E) geo = { left: Math.round(W / 2), top: 0, width: Math.round(W / 2), height: H }; // right half
+        if (!geo) return null;
+
+        win.style.transform = 'none';
+        win.style.left = `${geo.left}px`;
+        win.style.top = `${geo.top}px`;
+        win.style.width = `${geo.width}px`;
+        win.style.height = `${geo.height}px`;
+        Utils.Logger.window(`Window snapped to ${geo.width}x${geo.height} @ ${geo.left},${geo.top}`);
+        return geo;
     }
 
     public makeResizable(windowId: string): void {

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Session resume + window snapping (Web OS roadmap, Fase 5)**: The desktop now remembers your
+  session — which apps are open and their window layout — and restores it on reload. A new
+  `SessionManager` snapshots the windowed apps (worker/iframe children are skipped; their app
+  respawns them), persists to `C:\WINDOWS\SYSTEM\session.json` on process/layout changes, and
+  replays it at boot by relaunching each app and re-applying its geometry. Windows also gain
+  **Aero-style snapping**: drop a window against the top edge to maximize, or the left/right edge
+  to fill that half of the work area (the taskbar stays clear). Note: the roadmap's surface-based
+  compositor was deliberately **not** built — these apps render as DOM, so the browser already
+  composes them; a surface rewrite would cost everything the DOM gives for free and buy nothing.
+  See `docs/webos-roadmap/phase-5-session-compositor.md`.
 - **App packaging: manifest, versioned install/update/uninstall, local registry (Web OS roadmap, Fase 4)**:
   Apps can now be installed as packages (`.wapp` — a manifest plus its files). The `app.json`
   manifest declares id, semver version, entry and the capabilities the app may request; a new

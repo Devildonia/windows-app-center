@@ -18,6 +18,7 @@ import { Utils } from './js/utils';
 import { EventBus, Store } from './js/core/EventBus';
 import { VFS } from './js/core/VFS';
 import { Kernel } from './js/core/Kernel';
+import { SessionManager } from './js/core/SessionManager';
 import { BootLoader } from './js/core/BootLoader';
 import { HDRManager } from './js/core/HDRManager';
 import { ResourceManager } from './js/core/ResourceManager';
@@ -100,6 +101,15 @@ async function boot(): Promise<void> {
         console.error('[Kernel] VFS init failed, booting with defaults:', err);
     }
     if (window.initOS) window.initOS();
+
+    // Fase 5: keep the session up to date and resume the previous one (open apps
+    // + window layout). No saved session -> restore() is a no-op.
+    try {
+        SessionManager.init();
+        await SessionManager.restore();
+    } catch (err) {
+        console.error('[Kernel] Session restore failed:', err);
+    }
 }
 
 if (document.readyState === 'loading') {
