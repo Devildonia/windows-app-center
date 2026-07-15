@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **App packaging: manifest, versioned install/update/uninstall, local registry (Web OS roadmap, Fase 4)**:
+  Apps can now be installed as packages (`.wapp` — a manifest plus its files). The `app.json`
+  manifest declares id, semver version, entry and the capabilities the app may request; a new
+  `PackageManager` validates it, writes the files into the app's own home (`C:\APPS\<id>`),
+  stamps a SHA-256 integrity hash, and records it in a registry persisted in the VFS. Installing
+  the same or an older version is refused; a newer one performs a clean update (stale files
+  removed); uninstall removes the home, the registry entry and every permission grant. The
+  manifest's declared permissions become the ceiling the `PermissionBroker` enforces — an
+  undeclared capability is refused outright without prompting, while declared ones still ask for
+  consent at first use. The container is swappable (a zip loader plugs in without touching the
+  manager). See `docs/webos-roadmap/phase-4-packaging.md`.
 - **Permission consent + per-app home directories (Web OS roadmap, Fase 3)**: The static
   capability set from Fase 2 is replaced by a `PermissionBroker` that asks the user to allow or
   deny a capability (`fs:read`, `fs:write`, `notify`, …) the first time a process uses it, then

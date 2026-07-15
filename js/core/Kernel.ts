@@ -19,6 +19,7 @@ import { ProcessWatchdog } from './ProcessWatchdog';
 import { createIframeTransport, type IframeSpawnOptions } from './IframeProcess';
 import { attachSyscalls } from './SyscallBroker';
 import { PermissionBroker } from './PermissionBroker';
+import { PackageManager } from './PackageManager';
 
 export interface IAppRegistryEntry {
     appClass: IWindowsAppConstructor;
@@ -308,7 +309,8 @@ export const Kernel: IKernel = (() => {
         // that also keeps the Kernel self-sufficient if invoked standalone.
         void VFS.init();
         PluginBridge.init();
-        PermissionBroker.init(); // load persisted capability grants
+        PermissionBroker.init();  // load persisted capability grants
+        PackageManager.init();    // load installed apps + re-apply their permission ceilings
         Utils.Logger.log('Kernel: Ready');
     }
 

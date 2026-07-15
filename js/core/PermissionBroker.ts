@@ -53,6 +53,13 @@ function defaultPrompt(appId: string, capability: string): Promise<Decision> {
 
 export const PermissionBroker = (() => {
     let grants: Record<string, Record<string, Decision>> = {};
+    /**
+     * Permission ceiling declared by an installed app's manifest (Fase 4). If an
+     * app declared its capabilities, anything outside that list is refused
+     * outright — without bothering the user. Apps with no manifest (built-in
+     * demo processes) have no ceiling and fall through to consent.
+     */
+    let declared: Record<string, string[]> = {};
     let prompt: ConsentPrompt = defaultPrompt;
 
     /** Loads persisted grants from the VFS (call once at boot). */
@@ -72,6 +79,13 @@ export const PermissionBroker = (() => {
      * first use and remembering the decision.
      */
     async function check(appId: string, capability: string): Promise<boolean> {
+        // Manifest ceiling: never prompt for a capability the app didn't declare.
+        const ceiling = declared[appId];
+        if (ceiling && !ceiling.includes(capability)) {
+            Utils.Logger.warn(`[PermissionBroker] ${appId} requested undeclared capability "${capability}"`);
+            return false;
+        }
+
         const appGrants = grants[appId] ?? (grants[appId] = {});
         const existing = appGrants[capability];
         if (existing) return existing === 'granted';
@@ -105,10 +119,26 @@ export const PermissionBroker = (() => {
         persist();
     }
 
+    /** Records an installed app's declared permission ceiling (from its manifest). */
+    function setDeclared(appId: string, permissions: string[]): void {
+        declared[appId] = [...permissions];
+    }
+
+    function clearDeclared(appId: string): void {
+        delete declared[appId];
+    }
+
+    /** Drops every stored decision for an app (called on uninstall). */
+    function revokeApp(appId: string): void {
+        delete grants[appId];
+        persist();
+    }
+
     function reset(): void {
         grants = {};
+        declared = {};
         prompt = defaultPrompt;
     }
 
-    return { init, check, peek, set, setPrompt, persist, reset };
+    return { init, check, peek, set, setPrompt, setDeclared, clearDeclared, revokeApp, persist, reset };
 })();
